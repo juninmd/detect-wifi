@@ -34,6 +34,8 @@ class PreferencesUtil(context: Context) {
         private const val PREFIX_CATEGORY = "category_"
         private const val PREFIX_NOTIFY_ARRIVAL = "notify_arrival_"
         private const val PREFIX_NOTIFY_DEPARTURE = "notify_departure_"
+        private const val PREFIX_CRITICAL_ALERT = "critical_alert_"
+        private const val PREFIX_TELEGRAM_ALERT = "telegram_alert_"
         private const val KEY_ALL_BSSIDS = "all_bssids"
     }
 
@@ -72,6 +74,22 @@ class PreferencesUtil(context: Context) {
 
     fun shouldNotifyDeparture(bssid: String): Boolean {
         return preferences.getBoolean(PREFIX_NOTIFY_DEPARTURE + bssid, false)
+    }
+
+    fun setCriticalAlertEnabled(bssid: String, enabled: Boolean) {
+        preferences.edit().putBoolean(PREFIX_CRITICAL_ALERT + bssid, enabled).apply()
+    }
+
+    fun isCriticalAlertEnabled(bssid: String): Boolean {
+        return preferences.getBoolean(PREFIX_CRITICAL_ALERT + bssid, false)
+    }
+
+    fun setTelegramAlertEnabled(bssid: String, enabled: Boolean) {
+        preferences.edit().putBoolean(PREFIX_TELEGRAM_ALERT + bssid, enabled).apply()
+    }
+
+    fun isTelegramAlertEnabled(bssid: String): Boolean {
+        return preferences.getBoolean(PREFIX_TELEGRAM_ALERT + bssid, false)
     }
 
     // Telegram Getters/Setters

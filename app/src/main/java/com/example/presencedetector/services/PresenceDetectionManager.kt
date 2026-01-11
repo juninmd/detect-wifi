@@ -54,11 +54,11 @@ class PresenceDetectionManager(private val context: Context) {
             wifiPresenceDetected = detected
             currentWifiDevices = devices
             
-            // Track history (1x per day)
-            devices.forEach { preferences.trackDetection(it.bssid) }
-            
-            // Process smart notifications for individual devices
+            // Process smart notifications FIRST to detect "new" devices correctly
             processSmartDeviceEvents(devices)
+
+            // Then Track history (1x per day)
+            devices.forEach { preferences.trackDetection(it.bssid) }
             
             if (detected) lastWifiDetection = System.currentTimeMillis()
             evaluateGlobalPresence("WiFi", details)
@@ -169,11 +169,20 @@ class PresenceDetectionManager(private val context: Context) {
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val category = device.category.displayName
         
+        // Critical Alert Logic (Bypass Silent)
+        if (preferences.isCriticalAlertEnabled(device.bssid)) {
+             playSecurityAlarm()
+        }
+
         val title = "🔔 ${device.category.iconRes} Detected: $nickname"
         val message = "Just arrived at $time. Signal strength is ${device.level}dBm. Recognized as $category."
         
         NotificationUtil.sendPresenceNotification(context, title, message, true)
-        telegramService.sendMessage("🔔 $nickname ($category) arrived at $time. Signal: ${device.level}dBm")
+
+        // Per-device Telegram Alert
+        if (preferences.isTelegramAlertEnabled(device.bssid) && preferences.isTelegramEnabled()) {
+             telegramService.sendMessage("🔔 $nickname ($category) arrived at $time. Signal: ${device.level}dBm")
+        }
     }
 
     private fun sendDepartureNotification(bssid: String, device: WiFiDevice?) {
@@ -181,11 +190,20 @@ class PresenceDetectionManager(private val context: Context) {
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val icon = device?.category?.iconRes ?: "📱"
         
+        // Critical Alert Logic (Bypass Silent)
+        if (preferences.isCriticalAlertEnabled(bssid)) {
+             playSecurityAlarm()
+        }
+
         val title = "🚪 Device Left: $nickname"
         val message = "No longer detected as of $time. ${device?.category?.iconRes} signal has dropped."
         
         NotificationUtil.sendPresenceNotification(context, title, message, false)
-        telegramService.sendMessage("🚪 $nickname left at $time.")
+
+        // Per-device Telegram Alert
+        if (preferences.isTelegramAlertEnabled(bssid) && preferences.isTelegramEnabled()) {
+             telegramService.sendMessage("🚪 $nickname left at $time.")
+        }
     }
 
     fun startDetection() {

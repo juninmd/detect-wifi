@@ -208,6 +208,34 @@
                         android:layout_height="wrap_content"
                         android:text="Notify when Leaves" />
 
+                    <com.google.android.material.divider.MaterialDivider
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="8dp"/>
+
+                    <TextView
+                         android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+                         android:text="Advanced Alerts"
+                         android:textStyle="bold"
+                         android:textColor="#333333"/>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchCriticalAlert"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="🚨 Critical Alert (Bypass Silent)"
+                        android:paddingTop="8dp"
+                        android:paddingBottom="8dp"/>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchTelegramAlert"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="✈️ Send Telegram Message"
+                        android:paddingTop="8dp"
+                        android:paddingBottom="8dp"/>
+
                     <Button
                         android:id="@+id/btnSave"
                         android:layout_width="match_parent"

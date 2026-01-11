@@ -12,6 +12,7 @@ import com.example.presencedetector.utils.PreferencesUtil
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.radiobutton.MaterialRadioButton
+import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -43,6 +44,8 @@ class DeviceDetailActivity : AppCompatActivity() {
     private lateinit var rgCategory: RadioGroup
     private lateinit var cbNotifyArrival: MaterialCheckBox
     private lateinit var cbNotifyDeparture: MaterialCheckBox
+    private lateinit var switchCriticalAlert: SwitchMaterial
+    private lateinit var switchTelegramAlert: SwitchMaterial
     private lateinit var btnSave: Button
     private lateinit var tvHistoryCount: TextView
 
@@ -90,6 +93,8 @@ class DeviceDetailActivity : AppCompatActivity() {
         rgCategory = findViewById(R.id.rgCategory)
         cbNotifyArrival = findViewById(R.id.cbNotifyArrival)
         cbNotifyDeparture = findViewById(R.id.cbNotifyDeparture)
+        switchCriticalAlert = findViewById(R.id.switchCriticalAlert)
+        switchTelegramAlert = findViewById(R.id.switchTelegramAlert)
         btnSave = findViewById(R.id.btnSave)
         tvHistoryCount = findViewById(R.id.tvHistoryCount)
     }
@@ -130,6 +135,9 @@ class DeviceDetailActivity : AppCompatActivity() {
         cbNotifyArrival.isChecked = preferences.shouldNotifyArrival(bssid)
         cbNotifyDeparture.isChecked = preferences.shouldNotifyDeparture(bssid)
 
+        switchCriticalAlert.isChecked = preferences.isCriticalAlertEnabled(bssid)
+        switchTelegramAlert.isChecked = preferences.isTelegramAlertEnabled(bssid)
+
         // Category Selection
         for (i in 0 until rgCategory.childCount) {
             val rb = rgCategory.getChildAt(i) as MaterialRadioButton
@@ -154,6 +162,8 @@ class DeviceDetailActivity : AppCompatActivity() {
 
             preferences.setNotifyArrival(bssid, cbNotifyArrival.isChecked)
             preferences.setNotifyDeparture(bssid, cbNotifyDeparture.isChecked)
+            preferences.setCriticalAlertEnabled(bssid, switchCriticalAlert.isChecked)
+            preferences.setTelegramAlertEnabled(bssid, switchTelegramAlert.isChecked)
 
             Toast.makeText(this, "Settings Saved", Toast.LENGTH_SHORT).show()
             finish()
