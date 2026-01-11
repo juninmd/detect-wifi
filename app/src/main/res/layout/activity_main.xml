@@ -160,7 +160,7 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Live Radar Card (Updated to match style) -->
+                <!-- Live Radar Card -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/btnOpenRadarFromGrid"
                     android:layout_width="0dp"
@@ -181,8 +181,9 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Recurring (Neighbors) Card -->
+                <!-- History Card (New) -->
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnOpenHistory"
                     android:layout_width="0dp"
                     android:layout_height="140dp"
                     android:layout_columnWeight="1"
@@ -197,9 +198,9 @@
                         android:layout_height="match_parent"
                         android:orientation="vertical"
                         android:padding="20dp">
-                        <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@android:drawable/ic_menu_directions" app:tint="#8E8E93"/>
-                        <TextView android:id="@+id/tvCountRecurring" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="0" android:textAppearance="@style/TextAppearance.Material3.HeadlineLarge" android:textColor="@color/dark_text" android:textStyle="bold"/>
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Recurring" android:textAppearance="@style/TextAppearance.Material3.LabelLarge" android:textColor="@color/light_text"/>
+                        <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@android:drawable/ic_menu_recent_history" app:tint="#FFC107"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="History" android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" android:textColor="@color/dark_text" android:textStyle="bold"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Logs by MAC" android:textAppearance="@style/TextAppearance.Material3.LabelLarge" android:textColor="@color/light_text"/>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

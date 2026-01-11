@@ -22,6 +22,7 @@ class PreferencesUtil(context: Context) {
         private const val PREFIX_CATEGORY = "category_"
         private const val PREFIX_NOTIFY_ARRIVAL = "notify_arrival_"
         private const val PREFIX_NOTIFY_DEPARTURE = "notify_departure_"
+        private const val KEY_ALL_BSSIDS = "all_bssids"
     }
 
     private val preferences: SharedPreferences = context.getSharedPreferences(
@@ -103,13 +104,31 @@ class PreferencesUtil(context: Context) {
      */
     fun trackDetection(bssid: String) {
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val history = preferences.getStringSet(PREFIX_HISTORY + bssid, mutableSetOf()) ?: mutableSetOf()
+        val historyKey = PREFIX_HISTORY + bssid
+        val history = preferences.getStringSet(historyKey, mutableSetOf()) ?: mutableSetOf()
         
         if (!history.contains(today)) {
             val newHistory = history.toMutableSet()
             newHistory.add(today)
-            preferences.edit().putStringSet(PREFIX_HISTORY + bssid, newHistory).apply()
+            
+            // Update all BSSIDs list
+            val allBssids = preferences.getStringSet(KEY_ALL_BSSIDS, mutableSetOf()) ?: mutableSetOf()
+            val newAllBssids = allBssids.toMutableSet()
+            newAllBssids.add(bssid)
+            
+            preferences.edit()
+                .putStringSet(historyKey, newHistory)
+                .putStringSet(KEY_ALL_BSSIDS, newAllBssids)
+                .apply()
         }
+    }
+
+    fun getDetectionHistory(bssid: String): List<String> {
+        return preferences.getStringSet(PREFIX_HISTORY + bssid, emptySet())?.toList()?.sortedDescending() ?: emptyList()
+    }
+
+    fun getAllTrackedBssids(): List<String> {
+        return preferences.getStringSet(KEY_ALL_BSSIDS, emptySet())?.toList() ?: emptyList()
     }
 
     fun getDetectionHistoryCount(bssid: String): Int {
