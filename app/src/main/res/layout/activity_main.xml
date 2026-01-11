@@ -181,25 +181,24 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Recurring (Neighbors) Card -->
+                <!-- Settings Card -->
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnSettings"
                     android:layout_width="0dp"
                     android:layout_height="140dp"
                     android:layout_columnWeight="1"
                     android:layout_margin="6dp"
-                    app:cardBackgroundColor="@color/card_background"
                     app:cardCornerRadius="24dp"
                     app:cardElevation="0dp"
-                    app:strokeWidth="1dp"
-                    app:strokeColor="@color/border_color">
+                    app:cardBackgroundColor="#5C6BC0">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:orientation="vertical"
                         android:padding="20dp">
-                        <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@android:drawable/ic_menu_directions" app:tint="#8E8E93"/>
-                        <TextView android:id="@+id/tvCountRecurring" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="0" android:textAppearance="@style/TextAppearance.Material3.HeadlineLarge" android:textColor="@color/dark_text" android:textStyle="bold"/>
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Recurring" android:textAppearance="@style/TextAppearance.Material3.LabelLarge" android:textColor="@color/light_text"/>
+                        <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@android:drawable/ic_menu_preferences" app:tint="@color/white"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Settings" android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" android:textColor="@color/white" android:textStyle="bold"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Config" android:textAppearance="@style/TextAppearance.Material3.LabelLarge" android:textColor="#CCFFFFFF"/>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

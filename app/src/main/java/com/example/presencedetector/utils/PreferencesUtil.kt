@@ -17,6 +17,18 @@ class PreferencesUtil(context: Context) {
         private const val KEY_DETECTION_ENABLED = "detection_enabled"
         private const val KEY_FOREGROUND_SERVICE = "foreground_service"
         private const val KEY_NOTIFY_ON_PRESENCE = "notify_on_presence"
+
+        // Telegram Settings
+        private const val KEY_TELEGRAM_ENABLED = "telegram_enabled"
+        private const val KEY_TELEGRAM_TOKEN = "telegram_token"
+        private const val KEY_TELEGRAM_CHAT_ID = "telegram_chat_id"
+
+        // Security Settings
+        private const val KEY_SECURITY_ALERT_ENABLED = "security_alert_enabled"
+        private const val KEY_SECURITY_SOUND_ENABLED = "security_sound_enabled"
+        private const val KEY_SECURITY_START_TIME = "security_start_time" // HH:mm
+        private const val KEY_SECURITY_END_TIME = "security_end_time"     // HH:mm
+
         private const val PREFIX_HISTORY = "history_"
         private const val PREFIX_NICKNAME = "nickname_"
         private const val PREFIX_CATEGORY = "category_"
@@ -59,6 +71,49 @@ class PreferencesUtil(context: Context) {
 
     fun shouldNotifyDeparture(bssid: String): Boolean {
         return preferences.getBoolean(PREFIX_NOTIFY_DEPARTURE + bssid, false)
+    }
+
+    // Telegram Getters/Setters
+    fun setTelegramEnabled(enabled: Boolean) = preferences.edit().putBoolean(KEY_TELEGRAM_ENABLED, enabled).apply()
+    fun isTelegramEnabled() = preferences.getBoolean(KEY_TELEGRAM_ENABLED, false)
+
+    fun setTelegramToken(token: String) = preferences.edit().putString(KEY_TELEGRAM_TOKEN, token).apply()
+    fun getTelegramToken(): String? = preferences.getString(KEY_TELEGRAM_TOKEN, null)
+
+    fun setTelegramChatId(chatId: String) = preferences.edit().putString(KEY_TELEGRAM_CHAT_ID, chatId).apply()
+    fun getTelegramChatId(): String? = preferences.getString(KEY_TELEGRAM_CHAT_ID, null)
+
+    // Security Getters/Setters
+    fun setSecurityAlertEnabled(enabled: Boolean) = preferences.edit().putBoolean(KEY_SECURITY_ALERT_ENABLED, enabled).apply()
+    fun isSecurityAlertEnabled() = preferences.getBoolean(KEY_SECURITY_ALERT_ENABLED, false)
+
+    fun setSecuritySoundEnabled(enabled: Boolean) = preferences.edit().putBoolean(KEY_SECURITY_SOUND_ENABLED, enabled).apply()
+    fun isSecuritySoundEnabled() = preferences.getBoolean(KEY_SECURITY_SOUND_ENABLED, false)
+
+    fun setSecuritySchedule(start: String, end: String) {
+        preferences.edit()
+            .putString(KEY_SECURITY_START_TIME, start)
+            .putString(KEY_SECURITY_END_TIME, end)
+            .apply()
+    }
+
+    fun getSecuritySchedule(): Pair<String, String> {
+        val start = preferences.getString(KEY_SECURITY_START_TIME, "22:00") ?: "22:00"
+        val end = preferences.getString(KEY_SECURITY_END_TIME, "06:00") ?: "06:00"
+        return Pair(start, end)
+    }
+
+    fun isCurrentTimeInSecuritySchedule(): Boolean {
+        val (startStr, endStr) = getSecuritySchedule()
+        val now = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+
+        // Simple string comparison works for HH:mm 24h format
+        // Case 1: 22:00 to 06:00 (Overnight)
+        if (startStr > endStr) {
+            return now >= startStr || now <= endStr
+        }
+        // Case 2: 09:00 to 17:00 (Daytime)
+        return now in startStr..endStr
     }
 
     fun setForegroundServiceRunning(running: Boolean) {

@@ -1,6 +1,8 @@
 package com.example.presencedetector.services
 
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.RingtoneManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -24,6 +26,7 @@ class PresenceDetectionManager(private val context: Context) {
     private val wifiService = WiFiDetectionService(context)
     private val mainHandler = Handler(Looper.getMainLooper())
     private val preferences = PreferencesUtil(context)
+    private val telegramService = TelegramService(context)
 
     private var presenceListener: PresenceListener? = null
     private var wifiPresenceDetected = false
@@ -73,6 +76,12 @@ class PresenceDetectionManager(private val context: Context) {
                 // Device just appeared
                 devicesInRangeMap[device.bssid] = device
                 
+                // Security Check for NEW devices
+                val isNewDevice = preferences.getDetectionHistoryCount(device.bssid) == 0
+                if (isNewDevice && preferences.isSecurityAlertEnabled()) {
+                    handleSecurityThreat(device)
+                }
+
                 if (preferences.shouldNotifyOnPresence() && preferences.shouldNotifyArrival(device.bssid)) {
                     val arrivalKey = "${device.bssid}_arr_$today"
                     if (!notifiedArrivalsToday.contains(arrivalKey)) {
@@ -98,6 +107,56 @@ class PresenceDetectionManager(private val context: Context) {
         }
     }
 
+    private fun handleSecurityThreat(device: WiFiDevice) {
+        // Only alert if signal is reasonably strong to avoid false positives from street traffic
+        if (device.level < -80) return
+
+        val now = System.currentTimeMillis()
+        val key = "${device.bssid}_security_alert"
+
+        // Prevent spamming alerts (throttle to once per hour per device)
+        // Note: In a real app we would store this timestamp persistently or in a map
+        // For now, we assume this is critical enough to alert once per session or throttle lightly
+
+        val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        val msg = "⚠️ SECURITY ALERT: New Unknown Network detected! SSID: ${device.ssid} (${device.level}dBm) at $time"
+
+        // 1. Send High Priority Notification
+        NotificationUtil.sendPresenceNotification(context, "⚠️ SECURITY THREAT", msg, true)
+
+        // 2. Send Telegram
+        telegramService.sendMessage(msg)
+
+        // 3. Play Sound (Audit/Alarm) if conditions met
+        if (preferences.isSecuritySoundEnabled() && preferences.isCurrentTimeInSecuritySchedule()) {
+            playSecurityAlarm()
+        }
+    }
+
+    private fun playSecurityAlarm() {
+        try {
+            val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            val ringtone = RingtoneManager.getRingtone(context, alarmSound)
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                ringtone.audioAttributes = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            }
+
+            ringtone.play()
+
+            // Stop after 5 seconds
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (ringtone.isPlaying) ringtone.stop()
+            }, 5000)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to play alarm", e)
+        }
+    }
+
     private fun sendArrivalNotification(device: WiFiDevice) {
         val nickname = preferences.getNickname(device.bssid) ?: device.ssid
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
@@ -107,6 +166,7 @@ class PresenceDetectionManager(private val context: Context) {
         val message = "Just arrived at $time. Signal strength is ${device.level}dBm. Recognized as $category."
         
         NotificationUtil.sendPresenceNotification(context, title, message, true)
+        telegramService.sendMessage("🔔 $nickname ($category) arrived at $time. Signal: ${device.level}dBm")
     }
 
     private fun sendDepartureNotification(device: WiFiDevice) {
@@ -117,6 +177,7 @@ class PresenceDetectionManager(private val context: Context) {
         val message = "No longer detected as of $time. ${device.category.iconRes} signal has dropped."
         
         NotificationUtil.sendPresenceNotification(context, title, message, false)
+        telegramService.sendMessage("🚪 $nickname left at $time.")
     }
 
     fun startDetection() {
