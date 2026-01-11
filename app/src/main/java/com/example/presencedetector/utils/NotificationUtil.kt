@@ -9,6 +9,7 @@ import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.presencedetector.MainActivity
+import com.example.presencedetector.WifiRadarActivity
 import com.example.presencedetector.R
 
 /**
@@ -25,7 +26,6 @@ object NotificationUtil {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = context.getSystemService(NotificationManager::class.java)
 
-            // Canal para notificações de foreground (contínuo)
             val foregroundChannel = NotificationChannel(
                 CHANNEL_ID,
                 CHANNEL_NAME,
@@ -35,7 +35,6 @@ object NotificationUtil {
                 setShowBadge(false)
             }
 
-            // Canal para alertas (presença detectada)
             val alertChannel = NotificationChannel(
                 ALERT_CHANNEL_ID,
                 ALERT_CHANNEL_NAME,
@@ -49,14 +48,13 @@ object NotificationUtil {
             notificationManager?.createNotificationChannels(
                 listOf(foregroundChannel, alertChannel)
             )
-            Log.d(TAG, "Notification channels created")
         }
     }
 
     fun createForegroundNotification(
         context: Context,
         title: String = "Detectando Presença",
-        subtitle: String = "Scanning WiFi and Bluetooth..."
+        subtitle: String = "Scanning WiFi..."
     ): android.app.Notification {
         createNotificationChannels(context)
 
@@ -86,14 +84,14 @@ object NotificationUtil {
         context: Context,
         title: String,
         message: String,
-        presenceDetected: Boolean
+        isImportantEvent: Boolean
     ) {
         createNotificationChannels(context)
 
-        val intent = Intent(context, MainActivity::class.java).apply {
+        // Ao tocar na notificação, abre a tela de Radar para ver os detalhes
+        val intent = Intent(context, WifiRadarActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            putExtra("presence_detected", presenceDetected)
-            putExtra("notification_message", message)
+            putExtra("from_notification", true)
         }
 
         val pendingIntent = PendingIntent.getActivity(
@@ -103,7 +101,7 @@ object NotificationUtil {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val icon = if (presenceDetected) {
+        val icon = if (isImportantEvent) {
             android.R.drawable.ic_dialog_info
         } else {
             android.R.drawable.ic_dialog_alert
@@ -117,15 +115,10 @@ object NotificationUtil {
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setVibrate(longArrayOf(0, 500, 250, 500))
-            .setLights(0xFF00FF00.toInt(), 1000, 1000)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .build()
 
         val notificationManager = context.getSystemService(NotificationManager::class.java)
-        notificationManager?.notify(
-            System.currentTimeMillis().toInt(),
-            notification
-        )
-
-        Log.d(TAG, "Presence notification sent: $title")
+        notificationManager?.notify(System.currentTimeMillis().toInt(), notification)
     }
 }

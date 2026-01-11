@@ -11,8 +11,8 @@ object DeviceClassifier {
         val name = ssid.lowercase()
         
         return when {
-            // Hidden Networks
-            ssid.isEmpty() || ssid == "<unknown ssid>" -> DeviceCategory.ROUTER
+            // Kindle / E-Readers
+            name.contains("kindle") || name.contains("ebook") -> DeviceCategory.KINDLE
             
             // Alexa / Echo
             name.contains("alexa") || name.contains("echo") || name.contains("amazon") -> DeviceCategory.ALEXA

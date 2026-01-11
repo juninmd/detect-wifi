@@ -34,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var stopButton: Button
     private lateinit var btnOpenRadarFromGrid: MaterialCardView
     private lateinit var btnSettings: MaterialCardView
+    private lateinit var btnOpenHistory: MaterialCardView
     private lateinit var statusIndicator: ImageView
     private lateinit var statusText: TextView
     private lateinit var statusDetails: TextView
@@ -43,7 +44,6 @@ class MainActivity : AppCompatActivity() {
     
     private lateinit var tvCountKnown: TextView
     private lateinit var tvNamesKnown: TextView
-    private lateinit var tvCountRecurring: TextView
     private lateinit var tvCountUnknown: TextView
 
     private var detectionManager: PresenceDetectionManager? = null
@@ -69,6 +69,7 @@ class MainActivity : AppCompatActivity() {
         stopButton = findViewById(R.id.stopButton)
         btnOpenRadarFromGrid = findViewById(R.id.btnOpenRadarFromGrid)
         btnSettings = findViewById(R.id.btnSettings)
+        btnOpenHistory = findViewById(R.id.btnOpenHistory)
         statusIndicator = findViewById(R.id.statusIndicator)
         statusText = findViewById(R.id.statusText)
         statusDetails = findViewById(R.id.statusDetails)
@@ -78,7 +79,6 @@ class MainActivity : AppCompatActivity() {
         
         tvCountKnown = findViewById(R.id.tvCountKnown)
         tvNamesKnown = findViewById(R.id.tvNamesKnown)
-        tvCountRecurring = findViewById(R.id.tvCountRecurring)
         tvCountUnknown = findViewById(R.id.tvCountUnknown)
 
         cbNotifyPresence.isChecked = preferences.shouldNotifyOnPresence()
@@ -88,12 +88,17 @@ class MainActivity : AppCompatActivity() {
 
         startButton.setOnClickListener { startDetection() }
         stopButton.setOnClickListener { stopDetection() }
+
         btnOpenRadarFromGrid.setOnClickListener {
             startActivity(Intent(this, WifiRadarActivity::class.java))
         }
 
         btnSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
+        btnOpenHistory.setOnClickListener {
+            startActivity(Intent(this, HistoryActivity::class.java))
         }
     }
 
@@ -120,7 +125,6 @@ class MainActivity : AppCompatActivity() {
         tvNamesKnown.text = if (knownDevices.isEmpty()) "Nobody home" else "$categories | $nicknames"
         
         tvCountUnknown.text = unknownDevices.size.toString()
-        tvCountRecurring.text = (unknownDevices.size / 3).toString()
 
         statusDetails.text = "Monitoring via $method"
         
@@ -134,7 +138,6 @@ class MainActivity : AppCompatActivity() {
             statusText.text = "Idle"
         }
 
-        // Detailed logging
         if (devices.isNotEmpty()) {
             val summary = devices.sortedByDescending { it.level }.take(5).joinToString(", ") { 
                 val name = preferences.getNickname(it.bssid) ?: it.ssid.take(8)
@@ -188,14 +191,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun hasRequiredPermissions(): Boolean {
         val permissions = mutableListOf<String>()
-        
-        // WiFi & Location permissions (mandatory for scanning)
         permissions.add(Manifest.permission.ACCESS_WIFI_STATE)
         permissions.add(Manifest.permission.CHANGE_WIFI_STATE)
         permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
         permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
 
-        // Android 13+ (API 33+) permissions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
             permissions.add(Manifest.permission.NEARBY_WIFI_DEVICES)
@@ -208,7 +208,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun requestPermissions() {
         val permissions = mutableListOf<String>()
-        
         permissions.add(Manifest.permission.ACCESS_WIFI_STATE)
         permissions.add(Manifest.permission.CHANGE_WIFI_STATE)
         permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
