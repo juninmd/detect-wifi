@@ -6,16 +6,16 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import kotlinx.coroutines.*
+import com.example.presencedetector.model.WiFiDevice
 
 /**
  * WiFi-based presence detection service.
- * Scans for WiFi networks to detect if there are devices/people in the area.
  */
 class WiFiDetectionService(context: Context) {
     companion object {
         private const val TAG = "WiFiDetector"
-        private const val SCAN_INTERVAL = 5000L // 5 seconds
-        private const val SIGNAL_THRESHOLD = -70 // dBm
+        private const val SCAN_INTERVAL = 3000L // Updated to 3 seconds as requested
+        private const val SIGNAL_THRESHOLD = -85
     }
 
     private val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
@@ -27,7 +27,7 @@ class WiFiDetectionService(context: Context) {
     private var isScanning = false
 
     fun interface PresenceListener {
-        fun onPresenceDetected(peopleDetected: Boolean, details: String)
+        fun onPresenceDetected(peopleDetected: Boolean, devices: List<WiFiDevice>, details: String)
     }
 
     fun setPresenceListener(listener: PresenceListener) {
@@ -35,14 +35,8 @@ class WiFiDetectionService(context: Context) {
     }
 
     fun startScanning() {
-        if (isScanning) {
-            Log.w(TAG, "WiFi scanning already started")
-            return
-        }
-
+        if (isScanning) return
         isScanning = true
-        Log.i(TAG, "Starting WiFi scanning")
-
         scanJob = scope.launch {
             while (isActive) {
                 performScan()
@@ -55,61 +49,41 @@ class WiFiDetectionService(context: Context) {
         scanJob?.cancel()
         scanJob = null
         isScanning = false
-        Log.i(TAG, "WiFi scanning stopped")
     }
 
     private suspend fun performScan() {
         try {
-            if (wifiManager == null) {
-                Log.e(TAG, "WiFi Manager not available")
-                return
-            }
-
-            val scanResults = wifiManager!!.scanResults
-
+            val scanResults = wifiManager?.scanResults
             if (scanResults.isNullOrEmpty()) {
-                Log.d(TAG, "No WiFi networks found")
-                notifyPresence(false, "No WiFi networks detected")
+                notifyPresence(false, emptyList(), "No networks")
                 return
             }
 
-            val presenceDetected = analyzeSignals(scanResults)
-            val details = "Found ${scanResults.size} networks. Presence: ${if (presenceDetected) "YES" else "NO"}"
+            val devices = scanResults.map { result ->
+                WiFiDevice(
+                    ssid = result.SSID ?: "Unknown",
+                    bssid = result.BSSID ?: "00:00:00:00:00:00",
+                    level = result.level,
+                    frequency = result.frequency
+                )
+            }
 
-            notifyPresence(presenceDetected, details)
+            val presenceDetected = devices.any { it.level >= -70 }
+            notifyPresence(presenceDetected, devices, "Found ${devices.size} networks")
 
         } catch (e: Exception) {
-            Log.e(TAG, "Error during WiFi scan", e)
+            Log.e(TAG, "Scan error", e)
         }
     }
 
-    private fun analyzeSignals(results: List<android.net.wifi.ScanResult>): Boolean {
-        var strongSignalCount = 0
-        val totalNetworks = results.size
-
-        for (result in results) {
-            val level = result.level
-            Log.d(TAG, "Network: ${result.SSID} Level: ${level}dBm")
-
-            if (level >= SIGNAL_THRESHOLD) {
-                strongSignalCount++
-            }
-        }
-
-        return strongSignalCount > 0 && totalNetworks > 0
-    }
-
-    private fun notifyPresence(detected: Boolean, details: String) {
+    private fun notifyPresence(detected: Boolean, devices: List<WiFiDevice>, details: String) {
         presenceListener?.let {
-            mainHandler.post {
-                it.onPresenceDetected(detected, details)
-            }
+            mainHandler.post { it.onPresenceDetected(detected, devices, details) }
         }
-        Log.i(TAG, "Presence detection result: $details")
     }
 
     fun isScanning(): Boolean = isScanning
-
+    
     fun destroy() {
         stopScanning()
         scope.cancel()

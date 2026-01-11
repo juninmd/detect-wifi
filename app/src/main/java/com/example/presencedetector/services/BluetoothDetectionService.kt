@@ -1,26 +1,28 @@
 package com.example.presencedetector.services
 
+import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
 
 /**
  * Bluetooth-based presence detection service.
  * Scans for Bluetooth devices as a fallback to WiFi detection.
  */
-class BluetoothDetectionService(context: Context) {
+class BluetoothDetectionService(private val context: Context) {
     companion object {
         private const val TAG = "BluetoothDetector"
         private const val SCAN_INTERVAL = 10000L // 10 seconds
         private const val SIGNAL_THRESHOLD = -70 // dBm
-        private const val SCAN_DURATION = 5000L // Scan for 5 seconds
     }
 
     private val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
@@ -46,9 +48,15 @@ class BluetoothDetectionService(context: Context) {
             return
         }
 
-        if (bluetoothAdapter == null || !bluetoothAdapter!!.isEnabled) {
+        if (!hasBluetoothPermissions()) {
+            Log.w(TAG, "Bluetooth permissions not granted")
+            notifyPresence(false, "Permissions missing")
+            return
+        }
+
+        if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
             Log.w(TAG, "Bluetooth not available or not enabled")
-            notifyPresence(false, "Bluetooth not available")
+            notifyPresence(false, "Bluetooth disabled")
             return
         }
 
@@ -63,10 +71,20 @@ class BluetoothDetectionService(context: Context) {
         }
     }
 
+    private fun hasBluetoothPermissions(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+        } else {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
     fun stopScanning() {
         if (isScanning && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             try {
-                bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallback)
+                if (hasBluetoothPermissions()) {
+                    bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallback)
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Error stopping BLE scan", e)
             }
@@ -80,20 +98,24 @@ class BluetoothDetectionService(context: Context) {
     }
 
     private fun performScan() {
-        if (bluetoothAdapter == null || !bluetoothAdapter!!.isEnabled) {
-            notifyPresence(false, "Bluetooth disabled")
+        if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
             return
         }
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                bluetoothAdapter!!.bluetoothLeScanner?.startScan(scanCallback)
-                Log.d(TAG, "BLE scan started")
+                if (hasBluetoothPermissions()) {
+                    bluetoothAdapter.bluetoothLeScanner?.startScan(scanCallback)
+                    
+                    // Stop scan after 5 seconds to save battery
+                    scope.launch {
+                        delay(5000)
+                        if (isScanning && hasBluetoothPermissions()) {
+                            bluetoothAdapter.bluetoothLeScanner?.stopScan(scanCallback)
+                        }
+                    }
+                }
             }
-
-            val bondedDeviceCount = bluetoothAdapter!!.bondedDevices.size
-            Log.d(TAG, "Bonded devices found: $bondedDeviceCount")
-
         } catch (e: Exception) {
             Log.e(TAG, "Error during Bluetooth scan", e)
         }
@@ -102,31 +124,19 @@ class BluetoothDetectionService(context: Context) {
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
             super.onScanResult(callbackType, result)
-
-            result?.device?.let { device ->
-                val rssi = result.rssi
-
+            result?.let {
+                val device = it.device
+                val rssi = it.rssi
                 if (rssi >= SIGNAL_THRESHOLD) {
                     detectedDevices.add(device.address)
-                    Log.d(TAG, "Device detected: ${device.name} (${device.address}) RSSI: $rssi")
-                    notifyPresence(true, "BLE device detected: ${device.name}")
+                    notifyPresence(true, "Device detected: ${device.address}")
                 }
-            }
-        }
-
-        override fun onBatchScanResults(results: MutableList<ScanResult>?) {
-            super.onBatchScanResults(results)
-
-            if (!results.isNullOrEmpty()) {
-                Log.d(TAG, "Batch scan results: ${results.size}")
-                notifyPresence(true, "Multiple BLE devices detected: ${results.size}")
             }
         }
 
         override fun onScanFailed(errorCode: Int) {
             super.onScanFailed(errorCode)
-            Log.e(TAG, "BLE scan failed with error code: $errorCode")
-            notifyPresence(false, "Bluetooth scan error: $errorCode")
+            Log.e(TAG, "BLE scan failed: $errorCode")
         }
     }
 
@@ -136,12 +146,9 @@ class BluetoothDetectionService(context: Context) {
                 it.onPresenceDetected(detected, details)
             }
         }
-        Log.i(TAG, "Bluetooth presence detection: $details")
     }
 
     fun isScanning(): Boolean = isScanning
-
-    fun getDetectedDeviceCount(): Int = detectedDevices.size
 
     fun destroy() {
         stopScanning()
