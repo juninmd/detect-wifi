@@ -7,14 +7,11 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
-    <!-- Bluetooth Permissions -->
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
-        tools:node="replace" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"
-        tools:node="replace" />
+    
+    <!-- Required for Android 13+ WiFi scanning without location precision -->
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" 
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="s" />
 
     <!-- Notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -23,10 +20,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- For Android 14+ (API 34+) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-
-    <uses-feature
-        android:name="android.hardware.bluetooth"
-        android:required="false" />
 
     <application
         android:name=".PresenceDetectorApp"

@@ -12,8 +12,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Combined presence detection service using WiFi as primary
- * and Bluetooth as fallback method.
+ * Combined presence detection service using WiFi as primary method.
  */
 class PresenceDetectionManager(private val context: Context) {
     companion object {
@@ -23,19 +22,15 @@ class PresenceDetectionManager(private val context: Context) {
     }
 
     private val wifiService = WiFiDetectionService(context)
-    private val bluetoothService = BluetoothDetectionService(context)
     private val mainHandler = Handler(Looper.getMainLooper())
     private val preferences = PreferencesUtil(context)
 
     private var presenceListener: PresenceListener? = null
     private var wifiPresenceDetected = false
-    private var bluetoothPresenceDetected = false
     private var lastWifiDetection = 0L
-    private var lastBluetoothDetection = 0L
     private var lastPresenceState = false
     
     // Tracks current presence of individual devices to detect leave events
-    // Map BSSID to Device object to retain details for notifications
     private val devicesInRangeMap = mutableMapOf<String, WiFiDevice>()
     private val notifiedArrivalsToday = mutableSetOf<String>()
     
@@ -66,12 +61,6 @@ class PresenceDetectionManager(private val context: Context) {
             if (detected) lastWifiDetection = System.currentTimeMillis()
             evaluatePresence("WiFi", details)
         }
-
-        bluetoothService.setPresenceListener { detected, details ->
-            bluetoothPresenceDetected = detected
-            if (detected) lastBluetoothDetection = System.currentTimeMillis()
-            evaluatePresence("Bluetooth", details)
-        }
     }
 
     private fun processDeviceEvents(detectedDevices: List<WiFiDevice>) {
@@ -92,7 +81,7 @@ class PresenceDetectionManager(private val context: Context) {
                     }
                 }
             } else {
-                // Update stored device data (for lastSeen and level)
+                // Update stored device data
                 devicesInRangeMap[device.bssid] = device
             }
         }
@@ -118,7 +107,6 @@ class PresenceDetectionManager(private val context: Context) {
         val message = "Just arrived at $time. Signal strength is ${device.level}dBm. Recognized as $category."
         
         NotificationUtil.sendPresenceNotification(context, title, message, true)
-        Log.i(TAG, "Arrival notification sent: $nickname")
     }
 
     private fun sendDepartureNotification(device: WiFiDevice) {
@@ -129,17 +117,14 @@ class PresenceDetectionManager(private val context: Context) {
         val message = "No longer detected as of $time. ${device.category.iconRes} signal has dropped."
         
         NotificationUtil.sendPresenceNotification(context, title, message, false)
-        Log.i(TAG, "Departure notification sent: $nickname")
     }
 
     fun startDetection() {
         wifiService.startScanning()
-        bluetoothService.startScanning()
     }
 
     fun stopDetection() {
         wifiService.stopScanning()
-        bluetoothService.stopScanning()
         devicesInRangeMap.clear()
     }
 
@@ -174,8 +159,7 @@ class PresenceDetectionManager(private val context: Context) {
 
     private fun isPeoplePresentNow(): Boolean {
         val now = System.currentTimeMillis()
-        return (wifiPresenceDetected && (now - lastWifiDetection) < DETECTION_TIMEOUT) ||
-               (bluetoothPresenceDetected && (now - lastBluetoothDetection) < DETECTION_TIMEOUT)
+        return (wifiPresenceDetected && (now - lastWifiDetection) < DETECTION_TIMEOUT)
     }
 
     private fun sendNotification(peoplePresent: Boolean, method: String, details: String) {
@@ -187,9 +171,9 @@ class PresenceDetectionManager(private val context: Context) {
         val message = if (peoplePresent) {
             if (knownInRange.isNotEmpty()) {
                 val names = knownInRange.joinToString(", ") { preferences.getNickname(it.bssid) ?: "" }
-                "At $time: $names detected via $method."
+                "At $time: $names detected."
             } else {
-                "Presence detected at $time via $method. ($details)"
+                "Presence detected at $time. ($details)"
             }
         } else {
             "All known devices left. Last activity recorded at $time."
@@ -205,7 +189,6 @@ class PresenceDetectionManager(private val context: Context) {
     fun getDetectionStatus(): String {
         return buildString {
             append("WiFi: ${if (wifiService.isScanning()) "Active" else "Off"}")
-            append(" | BT: ${if (bluetoothService.isScanning()) "Active" else "Off"}")
             append(" | Present: ${if (lastPresenceState) "YES" else "NO"}")
         }
     }
@@ -213,6 +196,5 @@ class PresenceDetectionManager(private val context: Context) {
     fun destroy() {
         stopDetection()
         wifiService.destroy()
-        bluetoothService.destroy()
     }
 }

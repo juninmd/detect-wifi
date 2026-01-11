@@ -1,10 +1,12 @@
 package com.example.presencedetector.services
 
+import android.Manifest
 import android.content.Context
 import android.net.wifi.WifiManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.annotation.RequiresPermission
 import kotlinx.coroutines.*
 import com.example.presencedetector.model.WiFiDevice
 
@@ -51,6 +53,7 @@ class WiFiDetectionService(context: Context) {
         isScanning = false
     }
 
+    @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     private suspend fun performScan() {
         try {
             val scanResults = wifiManager?.scanResults
