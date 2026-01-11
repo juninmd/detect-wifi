@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Presence Detector</string>
+    <string name="app_title">WiFi Presence Detector</string>
+
+    <!-- Buttons -->
+    <string name="btn_start">Start Detection</string>
+    <string name="btn_stop">Stop Detection</string>
+
+    <!-- Status -->
+    <string name="status_stopped">Status: Stopped</string>
+    <string name="status_detecting">Status: Detecting...</string>
+    <string name="status_indicator">Presence Status</string>
+
+    <!-- Log -->
+    <string name="log_title">Detection Log</string>
+    <string name="log_initial">Waiting to start detection...</string>
+
+    <!-- Messages -->
+    <string name="presence_detected">People Detected!</string>
+    <string name="no_presence">No one home</string>
+</resources>

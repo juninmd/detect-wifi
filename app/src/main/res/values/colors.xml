@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary colors -->
+    <color name="primary_color">#2196F3</color>
+    <color name="primary_dark">#1565C0</color>
+    <color name="accent_color">#FF5722</color>
+
+    <!-- Status colors -->
+    <color name="presence_detected">#4CAF50</color>
+    <color name="presence_not_detected">#F44336</color>
+
+    <!-- Text colors -->
+    <color name="dark_text">#212121</color>
+    <color name="light_text">#757575</color>
+    <color name="log_text">#333333</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- UI colors -->
+    <color name="background">#FAFAFA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="danger_color">#F44336</color>
+    <color name="success_color">#4CAF50</color>
+</resources>
