@@ -44,6 +44,10 @@
             android:label="WiFi Radar"
             android:parentActivityName=".MainActivity" />
 
+        <activity android:name=".HistoryActivity"
+            android:label="Device History"
+            android:parentActivityName=".MainActivity" />
+
         <service
             android:name=".services.DetectionBackgroundService"
             android:enabled="true"
