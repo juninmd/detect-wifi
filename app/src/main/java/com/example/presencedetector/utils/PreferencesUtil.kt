@@ -8,7 +8,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Utility class for managing application preferences.
+ * Utility class for managing application preferences and history logs.
  */
 class PreferencesUtil(context: Context) {
     companion object {
@@ -26,8 +26,8 @@ class PreferencesUtil(context: Context) {
         // Security Settings
         private const val KEY_SECURITY_ALERT_ENABLED = "security_alert_enabled"
         private const val KEY_SECURITY_SOUND_ENABLED = "security_sound_enabled"
-        private const val KEY_SECURITY_START_TIME = "security_start_time" // HH:mm
-        private const val KEY_SECURITY_END_TIME = "security_end_time"     // HH:mm
+        private const val KEY_SECURITY_START_TIME = "security_start_time"
+        private const val KEY_SECURITY_END_TIME = "security_end_time"
 
         private const val PREFIX_HISTORY = "history_"
         private const val PREFIX_NICKNAME = "nickname_"
@@ -36,6 +36,7 @@ class PreferencesUtil(context: Context) {
         private const val PREFIX_NOTIFY_DEPARTURE = "notify_departure_"
         private const val PREFIX_CRITICAL_ALERT = "critical_alert_"
         private const val PREFIX_TELEGRAM_ALERT = "telegram_alert_"
+        private const val PREFIX_EVENT_LOGS = "event_logs_"
         private const val KEY_ALL_BSSIDS = "all_bssids"
     }
 
@@ -92,63 +93,31 @@ class PreferencesUtil(context: Context) {
         return preferences.getBoolean(PREFIX_TELEGRAM_ALERT + bssid, false)
     }
 
-    // Telegram Getters/Setters
+    // Telegram
     fun setTelegramEnabled(enabled: Boolean) = preferences.edit().putBoolean(KEY_TELEGRAM_ENABLED, enabled).apply()
     fun isTelegramEnabled() = preferences.getBoolean(KEY_TELEGRAM_ENABLED, false)
-
     fun setTelegramToken(token: String) = preferences.edit().putString(KEY_TELEGRAM_TOKEN, token).apply()
     fun getTelegramToken(): String? = preferences.getString(KEY_TELEGRAM_TOKEN, null)
-
     fun setTelegramChatId(chatId: String) = preferences.edit().putString(KEY_TELEGRAM_CHAT_ID, chatId).apply()
     fun getTelegramChatId(): String? = preferences.getString(KEY_TELEGRAM_CHAT_ID, null)
 
-    // Security Getters/Setters
+    // Security
     fun setSecurityAlertEnabled(enabled: Boolean) = preferences.edit().putBoolean(KEY_SECURITY_ALERT_ENABLED, enabled).apply()
     fun isSecurityAlertEnabled() = preferences.getBoolean(KEY_SECURITY_ALERT_ENABLED, false)
-
     fun setSecuritySoundEnabled(enabled: Boolean) = preferences.edit().putBoolean(KEY_SECURITY_SOUND_ENABLED, enabled).apply()
     fun isSecuritySoundEnabled() = preferences.getBoolean(KEY_SECURITY_SOUND_ENABLED, false)
-
     fun setSecuritySchedule(start: String, end: String) {
-        preferences.edit()
-            .putString(KEY_SECURITY_START_TIME, start)
-            .putString(KEY_SECURITY_END_TIME, end)
-            .apply()
+        preferences.edit().putString(KEY_SECURITY_START_TIME, start).putString(KEY_SECURITY_END_TIME, end).apply()
     }
-
     fun getSecuritySchedule(): Pair<String, String> {
         val start = preferences.getString(KEY_SECURITY_START_TIME, "22:00") ?: "22:00"
         val end = preferences.getString(KEY_SECURITY_END_TIME, "06:00") ?: "06:00"
         return Pair(start, end)
     }
-
     fun isCurrentTimeInSecuritySchedule(): Boolean {
         val (startStr, endStr) = getSecuritySchedule()
         val now = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-
-        // Simple string comparison works for HH:mm 24h format
-        // Case 1: 22:00 to 06:00 (Overnight)
-        if (startStr > endStr) {
-            return now >= startStr || now <= endStr
-        }
-        // Case 2: 09:00 to 17:00 (Daytime)
-        return now in startStr..endStr
-    }
-
-    fun setForegroundServiceRunning(running: Boolean) {
-        preferences.edit().putBoolean(KEY_FOREGROUND_SERVICE, running).apply()
-    }
-
-    fun isForegroundServiceRunning(): Boolean {
-        return preferences.getBoolean(KEY_FOREGROUND_SERVICE, false)
-    }
-
-    fun setLastDetection(timestamp: Long) {
-        preferences.edit().putLong(KEY_LAST_DETECTION, timestamp).apply()
-    }
-
-    fun getLastDetection(): Long {
-        return preferences.getLong(KEY_LAST_DETECTION, 0)
+        return if (startStr > endStr) now >= startStr || now <= endStr else now in startStr..endStr
     }
 
     fun saveNickname(bssid: String, nickname: String) {
@@ -165,47 +134,55 @@ class PreferencesUtil(context: Context) {
 
     fun getManualCategory(bssid: String): DeviceCategory? {
         val name = preferences.getString(PREFIX_CATEGORY + bssid, null) ?: return null
-        return try {
-            DeviceCategory.valueOf(name)
-        } catch (e: Exception) {
-            null
-        }
+        return try { DeviceCategory.valueOf(name) } catch (e: Exception) { null }
     }
 
     /**
-     * Track detection history. Counts 1x per day.
+     * Log precise arrival/departure events with time.
      */
+    fun logEvent(bssid: String, eventType: String) {
+        val timestamp = SimpleDateFormat("dd/MM HH:mm:ss", Locale.getDefault()).format(Date())
+        val logEntry = "[$timestamp] $eventType"
+        
+        val logs = preferences.getStringSet(PREFIX_EVENT_LOGS + bssid, mutableSetOf()) ?: mutableSetOf()
+        val newLogs = logs.toMutableSet()
+        newLogs.add(logEntry)
+        
+        // Ensure BSSID is in the master list
+        val allBssids = preferences.getStringSet(KEY_ALL_BSSIDS, mutableSetOf()) ?: mutableSetOf()
+        val newAllBssids = allBssids.toMutableSet()
+        newAllBssids.add(bssid)
+        
+        preferences.edit()
+            .putStringSet(PREFIX_EVENT_LOGS + bssid, newLogs)
+            .putStringSet(KEY_ALL_BSSIDS, newAllBssids)
+            .apply()
+            
+        // Also keep the daily history count logic
+        trackDetection(bssid)
+    }
+
+    fun getEventLogs(bssid: String): List<String> {
+        return preferences.getStringSet(PREFIX_EVENT_LOGS + bssid, emptySet())?.toList()?.sortedDescending() ?: emptyList()
+    }
+
     fun trackDetection(bssid: String) {
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val historyKey = PREFIX_HISTORY + bssid
         val history = preferences.getStringSet(historyKey, mutableSetOf()) ?: mutableSetOf()
-        
         if (!history.contains(today)) {
             val newHistory = history.toMutableSet()
             newHistory.add(today)
-
-            // Update all BSSIDs list
-            val allBssids = preferences.getStringSet(KEY_ALL_BSSIDS, mutableSetOf()) ?: mutableSetOf()
-            val newAllBssids = allBssids.toMutableSet()
-            newAllBssids.add(bssid)
-
-            preferences.edit()
-                .putStringSet(historyKey, newHistory)
-                .putStringSet(KEY_ALL_BSSIDS, newAllBssids)
-                .apply()
+            preferences.edit().putStringSet(historyKey, newHistory).apply()
         }
-    }
-
-    fun getDetectionHistory(bssid: String): List<String> {
-        return preferences.getStringSet(PREFIX_HISTORY + bssid, emptySet())?.toList()?.sortedDescending() ?: emptyList()
-    }
-
-    fun getAllTrackedBssids(): List<String> {
-        return preferences.getStringSet(KEY_ALL_BSSIDS, emptySet())?.toList() ?: emptyList()
     }
 
     fun getDetectionHistoryCount(bssid: String): Int {
         return preferences.getStringSet(PREFIX_HISTORY + bssid, emptySet())?.size ?: 0
+    }
+
+    fun getAllTrackedBssids(): List<String> {
+        return preferences.getStringSet(KEY_ALL_BSSIDS, emptySet())?.toList() ?: emptyList()
     }
 
     fun clear() {

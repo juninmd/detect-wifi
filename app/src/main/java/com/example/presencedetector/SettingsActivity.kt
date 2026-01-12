@@ -2,13 +2,12 @@ package com.example.presencedetector
 
 import android.app.TimePickerDialog
 import android.os.Bundle
-import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.presencedetector.services.TelegramService
 import com.example.presencedetector.utils.PreferencesUtil
 import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.switchmaterial.SwitchMaterial
+import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.textfield.TextInputEditText
 import java.util.Calendar
 
@@ -17,13 +16,13 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var preferences: PreferencesUtil
     private lateinit var telegramService: TelegramService
 
-    private lateinit var switchTelegram: SwitchMaterial
+    private lateinit var switchTelegram: MaterialSwitch
     private lateinit var etTelegramToken: TextInputEditText
     private lateinit var etTelegramChatId: TextInputEditText
-    private lateinit var btnTestTelegram: Button
+    private lateinit var btnTestTelegram: com.google.android.material.button.MaterialButton
 
-    private lateinit var switchSecurityAlert: SwitchMaterial
-    private lateinit var switchSecuritySound: SwitchMaterial
+    private lateinit var switchSecurityAlert: MaterialSwitch
+    private lateinit var switchSecuritySound: MaterialSwitch
     private lateinit var etSecurityStart: TextInputEditText
     private lateinit var etSecurityEnd: TextInputEditText
 
@@ -71,9 +70,9 @@ class SettingsActivity : AppCompatActivity() {
         switchSecurityAlert.isChecked = preferences.isSecurityAlertEnabled()
         switchSecuritySound.isChecked = preferences.isSecuritySoundEnabled()
 
-        val (start, end) = preferences.getSecuritySchedule()
-        etSecurityStart.setText(start)
-        etSecurityEnd.setText(end)
+        val schedule = preferences.getSecuritySchedule()
+        etSecurityStart.setText(schedule.first)
+        etSecurityEnd.setText(schedule.second)
     }
 
     private fun setupListeners() {

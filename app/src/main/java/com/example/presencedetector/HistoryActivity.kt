@@ -33,11 +33,11 @@ class HistoryActivity : AppCompatActivity() {
         toolbar.setNavigationOnClickListener { finish() }
 
         preferences = PreferencesUtil(this)
-
+        
         etFilter = findViewById(R.id.etFilterBssid)
         tvHistoryTitle = findViewById(R.id.tvHistoryTitle)
         recyclerView = findViewById(R.id.rvHistory)
-
+        
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
@@ -60,41 +60,40 @@ class HistoryActivity : AppCompatActivity() {
     private fun loadAllHistory() {
         val bssids = preferences.getAllTrackedBssids()
         val allLogs = mutableListOf<HistoryItem>()
-
+        
         bssids.forEach { bssid ->
             val nickname = preferences.getNickname(bssid) ?: "Unknown"
-            val dates = preferences.getDetectionHistory(bssid)
-            dates.forEach { date ->
-                allLogs.add(HistoryItem(bssid, nickname, date))
+            val eventLogs = preferences.getEventLogs(bssid)
+            eventLogs.forEach { logLine ->
+                allLogs.add(HistoryItem(bssid, nickname, logLine))
             }
         }
-
-        val sortedLogs = allLogs.sortedByDescending { it.date }
+        
+        val sortedLogs = allLogs.sortedByDescending { it.logDetail }
         adapter.setItems(sortedLogs)
-        tvHistoryTitle.text = "Full History (${sortedLogs.size} records)"
+        tvHistoryTitle.text = "Full History (${sortedLogs.size} events)"
     }
 
     private fun filterHistory(query: String) {
         val bssids = preferences.getAllTrackedBssids()
         val filteredLogs = mutableListOf<HistoryItem>()
-
+        
         bssids.forEach { bssid ->
             val nickname = preferences.getNickname(bssid) ?: ""
-            // Filter by BSSID or Nickname
             if (bssid.lowercase().contains(query) || nickname.lowercase().contains(query)) {
-                val dates = preferences.getDetectionHistory(bssid)
-                dates.forEach { date ->
-                    filteredLogs.add(HistoryItem(bssid, nickname.ifEmpty { "Unknown" }, date))
+                val eventLogs = preferences.getEventLogs(bssid)
+                eventLogs.forEach { logLine ->
+                    filteredLogs.add(HistoryItem(bssid, nickname.ifEmpty { "Unknown" }, logLine))
                 }
             }
         }
-
-        val sortedLogs = filteredLogs.sortedByDescending { it.date }
+        
+        val sortedLogs = filteredLogs.sortedByDescending { it.logDetail }
         adapter.setItems(sortedLogs)
         tvHistoryTitle.text = "Filtered Results (${sortedLogs.size})"
     }
 
-    data class HistoryItem(val bssid: String, val nickname: String, val date: String)
+    data class HistoryItem(val bssid: String, val nickname: String, val logDetail: String)
 
     class HistoryAdapter : RecyclerView.Adapter<HistoryAdapter.ViewHolder>() {
         private var items: List<HistoryItem> = emptyList()
@@ -112,14 +111,13 @@ class HistoryActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
-            holder.text1.text = "${item.date} - ${item.nickname}"
+            holder.text1.text = "${item.nickname} - ${item.logDetail}"
             holder.text1.setTextColor(holder.itemView.context.getColor(R.color.dark_text))
             holder.text2.text = "BSSID: ${item.bssid}"
             holder.text2.setTextColor(holder.itemView.context.getColor(R.color.light_text))
-
+            
             holder.itemView.setOnClickListener {
                 val intent = Intent(holder.itemView.context, WifiRadarActivity::class.java)
-                // Pass BSSID to highlight or auto-open if we want
                 holder.itemView.context.startActivity(intent)
             }
         }

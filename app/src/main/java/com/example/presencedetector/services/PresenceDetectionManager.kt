@@ -35,7 +35,6 @@ class PresenceDetectionManager(private val context: Context) {
     
     // Track timestamps for individual devices
     private val lastSeenMap = mutableMapOf<String, Long>()
-    private val arrivalNotifiedMap = mutableMapOf<String, Boolean>()
     private val departureNotifiedMap = mutableMapOf<String, Boolean>()
     
     private var lastTimeSomeoneWasPresent = System.currentTimeMillis()
@@ -54,10 +53,10 @@ class PresenceDetectionManager(private val context: Context) {
             wifiPresenceDetected = detected
             currentWifiDevices = devices
             
-            // Process smart notifications FIRST to detect "new" devices correctly
+            // Process smart notifications and EVENT LOGGING
             processSmartDeviceEvents(devices)
 
-            // Then Track history (1x per day)
+            // Then Track daily history count
             devices.forEach { preferences.trackDetection(it.bssid) }
             
             if (detected) lastWifiDetection = System.currentTimeMillis()
@@ -66,8 +65,6 @@ class PresenceDetectionManager(private val context: Context) {
     }
 
     private fun processSmartDeviceEvents(detectedDevices: List<WiFiDevice>) {
-        if (!preferences.shouldNotifyOnPresence()) return
-
         val now = System.currentTimeMillis()
         val detectedBssids = detectedDevices.map { it.bssid }.toSet()
 
@@ -76,26 +73,27 @@ class PresenceDetectionManager(private val context: Context) {
             val bssid = device.bssid
             val lastSeen = lastSeenMap[bssid] ?: 0L
 
-            // Security Check for NEW devices
-            val isNewDevice = preferences.getDetectionHistoryCount(device.bssid) == 0
-            if (isNewDevice && preferences.isSecurityAlertEnabled()) {
-                handleSecurityThreat(device)
-            }
+            // LOG ARRIVAL if device was gone for > 5 minutes (or first time seen)
+            if (lastSeen == 0L || (now - lastSeen) > ABSENCE_THRESHOLD) {
+                preferences.logEvent(bssid, "Arrived")
+                
+                // Security Check for NEW devices (only if not seen before in history)
+                val isNewDevice = preferences.getDetectionHistoryCount(bssid) == 0
+                if (isNewDevice && preferences.isSecurityAlertEnabled()) {
+                    handleSecurityThreat(device)
+                }
 
-            // Logic: Only notify arrival if the device was gone for > 5 minutes
-            // (or if it's the first time we see it and we haven't seen it recently)
-            if (lastSeen != 0L && (now - lastSeen) > ABSENCE_THRESHOLD) {
-                if (preferences.shouldNotifyArrival(bssid)) {
+                // Notify Arrival if enabled
+                if (preferences.shouldNotifyOnPresence() && preferences.shouldNotifyArrival(bssid)) {
                     sendArrivalNotification(device)
                 }
             }
-
+            
             lastSeenMap[bssid] = now
             departureNotifiedMap[bssid] = false
         }
 
         // 2. Handle Departures
-        // Check all devices we've ever seen
         lastSeenMap.keys.forEach { bssid ->
             val lastSeen = lastSeenMap[bssid] ?: 0L
             val isCurrentlyMissing = !detectedBssids.contains(bssid)
@@ -103,8 +101,10 @@ class PresenceDetectionManager(private val context: Context) {
             if (isCurrentlyMissing && (now - lastSeen) >= ABSENCE_THRESHOLD) {
                 // Device has been missing for more than 5 minutes
                 if (departureNotifiedMap[bssid] != true) {
-                    if (preferences.shouldNotifyDeparture(bssid)) {
-                        // Find device info from history or current scan (if we had it)
+                    // LOG DEPARTURE
+                    preferences.logEvent(bssid, "Left")
+                    
+                    if (preferences.shouldNotifyOnPresence() && preferences.shouldNotifyDeparture(bssid)) {
                         val device = currentWifiDevices.find { it.bssid == bssid }
                         sendDepartureNotification(bssid, device)
                     }
@@ -115,26 +115,11 @@ class PresenceDetectionManager(private val context: Context) {
     }
 
     private fun handleSecurityThreat(device: WiFiDevice) {
-        // Only alert if signal is reasonably strong to avoid false positives from street traffic
         if (device.level < -80) return
-
-        val now = System.currentTimeMillis()
-        val key = "${device.bssid}_security_alert"
-
-        // Prevent spamming alerts (throttle to once per hour per device)
-        // Note: In a real app we would store this timestamp persistently or in a map
-        // For now, we assume this is critical enough to alert once per session or throttle lightly
-
         val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
         val msg = "⚠️ SECURITY ALERT: New Unknown Network detected! SSID: ${device.ssid} (${device.level}dBm) at $time"
-
-        // 1. Send High Priority Notification
         NotificationUtil.sendPresenceNotification(context, "⚠️ SECURITY THREAT", msg, true)
-
-        // 2. Send Telegram
         telegramService.sendMessage(msg)
-
-        // 3. Play Sound (Audit/Alarm) if conditions met
         if (preferences.isSecuritySoundEnabled() && preferences.isCurrentTimeInSecuritySchedule()) {
             playSecurityAlarm()
         }
@@ -144,21 +129,16 @@ class PresenceDetectionManager(private val context: Context) {
         try {
             val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
             val ringtone = RingtoneManager.getRingtone(context, alarmSound)
-
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
                 ringtone.audioAttributes = AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ALARM)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build()
             }
-
             ringtone.play()
-
-            // Stop after 5 seconds
             Handler(Looper.getMainLooper()).postDelayed({
                 if (ringtone.isPlaying) ringtone.stop()
             }, 5000)
-
         } catch (e: Exception) {
             Log.e(TAG, "Failed to play alarm", e)
         }
@@ -169,7 +149,6 @@ class PresenceDetectionManager(private val context: Context) {
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val category = device.category.displayName
         
-        // Critical Alert Logic (Bypass Silent)
         if (preferences.isCriticalAlertEnabled(device.bssid)) {
              playSecurityAlarm()
         }
@@ -179,7 +158,6 @@ class PresenceDetectionManager(private val context: Context) {
         
         NotificationUtil.sendPresenceNotification(context, title, message, true)
 
-        // Per-device Telegram Alert
         if (preferences.isTelegramAlertEnabled(device.bssid) && preferences.isTelegramEnabled()) {
              telegramService.sendMessage("🔔 $nickname ($category) arrived at $time. Signal: ${device.level}dBm")
         }
@@ -188,19 +166,16 @@ class PresenceDetectionManager(private val context: Context) {
     private fun sendDepartureNotification(bssid: String, device: WiFiDevice?) {
         val nickname = preferences.getNickname(bssid) ?: device?.ssid ?: "Known Device"
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-        val icon = device?.category?.iconRes ?: "📱"
         
-        // Critical Alert Logic (Bypass Silent)
         if (preferences.isCriticalAlertEnabled(bssid)) {
              playSecurityAlarm()
         }
 
         val title = "🚪 Device Left: $nickname"
-        val message = "No longer detected as of $time. ${device?.category?.iconRes} signal has dropped."
+        val message = "No longer detected as of $time. ${device?.category?.iconRes ?: "📱"} signal has dropped."
         
         NotificationUtil.sendPresenceNotification(context, title, message, false)
 
-        // Per-device Telegram Alert
         if (preferences.isTelegramAlertEnabled(bssid) && preferences.isTelegramEnabled()) {
              telegramService.sendMessage("🚪 $nickname left at $time.")
         }
@@ -213,7 +188,6 @@ class PresenceDetectionManager(private val context: Context) {
     fun stopDetection() {
         wifiService.stopScanning()
         lastSeenMap.clear()
-        arrivalNotifiedMap.clear()
         departureNotifiedMap.clear()
     }
 
@@ -233,8 +207,6 @@ class PresenceDetectionManager(private val context: Context) {
 
         if (finalPresenceState != lastPresenceState) {
             lastPresenceState = finalPresenceState
-            // Only send GLOBAL aggregate notification if user hasn't opted for specific device notifications
-            // to avoid double alerts. If they have specific devices, we'll rely on those.
             if (shouldSendGlobalNotification()) {
                 sendGlobalNotification(finalPresenceState, method, details)
             }
@@ -251,28 +223,20 @@ class PresenceDetectionManager(private val context: Context) {
     }
 
     private fun shouldSendGlobalNotification(): Boolean {
-        // For simplicity, we send global if Master switch is on.
-        // But let's filter: only send if it's a REAL presence change.
         return preferences.shouldNotifyOnPresence()
     }
 
     private fun sendGlobalNotification(peoplePresent: Boolean, method: String, details: String) {
-        // We only notify global presence for devices that the user actually "cares" about (has nicknames)
-        // This prevents the "Router" from spamming unless it has a nickname.
         val relevantDevices = currentWifiDevices.filter { preferences.getNickname(it.bssid) != null }
-        
-        if (peoplePresent && relevantDevices.isEmpty()) return // Don't notify generic unknown presence unless it's very strong
-
+        if (peoplePresent && relevantDevices.isEmpty()) return
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val title = if (peoplePresent) "🏠 Presence Detected" else "🏠 Area Clear"
-        
         val message = if (peoplePresent) {
             val names = relevantDevices.joinToString(", ") { preferences.getNickname(it.bssid) ?: "" }
             "At $time: $names detected."
         } else {
             "All tracked devices have left the area."
         }
-
         NotificationUtil.sendPresenceNotification(context, title, message, peoplePresent)
     }
 
