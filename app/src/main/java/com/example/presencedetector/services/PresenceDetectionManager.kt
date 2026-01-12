@@ -48,6 +48,7 @@ class PresenceDetectionManager(private val context: Context) {
 
     private var lastTimeSomeoneWasPresent = System.currentTimeMillis()
     private var currentWifiDevices: List<WiFiDevice> = emptyList()
+    private var currentBluetoothDevices: List<WiFiDevice> = emptyList()
 
     fun interface PresenceListener {
         fun onPresenceChanged(peoplePresent: Boolean, method: String, devices: List<WiFiDevice>, details: String)
@@ -63,24 +64,32 @@ class PresenceDetectionManager(private val context: Context) {
             wifiPresenceDetected = detected
             currentWifiDevices = devices
 
-            // Process smart notifications and EVENT LOGGING
-            processSmartDeviceEvents(devices)
-
-            // Then Track daily history count
-            devices.forEach { preferences.trackDetection(it.bssid) }
-
             if (detected) lastWifiDetection = System.currentTimeMillis()
-            evaluateGlobalPresence("WiFi", details)
+            updateAndProcessDevices("WiFi", details)
         }
 
         // Bluetooth Detection Listener
-        bluetoothService.setPresenceListener { detected, details ->
+        bluetoothService.setPresenceListener { detected, devices, details ->
             bluetoothPresenceDetected = detected
+            currentBluetoothDevices = devices
+
             if (detected) lastBluetoothDetection = System.currentTimeMillis()
 
             Log.i(TAG, "Bluetooth detection: $detected - $details")
-            evaluateGlobalPresence("Bluetooth", details)
+            updateAndProcessDevices("Bluetooth", details)
         }
+    }
+
+    private fun updateAndProcessDevices(method: String, details: String) {
+        val allDevices = currentWifiDevices + currentBluetoothDevices
+
+        // Process events for all visible devices
+        processSmartDeviceEvents(allDevices)
+
+        // Track history for all devices
+        allDevices.forEach { preferences.trackDetection(it.bssid) }
+
+        evaluateGlobalPresence(method, details)
     }
 
     private fun processSmartDeviceEvents(detectedDevices: List<WiFiDevice>) {
@@ -140,7 +149,8 @@ class PresenceDetectionManager(private val context: Context) {
 
                     if (preferences.shouldNotifyOnPresence() && preferences.shouldNotifyDeparture(bssid)) {
                         if (canSendNotification(bssid)) {
-                            val device = currentWifiDevices.find { it.bssid == bssid }
+                            // Try to find device info from last known state if possible, or create dummy
+                            val device = (currentWifiDevices + currentBluetoothDevices).find { it.bssid == bssid }
                             sendDepartureNotification(bssid, device)
                             lastNotificationTimeMap[bssid] = now
                         }
@@ -148,7 +158,7 @@ class PresenceDetectionManager(private val context: Context) {
 
                     // Send Telegram notification (independent of system notification)
                     if (preferences.isTelegramAlertEnabled(bssid)) {
-                        val device = currentWifiDevices.find { it.bssid == bssid }
+                        val device = (currentWifiDevices + currentBluetoothDevices).find { it.bssid == bssid }
                         sendDepartureTelegramAlert(bssid, device)
                     }
 
@@ -328,7 +338,8 @@ class PresenceDetectionManager(private val context: Context) {
 
         presenceListener?.let { listener ->
             mainHandler.post {
-                val devicesWithNicknames = currentWifiDevices.map {
+                val allDevices = currentWifiDevices + currentBluetoothDevices
+                val devicesWithNicknames = allDevices.map {
                     it.copy(nickname = preferences.getNickname(it.bssid))
                 }
                 listener.onPresenceChanged(finalPresenceState, method, devicesWithNicknames, details)
@@ -341,7 +352,7 @@ class PresenceDetectionManager(private val context: Context) {
     }
 
     private fun sendGlobalNotification(peoplePresent: Boolean, method: String, details: String) {
-        val relevantDevices = currentWifiDevices.filter { preferences.getNickname(it.bssid) != null }
+        val relevantDevices = (currentWifiDevices + currentBluetoothDevices).filter { preferences.getNickname(it.bssid) != null }
         if (peoplePresent && relevantDevices.isEmpty()) return
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val title = if (peoplePresent) "🏠 Presence Detected" else "🏠 Area Clear"

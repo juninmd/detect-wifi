@@ -17,7 +17,7 @@
 private val hasNotifiedArrivalMap = mutableMapOf<String, Boolean>()
 
 // In processSmartDeviceEvents():
-if (!wasNotifiedArrival && preferences.shouldNotifyOnPresence() && 
+if (!wasNotifiedArrival && preferences.shouldNotifyOnPresence() &&
     preferences.shouldNotifyArrival(bssid)) {
     if (canSendNotification(bssid)) {
         sendArrivalNotification(device)

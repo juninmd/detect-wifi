@@ -19,7 +19,7 @@ Se QUALQUER uma dessas condições falhasse, o Telegram não recebia notificaç�
 private fun sendArrivalNotification(device: WiFiDevice) {
     // System notification...
     NotificationUtil.sendPresenceNotification(context, title, message, true)
-    
+
     // Telegram só enviava se System notification foi enviado
     if (preferences.isTelegramAlertEnabled(device.bssid) && preferences.isTelegramEnabled()) {
         telegramService.sendMessage("🔔 $nickname arrived...")
@@ -32,13 +32,13 @@ private fun sendArrivalNotification(device: WiFiDevice) {
 // No processSmartDeviceEvents() - Arrival
 if (lastSeen == 0L || (now - lastSeen) > ABSENCE_THRESHOLD) {
     // System notification (respects debounce)
-    if (!wasNotifiedArrival && preferences.shouldNotifyOnPresence() && 
+    if (!wasNotifiedArrival && preferences.shouldNotifyOnPresence() &&
         preferences.shouldNotifyArrival(bssid)) {
         if (canSendNotification(bssid)) {
             sendArrivalNotification(device)
         }
     }
-    
+
     // Telegram alert (independent, always sends if enabled)
     if (!wasNotifiedArrival && preferences.isTelegramAlertEnabled(bssid)) {
         sendArrivalTelegramAlert(device)  // ← Separate method
@@ -88,7 +88,7 @@ Check if:
     ↓
   ✅ ALL TRUE → Send Telegram immediately
   ❌ ANY FALSE → Skip
-    
+
 Note: NOT affected by system notification settings or debounce!
 ```
 

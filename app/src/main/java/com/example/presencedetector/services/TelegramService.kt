@@ -48,6 +48,8 @@ class TelegramService(private val context: Context) {
                 val data = "chat_id=" + URLEncoder.encode(chatId, "UTF-8") +
                            "&text=" + URLEncoder.encode(message, "UTF-8")
 
+                Log.d(TAG, "Sending message to chatId: $chatId")
+
                 OutputStreamWriter(conn.outputStream).use { writer ->
                     writer.write(data)
                     writer.flush()
@@ -58,6 +60,13 @@ class TelegramService(private val context: Context) {
                     Log.d(TAG, "Message sent successfully")
                 } else {
                     Log.e(TAG, "Failed to send message: $responseCode")
+                    try {
+                        val errorStream = conn.errorStream
+                        val response = errorStream?.bufferedReader()?.use { it.readText() }
+                        Log.e(TAG, "Error response: $response")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Could not read error stream", e)
+                    }
                 }
                 conn.disconnect()
 

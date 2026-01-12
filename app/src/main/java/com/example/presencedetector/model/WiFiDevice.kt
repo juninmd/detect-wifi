@@ -1,7 +1,7 @@
 package com.example.presencedetector.model
 
 /**
- * Data class representing a detected WiFi device/network.
+ * Data class representing a detected device (WiFi or Bluetooth).
  */
 data class WiFiDevice(
     val ssid: String,
@@ -11,7 +11,8 @@ data class WiFiDevice(
     var nickname: String? = null,
     val lastSeen: Long = System.currentTimeMillis(),
     var manualCategory: DeviceCategory? = null,
-    val isHotspot: Boolean = false  // New: indicates if this is a mobile hotspot
+    val isHotspot: Boolean = false,  // New: indicates if this is a mobile hotspot
+    val source: DeviceSource = DeviceSource.WIFI // Indicates if it's a WiFi or Bluetooth device
 ) {
     val category: DeviceCategory
         get() = manualCategory ?: com.example.presencedetector.utils.DeviceClassifier.classify(ssid, bssid)
@@ -28,4 +29,8 @@ data class WiFiDevice(
         in -70..-68 -> "🟠 Fair (-70 to -68 dBm)"
         else -> "🔴 Weak (< -70 dBm)"
     }
+}
+
+enum class DeviceSource {
+    WIFI, BLUETOOTH
 }
