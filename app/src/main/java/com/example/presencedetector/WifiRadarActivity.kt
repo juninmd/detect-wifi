@@ -81,7 +81,7 @@ class WifiRadarActivity : AppCompatActivity() {
         )
         recyclerView.adapter = adapter
 
-        detectionManager = PresenceDetectionManager(this)
+        detectionManager = PresenceDetectionManager(this, false)
         detectionManager.setPresenceListener { _, _, devices, _ ->
             runOnUiThread {
                 val processedDevices = devices.map { device ->

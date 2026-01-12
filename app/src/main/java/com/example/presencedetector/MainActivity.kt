@@ -103,7 +103,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupDetectionManager() {
-        detectionManager = PresenceDetectionManager(this)
+        detectionManager = PresenceDetectionManager(this, false)
         detectionManager?.setPresenceListener { _, method, devices, details ->
             runOnUiThread {
                 updateDashboard(devices, method, details)
@@ -196,6 +196,11 @@ class MainActivity : AppCompatActivity() {
         permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
         permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            permissions.add(Manifest.permission.BLUETOOTH_SCAN)
+            permissions.add(Manifest.permission.BLUETOOTH_CONNECT)
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
             permissions.add(Manifest.permission.NEARBY_WIFI_DEVICES)
@@ -212,6 +217,11 @@ class MainActivity : AppCompatActivity() {
         permissions.add(Manifest.permission.CHANGE_WIFI_STATE)
         permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
         permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            permissions.add(Manifest.permission.BLUETOOTH_SCAN)
+            permissions.add(Manifest.permission.BLUETOOTH_CONNECT)
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
