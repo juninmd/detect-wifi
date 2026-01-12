@@ -100,6 +100,19 @@
                     android:textColor="@color/white"
                     android:visibility="gone"
                     style="@style/Widget.Material3.Chip.Suggestion" />
+
+                <!-- Source Badge: WiFi or Bluetooth -->
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipSourceBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📶 WiFi"
+                    android:textSize="10sp"
+                    android:layout_marginStart="6dp"
+                    app:chipCornerRadius="8dp"
+                    app:chipBackgroundColor="@color/primary_vibrant"
+                    android:textColor="@color/white"
+                    style="@style/Widget.Material3.Chip.Suggestion" />
             </LinearLayout>
 
         </LinearLayout>

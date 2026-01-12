@@ -139,7 +139,10 @@ class HistoryActivity : AppCompatActivity() {
             }
 
             holder.itemView.setOnClickListener {
-                val intent = Intent(holder.itemView.context, WifiRadarActivity::class.java)
+                // Open device detail to show full history for this specific device
+                val intent = Intent(holder.itemView.context, DeviceDetailActivity::class.java)
+                intent.putExtra("bssid", item.bssid)
+                intent.putExtra("from_history", true)
                 holder.itemView.context.startActivity(intent)
             }
         }

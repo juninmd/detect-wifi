@@ -9,13 +9,15 @@ import android.graphics.SweepGradient
 import android.util.AttributeSet
 import android.view.View
 import android.view.animation.LinearInterpolator
+import com.example.presencedetector.model.DeviceSource
 import com.example.presencedetector.model.WiFiDevice
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 
 /**
- * Modern Radar View with scanning animation and device blips.
+ * Modern Radar View with scanning animation, device blips, and signal smoothing.
  */
 class RadarView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -54,12 +56,18 @@ class RadarView @JvmOverloads constructor(
     private var scanAngle = 0f
     private val animationSpeed = 2f
     private var isAnimating = true
+    private var pulsePhase = 0f
+
+    // Signal smoothing: store last known levels per BSSID for interpolation
+    private val smoothedLevels = mutableMapOf<String, Float>()
+    private val SMOOTHING_FACTOR = 0.3f // Lower = smoother, higher = more responsive
 
     // Animation Loop
     private val animator = object : Runnable {
         override fun run() {
             if (isAnimating) {
                 scanAngle = (scanAngle + animationSpeed) % 360f
+                pulsePhase = (pulsePhase + 0.1f) % (2f * Math.PI.toFloat())
                 invalidate()
                 postDelayed(this, 16) // ~60 FPS
             }
@@ -92,6 +100,25 @@ class RadarView @JvmOverloads constructor(
         post(animator)
     }
 
+    /**
+     * Smooth signal level using exponential moving average.
+     * Prevents devices from jumping around erratically.
+     */
+    private fun getSmoothedLevel(bssid: String, currentLevel: Int): Float {
+        val previous = smoothedLevels[bssid] ?: currentLevel.toFloat()
+        val smoothed = previous + SMOOTHING_FACTOR * (currentLevel - previous)
+        smoothedLevels[bssid] = smoothed
+        return smoothed
+    }
+
+    /**
+     * Get consistent angle based on BSSID hash.
+     * Device will always appear at the same position around the radar.
+     */
+    private fun getConsistentAngle(bssid: String): Float {
+        return (abs(bssid.hashCode()) % 360).toFloat()
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
@@ -102,7 +129,7 @@ class RadarView @JvmOverloads constructor(
         // 1. Draw Radar Grid
         // Outer circle
         canvas.drawCircle(centerX, centerY, maxRadius, circlePaint)
-        // Inner circles
+        // Inner circles with distance labels
         canvas.drawCircle(centerX, centerY, maxRadius * 0.66f, gridPaint)
         canvas.drawCircle(centerX, centerY, maxRadius * 0.33f, gridPaint)
         // Crosshairs
@@ -121,38 +148,44 @@ class RadarView @JvmOverloads constructor(
         canvas.drawCircle(centerX, centerY, maxRadius, sweepPaint)
         canvas.restore()
 
-        // 3. Draw Devices
-        devices.forEachIndexed { index, device ->
-            // Map signal level (-90 to -30) to distance (1.0 to 0.0)
-            // Stronger signal = Closer to center
-            val level = device.level.coerceIn(-90, -30)
-            val normalizedDist = 1f - ((level + 90) / 60f)
-            val radius = normalizedDist * maxRadius
-            
-            // Distribute devices around the circle to avoid overlap visual
-            // Using a pseudo-random but deterministic angle based on hashcode or index
-            val angleDeg = (index * 137.5f) % 360f
+        // 3. Draw Devices with improved positioning
+        devices.forEach { device ->
+            // Get consistent angle based on BSSID (device always in same position)
+            val angleDeg = getConsistentAngle(device.bssid)
             val angleRad = Math.toRadians(angleDeg.toDouble())
+
+            // Smooth signal level to prevent jumping
+            val smoothedLevel = getSmoothedLevel(device.bssid, device.level)
+            val clampedLevel = smoothedLevel.coerceIn(-90f, -30f)
+            val normalizedDist = 1f - ((clampedLevel + 90f) / 60f)
+            val radius = normalizedDist * maxRadius
 
             val dx = centerX + (radius * cos(angleRad)).toFloat()
             val dy = centerY + (radius * sin(angleRad)).toFloat()
 
-            // Device Color
+            // Device Color based on source type and known status
             val isKnown = device.nickname != null
-            val color = if (isKnown) Color.parseColor("#34C759") else Color.parseColor("#FF9500")
-            
-            // Draw Glow
-            if (isKnown) {
-                devicePaint.color = color
-                devicePaint.alpha = 50
-                canvas.drawCircle(dx, dy, 25f, devicePaint)
+            val color = when {
+                device.source == DeviceSource.BLUETOOTH -> if (isKnown) Color.parseColor("#007AFF") else Color.parseColor("#5856D6")
+                isKnown -> Color.parseColor("#34C759") // Green for known WiFi
+                else -> Color.parseColor("#FF9500") // Orange for unknown WiFi
             }
+
+            // Pulsing glow effect for known devices (simulates active detection)
+            val pulseScale = 1f + 0.3f * sin(pulsePhase + angleDeg / 30f)
             
+            // Draw Glow (larger for known devices, pulsing)
+            devicePaint.color = color
+            devicePaint.alpha = if (isKnown) 60 else 30
+            val glowRadius = if (isKnown) 25f * pulseScale else 18f
+            canvas.drawCircle(dx, dy, glowRadius, devicePaint)
+
             // Draw Dot
             devicePaint.color = color
             devicePaint.alpha = 255
-            canvas.drawCircle(dx, dy, 12f, devicePaint)
-            
+            val dotRadius = if (isKnown) 12f else 8f
+            canvas.drawCircle(dx, dy, dotRadius, devicePaint)
+
             // Draw Label
             val label = device.nickname ?: device.ssid.take(8)
             canvas.drawText(label, dx, dy + 40f, textPaint)
@@ -163,3 +196,4 @@ class RadarView @JvmOverloads constructor(
         canvas.drawCircle(centerX, centerY, 8f, devicePaint)
     }
 }
+

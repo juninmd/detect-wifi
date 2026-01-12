@@ -22,7 +22,8 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
         private const val DETECTION_TIMEOUT = 30000L // 30 seconds
         private const val ABSENCE_THRESHOLD = 30 * 60 * 1000L // 30 minutes - for logging/tracking
         private const val LONG_ABSENCE_THRESHOLD = 30 * 60 * 1000L // 30 minutes - triggers immediate notification on return
-        private const val NOTIFICATION_DEBOUNCE_WINDOW = 30000L // 30 seconds - ignore duplicate notifs
+        private const val NOTIFICATION_DEBOUNCE_WINDOW = 5 * 60 * 1000L // 5 minutes - prevent spam when device oscillates
+        private const val DEPARTURE_CONFIRMATION_TIME = 5 * 60 * 1000L // 5 minutes - confirm device is really gone before notifying
         private const val MIN_SIGNAL_THRESHOLD = -90 // dBm - ignore weak signals
     }
 

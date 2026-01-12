@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.presencedetector.model.DeviceCategory
+import com.example.presencedetector.model.DeviceSource
 import com.example.presencedetector.model.WiFiDevice
 import com.example.presencedetector.services.PresenceDetectionManager
 import com.example.presencedetector.ui.RadarView
@@ -314,6 +315,18 @@ class WifiRadarActivity : AppCompatActivity() {
                 onItemLongClick(device)
                 true
             }
+
+            // Show source badge (WiFi or Bluetooth)
+            when (device.source) {
+                DeviceSource.WIFI -> {
+                    holder.chipSourceBadge.text = "📶 WiFi"
+                    holder.chipSourceBadge.setChipBackgroundColorResource(R.color.success_color)
+                }
+                DeviceSource.BLUETOOTH -> {
+                    holder.chipSourceBadge.text = "🔵 Bluetooth"
+                    holder.chipSourceBadge.setChipBackgroundColorResource(R.color.primary_vibrant)
+                }
+            }
         }
 
         override fun getItemCount(): Int = devices.size
@@ -324,6 +337,7 @@ class WifiRadarActivity : AppCompatActivity() {
             val tvDetails: TextView = view.findViewById(R.id.tvDetails)
             val tvNotificationStatus: TextView = view.findViewById(R.id.tvNotificationStatus)
             val chipNickname: Chip = view.findViewById(R.id.chipNickname)
+            val chipSourceBadge: Chip = view.findViewById(R.id.chipSourceBadge)
         }
     }
 }

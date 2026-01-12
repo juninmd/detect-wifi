@@ -35,14 +35,26 @@ object NotificationUtil {
                 setShowBadge(false)
             }
 
+            // Critical Alert Channel - bypasses DND for security alerts
             val alertChannel = NotificationChannel(
                 ALERT_CHANNEL_ID,
                 ALERT_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Presence detection alerts"
+                description = "Presence detection alerts - Critical"
                 enableVibration(true)
+                vibrationPattern = longArrayOf(0, 500, 250, 500, 250, 500)
                 enableLights(true)
+                lightColor = android.graphics.Color.RED
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+                setBypassDnd(true) // Bypass silent/DND mode for security alerts
+                setSound(
+                    android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM),
+                    android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
             }
 
             notificationManager?.createNotificationChannels(
@@ -72,7 +84,7 @@ object NotificationUtil {
         return NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(subtitle)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
             .setAutoCancel(false)
             .setOngoing(true)
@@ -102,9 +114,9 @@ object NotificationUtil {
         )
 
         val icon = if (isImportantEvent) {
-            android.R.drawable.ic_dialog_info
+            R.drawable.ic_notification
         } else {
-            android.R.drawable.ic_dialog_alert
+            R.drawable.ic_notification_alert
         }
 
         val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
