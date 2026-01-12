@@ -20,7 +20,8 @@ class PresenceDetectionManager(private val context: Context) {
     companion object {
         private const val TAG = "PresenceDetection"
         private const val DETECTION_TIMEOUT = 30000L // 30 seconds
-        private const val ABSENCE_THRESHOLD = 5 * 60 * 1000L // 5 minutes
+        private const val ABSENCE_THRESHOLD = 30 * 60 * 1000L // 30 minutes - for logging/tracking
+        private const val LONG_ABSENCE_THRESHOLD = 30 * 60 * 1000L // 30 minutes - triggers immediate notification on return
         private const val NOTIFICATION_DEBOUNCE_WINDOW = 30000L // 30 seconds - ignore duplicate notifs
         private const val MIN_SIGNAL_THRESHOLD = -90 // dBm - ignore weak signals
     }
@@ -160,31 +161,40 @@ class PresenceDetectionManager(private val context: Context) {
 
     /**
      * Check if enough time has passed since last notification to avoid spam.
-     * Uses dynamic debouncing based on how long the device has been absent.
-     * 
+     * Uses smart logic based on device state:
+     *
      * Logic:
-     * - If device just returned after long absence (5+ min): notify immediately
-     * - If device is present and active: wait 30s before notifying again
+     * 1. If device is present/nearby and already notified of arrival this cycle -> DON'T notify again
+     * 2. If device left/departed -> CAN notify about departure
+     * 3. If device returned after 30+ min of absence -> notify IMMEDIATELY (no debounce)
+     * 4. If device recently present -> respect 30s debounce window
      */
     private fun canSendNotification(bssid: String): Boolean {
         val now = System.currentTimeMillis()
         val lastSeen = lastSeenMap[bssid] ?: 0L
         val lastDeparture = lastDepartureTimeMap[bssid] ?: 0L
         val lastNotification = lastNotificationTimeMap[bssid] ?: 0L
-        
-        // If this is first notification in this arrival cycle, always send
+        val wasNotifiedArrival = hasNotifiedArrivalMap[bssid] ?: false
+
+        // If device is currently present and we already notified of arrival, don't notify again
+        if (wasNotifiedArrival && (now - lastSeen) < NOTIFICATION_DEBOUNCE_WINDOW) {
+            return false
+        }
+
+        // If device came back after 30+ minutes of absence, notify immediately
+        if (lastDeparture > 0L && lastSeen > lastDeparture) {
+            val absenceDuration = lastSeen - lastDeparture
+            if (absenceDuration >= LONG_ABSENCE_THRESHOLD) {
+                return true
+            }
+        }
+
+        // First notification in cycle, always send
         if (lastNotification == 0L) {
             return true
         }
-        
-        // If device was absent for 5+ minutes and came back, allow immediate notification
-        val absenceDuration = lastSeen - lastDeparture
-        if (absenceDuration > ABSENCE_THRESHOLD) {
-            // Device came back after long absence, notify immediately
-            return true
-        }
-        
-        // Otherwise, respect 30s debounce window
+
+        // Otherwise, respect 30s debounce window for duplicate notifications
         return (now - lastNotification) >= NOTIFICATION_DEBOUNCE_WINDOW
     }
 

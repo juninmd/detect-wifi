@@ -41,14 +41,16 @@
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
                 app:strokeColor="@color/border_color">
-                
+
                 <com.example.presencedetector.ui.RadarView
                     android:id="@+id/radarView"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:padding="24dp" />
-                    
+
             </com.google.android.material.card.MaterialCardView>
+
+            <include layout="@layout/card_device_summary" android:id="@+id/card_summary"/>
 
             <TextView
                 android:layout_width="wrap_content"

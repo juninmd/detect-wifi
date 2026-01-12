@@ -20,6 +20,7 @@ import com.example.presencedetector.utils.PreferencesUtil
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.radiobutton.MaterialRadioButton
 import java.text.SimpleDateFormat
@@ -33,6 +34,19 @@ class WifiRadarActivity : AppCompatActivity() {
     private lateinit var detectionManager: PresenceDetectionManager
     private lateinit var preferences: PreferencesUtil
     private lateinit var adapter: WifiAdapter
+
+    // Summary card views
+    private lateinit var tvTotalDevices: TextView
+    private lateinit var tvKnownDevices: TextView
+    private lateinit var tvPersonDevices: TextView
+    private lateinit var tvApplianceDevices: TextView
+    private lateinit var chipGroupCategories: ChipGroup
+
+    // Sorting
+    enum class SortOrder {
+        DISTANCE, NAME, CATEGORY
+    }
+    private var currentSortOrder = SortOrder.DISTANCE
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +66,15 @@ class WifiRadarActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.wifiRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
+        // Initialize summary card views from included layout
+        val summaryCard = findViewById<View>(R.id.card_summary)
+        tvTotalDevices = summaryCard.findViewById(R.id.tvTotalDevices)
+        tvKnownDevices = summaryCard.findViewById(R.id.tvKnownDevices)
+        tvPersonDevices = summaryCard.findViewById(R.id.tvPersonDevices)
+        tvApplianceDevices = summaryCard.findViewById(R.id.tvApplianceDevices)
+        chipGroupCategories = summaryCard.findViewById(R.id.chipGroupCategories)
+
+
         adapter = WifiAdapter(
             onItemClick = { device -> showEditDialog(device) },
             onItemLongClick = { device -> showDeviceInfoDialog(device) }
@@ -67,8 +90,9 @@ class WifiRadarActivity : AppCompatActivity() {
                         nickname = preferences.getNickname(bssid)
                     }
                 }
-                adapter.updateDevices(processedDevices)
+                adapter.updateDevices(processedDevices, currentSortOrder)
                 radarView.updateDevices(processedDevices)
+                updateSummary(processedDevices)
             }
         }
     }
@@ -84,7 +108,55 @@ class WifiRadarActivity : AppCompatActivity() {
                 forceRefreshDevices()
                 true
             }
+            R.id.action_sort -> {
+                showSortDialog()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun showSortDialog() {
+        val sortOptions = arrayOf("📍 Distance (Default)", "🔤 Device Name", "📂 Category")
+        val checkedItem = currentSortOrder.ordinal
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Sort Devices By")
+            .setSingleChoiceItems(sortOptions, checkedItem) { dialog, which ->
+                currentSortOrder = SortOrder.values()[which]
+                adapter.notifyDataSetChanged()  // Force re-sort
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun updateSummary(devices: List<WiFiDevice>) {
+        val total = devices.size
+        val known = devices.count { preferences.getNickname(it.bssid) != null }
+        val people = devices.count { (preferences.getManualCategory(it.bssid) ?: it.category) == DeviceCategory.SMARTPHONE }
+        val appliances = devices.count { (preferences.getManualCategory(it.bssid) ?: it.category) == DeviceCategory.SMART_LIGHT }
+
+        tvTotalDevices.text = total.toString()
+        tvKnownDevices.text = known.toString()
+        tvPersonDevices.text = people.toString()
+        tvApplianceDevices.text = appliances.toString()
+
+        // Update category chips
+        chipGroupCategories.removeAllViews()
+        val categoryStats = mutableMapOf<DeviceCategory, Int>()
+        devices.forEach { device ->
+            val category = preferences.getManualCategory(device.bssid) ?: device.category
+            categoryStats[category] = (categoryStats[category] ?: 0) + 1
+        }
+
+        categoryStats.forEach { (category, count) ->
+            val chip = Chip(this).apply {
+                text = "${category.iconRes} ${category.displayName} ($count)"
+                isEnabled = false
+                setTextColor(getColor(R.color.dark_text))
+                chipIcon = null
+            }
+            chipGroupCategories.addView(chip)
         }
     }
 
@@ -187,8 +259,17 @@ class WifiRadarActivity : AppCompatActivity() {
     ) : RecyclerView.Adapter<WifiAdapter.ViewHolder>() {
         private var devices: List<WiFiDevice> = emptyList()
 
-        fun updateDevices(newDevices: List<WiFiDevice>) {
-            devices = newDevices.sortedByDescending { it.level }
+        fun updateDevices(newDevices: List<WiFiDevice>, sortOrder: SortOrder = SortOrder.DISTANCE) {
+            devices = when (sortOrder) {
+                SortOrder.DISTANCE -> newDevices.sortedByDescending { it.level } // Strongest signal first
+                SortOrder.NAME -> newDevices.sortedBy {
+                    preferences.getNickname(it.bssid) ?: it.ssid
+                }
+                SortOrder.CATEGORY -> newDevices.sortedBy { device ->
+                    val category = preferences.getManualCategory(device.bssid) ?: device.category
+                    category.displayName
+                }
+            }
             notifyDataSetChanged()
         }
 

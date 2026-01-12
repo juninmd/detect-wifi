@@ -33,11 +33,11 @@ class HistoryActivity : AppCompatActivity() {
         toolbar.setNavigationOnClickListener { finish() }
 
         preferences = PreferencesUtil(this)
-        
+
         etFilter = findViewById(R.id.etFilterBssid)
         tvHistoryTitle = findViewById(R.id.tvHistoryTitle)
         recyclerView = findViewById(R.id.rvHistory)
-        
+
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
@@ -60,7 +60,7 @@ class HistoryActivity : AppCompatActivity() {
     private fun loadAllHistory() {
         val bssids = preferences.getAllTrackedBssids()
         val allLogs = mutableListOf<HistoryItem>()
-        
+
         bssids.forEach { bssid ->
             val nickname = preferences.getNickname(bssid) ?: "Unknown"
             val eventLogs = preferences.getEventLogs(bssid)
@@ -71,7 +71,7 @@ class HistoryActivity : AppCompatActivity() {
                 allLogs.add(HistoryItem(bssid, nickname, logLine, isArrival, isDeparture))
             }
         }
-        
+
         val sortedLogs = allLogs.sortedByDescending { it.logDetail }
         adapter.setItems(sortedLogs)
         tvHistoryTitle.text = "Full History (${sortedLogs.size} events)"
@@ -80,7 +80,7 @@ class HistoryActivity : AppCompatActivity() {
     private fun filterHistory(query: String) {
         val bssids = preferences.getAllTrackedBssids()
         val filteredLogs = mutableListOf<HistoryItem>()
-        
+
         bssids.forEach { bssid ->
             val nickname = preferences.getNickname(bssid) ?: ""
             if (bssid.lowercase().contains(query) || nickname.lowercase().contains(query)) {
@@ -92,7 +92,7 @@ class HistoryActivity : AppCompatActivity() {
                 }
             }
         }
-        
+
         val sortedLogs = filteredLogs.sortedByDescending { it.logDetail }
         adapter.setItems(sortedLogs)
         tvHistoryTitle.text = "Filtered Results (${sortedLogs.size})"
@@ -116,17 +116,17 @@ class HistoryActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
-            
+
             // Set nickname
             holder.tvNickname.text = item.nickname
-            
+
             // Parse timestamp from log detail
             val timestamp = extractTime(item.logDetail)
             holder.tvTimestamp.text = timestamp
-            
+
             // Set BSSID (show last 8 chars for brevity)
             holder.tvBssid.text = item.bssid.takeLast(8)
-            
+
             // Determine event type and set UI accordingly
             if (item.isArrival) {
                 holder.tvEventIcon.text = "🟢"
@@ -137,7 +137,7 @@ class HistoryActivity : AppCompatActivity() {
                 holder.chipEventType.text = "Left"
                 holder.chipEventType.setChipBackgroundColorResource(R.color.danger_color)
             }
-            
+
             holder.itemView.setOnClickListener {
                 val intent = Intent(holder.itemView.context, WifiRadarActivity::class.java)
                 holder.itemView.context.startActivity(intent)
