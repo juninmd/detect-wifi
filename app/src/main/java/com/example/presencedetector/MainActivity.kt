@@ -33,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var startButton: Button
     private lateinit var stopButton: Button
     private lateinit var btnOpenRadarFromGrid: MaterialCardView
+    private lateinit var btnSettings: MaterialCardView
     private lateinit var btnOpenHistory: MaterialCardView
     private lateinit var statusIndicator: ImageView
     private lateinit var statusText: TextView
@@ -67,6 +68,7 @@ class MainActivity : AppCompatActivity() {
         startButton = findViewById(R.id.startButton)
         stopButton = findViewById(R.id.stopButton)
         btnOpenRadarFromGrid = findViewById(R.id.btnOpenRadarFromGrid)
+        btnSettings = findViewById(R.id.btnSettings)
         btnOpenHistory = findViewById(R.id.btnOpenHistory)
         statusIndicator = findViewById(R.id.statusIndicator)
         statusText = findViewById(R.id.statusText)
@@ -86,11 +88,15 @@ class MainActivity : AppCompatActivity() {
 
         startButton.setOnClickListener { startDetection() }
         stopButton.setOnClickListener { stopDetection() }
-        
+
         btnOpenRadarFromGrid.setOnClickListener {
             startActivity(Intent(this, WifiRadarActivity::class.java))
         }
-        
+
+        btnSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
         btnOpenHistory.setOnClickListener {
             startActivity(Intent(this, HistoryActivity::class.java))
         }

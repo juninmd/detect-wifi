@@ -113,7 +113,6 @@ class WifiRadarActivity : AppCompatActivity() {
         cbNotifyArrival.isChecked = preferences.shouldNotifyArrival(device.bssid)
         cbNotifyDeparture.isChecked = preferences.shouldNotifyDeparture(device.bssid)
 
-        // Populate Categories using MaterialRadioButtons for better visibility
         val categories = DeviceCategory.values()
         categories.forEach { category ->
             val rb = MaterialRadioButton(this).apply {
@@ -172,7 +171,7 @@ class WifiRadarActivity : AppCompatActivity() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val view = LayoutInflater.from(parent.context)
-                .inflate(android.R.layout.simple_list_item_2, parent, false)
+                .inflate(R.layout.item_wifi_device, parent, false)
             return ViewHolder(view)
         }
 
@@ -181,15 +180,28 @@ class WifiRadarActivity : AppCompatActivity() {
             val nickname = preferences.getNickname(device.bssid)
             val hasNotify = preferences.shouldNotifyArrival(device.bssid) || preferences.shouldNotifyDeparture(device.bssid)
             
-            val icon = device.category.iconRes
-            val nameDisplay = if (device.isHidden) "🔒 [Hidden Network]" else (nickname ?: device.ssid)
-            val notifyIcon = if (hasNotify) " 🔔" else ""
+            holder.tvIcon.text = device.category.iconRes
             
-            holder.text1.text = "$icon $nameDisplay$notifyIcon"
-            holder.text1.setTextColor(if (nickname != null) getColor(R.color.primary_color) else getColor(R.color.dark_text))
-            
-            holder.text2.text = "Type: ${device.category.displayName} | Signal: ${device.level} dBm"
-            holder.text2.setTextColor(getColor(R.color.light_text))
+            if (device.isHidden) {
+                holder.tvName.text = "🔒 [Hidden Network]"
+            } else {
+                holder.tvName.text = nickname ?: device.ssid
+            }
+
+            if (nickname != null) {
+                holder.tvName.setTextColor(getColor(R.color.primary_color))
+            } else {
+                holder.tvName.setTextColor(getColor(R.color.dark_text))
+            }
+
+            val details = "${device.category.displayName} • ${device.level} dBm"
+            holder.tvDetails.text = details
+
+            if (hasNotify) {
+                holder.tvNotificationStatus.visibility = View.VISIBLE
+            } else {
+                holder.tvNotificationStatus.visibility = View.GONE
+            }
             
             holder.itemView.setOnClickListener { onItemClick(device) }
             holder.itemView.setOnLongClickListener {
@@ -201,8 +213,10 @@ class WifiRadarActivity : AppCompatActivity() {
         override fun getItemCount(): Int = devices.size
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val text1: TextView = view.findViewById(android.R.id.text1)
-            val text2: TextView = view.findViewById(android.R.id.text2)
+            val tvIcon: TextView = view.findViewById(R.id.tvIcon)
+            val tvName: TextView = view.findViewById(R.id.tvName)
+            val tvDetails: TextView = view.findViewById(R.id.tvDetails)
+            val tvNotificationStatus: TextView = view.findViewById(R.id.tvNotificationStatus)
         }
     }
 }
