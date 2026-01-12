@@ -43,6 +43,7 @@ class PresenceDetectionManager(private val context: Context) {
     private val departureNotifiedMap = mutableMapOf<String, Boolean>()
     private val lastNotificationTimeMap = mutableMapOf<String, Long>() // Debounce notifications
     private val hasNotifiedArrivalMap = mutableMapOf<String, Boolean>() // Track if already notified arrival
+    private val lastDepartureTimeMap = mutableMapOf<String, Long>() // Track when device last left
 
     private var lastTimeSomeoneWasPresent = System.currentTimeMillis()
     private var currentWifiDevices: List<WiFiDevice> = emptyList()
@@ -134,6 +135,7 @@ class PresenceDetectionManager(private val context: Context) {
                 if (departureNotifiedMap[bssid] != true) {
                     // LOG DEPARTURE
                     preferences.logEvent(bssid, "Left")
+                    lastDepartureTimeMap[bssid] = now  // Record departure time for dynamic debounce
 
                     if (preferences.shouldNotifyOnPresence() && preferences.shouldNotifyDeparture(bssid)) {
                         if (canSendNotification(bssid)) {
@@ -158,10 +160,32 @@ class PresenceDetectionManager(private val context: Context) {
 
     /**
      * Check if enough time has passed since last notification to avoid spam.
+     * Uses dynamic debouncing based on how long the device has been absent.
+     * 
+     * Logic:
+     * - If device just returned after long absence (5+ min): notify immediately
+     * - If device is present and active: wait 30s before notifying again
      */
     private fun canSendNotification(bssid: String): Boolean {
-        val lastTime = lastNotificationTimeMap[bssid] ?: 0L
-        return (System.currentTimeMillis() - lastTime) >= NOTIFICATION_DEBOUNCE_WINDOW
+        val now = System.currentTimeMillis()
+        val lastSeen = lastSeenMap[bssid] ?: 0L
+        val lastDeparture = lastDepartureTimeMap[bssid] ?: 0L
+        val lastNotification = lastNotificationTimeMap[bssid] ?: 0L
+        
+        // If this is first notification in this arrival cycle, always send
+        if (lastNotification == 0L) {
+            return true
+        }
+        
+        // If device was absent for 5+ minutes and came back, allow immediate notification
+        val absenceDuration = lastSeen - lastDeparture
+        if (absenceDuration > ABSENCE_THRESHOLD) {
+            // Device came back after long absence, notify immediately
+            return true
+        }
+        
+        // Otherwise, respect 30s debounce window
+        return (now - lastNotification) >= NOTIFICATION_DEBOUNCE_WINDOW
     }
 
     private fun handleSecurityThreat(device: WiFiDevice) {
@@ -264,6 +288,7 @@ class PresenceDetectionManager(private val context: Context) {
         lastSeenMap.clear()
         departureNotifiedMap.clear()
         hasNotifiedArrivalMap.clear()
+        lastDepartureTimeMap.clear()
     }
 
     private fun evaluateGlobalPresence(method: String, details: String) {

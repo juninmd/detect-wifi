@@ -65,7 +65,10 @@ class HistoryActivity : AppCompatActivity() {
             val nickname = preferences.getNickname(bssid) ?: "Unknown"
             val eventLogs = preferences.getEventLogs(bssid)
             eventLogs.forEach { logLine ->
-                allLogs.add(HistoryItem(bssid, nickname, logLine))
+                // Parse log line to extract event type and timestamp
+                val isArrival = logLine.contains("Arrived")
+                val isDeparture = logLine.contains("Left")
+                allLogs.add(HistoryItem(bssid, nickname, logLine, isArrival, isDeparture))
             }
         }
         
@@ -83,7 +86,9 @@ class HistoryActivity : AppCompatActivity() {
             if (bssid.lowercase().contains(query) || nickname.lowercase().contains(query)) {
                 val eventLogs = preferences.getEventLogs(bssid)
                 eventLogs.forEach { logLine ->
-                    filteredLogs.add(HistoryItem(bssid, nickname.ifEmpty { "Unknown" }, logLine))
+                    val isArrival = logLine.contains("Arrived")
+                    val isDeparture = logLine.contains("Left")
+                    filteredLogs.add(HistoryItem(bssid, nickname.ifEmpty { "Unknown" }, logLine, isArrival, isDeparture))
                 }
             }
         }
@@ -93,7 +98,7 @@ class HistoryActivity : AppCompatActivity() {
         tvHistoryTitle.text = "Filtered Results (${sortedLogs.size})"
     }
 
-    data class HistoryItem(val bssid: String, val nickname: String, val logDetail: String)
+    data class HistoryItem(val bssid: String, val nickname: String, val logDetail: String, val isArrival: Boolean = false, val isDeparture: Boolean = false)
 
     class HistoryAdapter : RecyclerView.Adapter<HistoryAdapter.ViewHolder>() {
         private var items: List<HistoryItem> = emptyList()
@@ -105,16 +110,33 @@ class HistoryActivity : AppCompatActivity() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val view = LayoutInflater.from(parent.context)
-                .inflate(android.R.layout.simple_list_item_2, parent, false)
+                .inflate(R.layout.item_history_event, parent, false)
             return ViewHolder(view)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
-            holder.text1.text = "${item.nickname} - ${item.logDetail}"
-            holder.text1.setTextColor(holder.itemView.context.getColor(R.color.dark_text))
-            holder.text2.text = "BSSID: ${item.bssid}"
-            holder.text2.setTextColor(holder.itemView.context.getColor(R.color.light_text))
+            
+            // Set nickname
+            holder.tvNickname.text = item.nickname
+            
+            // Parse timestamp from log detail
+            val timestamp = extractTime(item.logDetail)
+            holder.tvTimestamp.text = timestamp
+            
+            // Set BSSID (show last 8 chars for brevity)
+            holder.tvBssid.text = item.bssid.takeLast(8)
+            
+            // Determine event type and set UI accordingly
+            if (item.isArrival) {
+                holder.tvEventIcon.text = "🟢"
+                holder.chipEventType.text = "Arrived"
+                holder.chipEventType.setChipBackgroundColorResource(R.color.success_bright)
+            } else if (item.isDeparture) {
+                holder.tvEventIcon.text = "🔴"
+                holder.chipEventType.text = "Left"
+                holder.chipEventType.setChipBackgroundColorResource(R.color.danger_color)
+            }
             
             holder.itemView.setOnClickListener {
                 val intent = Intent(holder.itemView.context, WifiRadarActivity::class.java)
@@ -124,9 +146,18 @@ class HistoryActivity : AppCompatActivity() {
 
         override fun getItemCount(): Int = items.size
 
+        private fun extractTime(logDetail: String): String {
+            // Log format: "Arrived 01:49" or "Left 01:49"
+            val parts = logDetail.split(" ")
+            return if (parts.size >= 2) parts[1] else "N/A"
+        }
+
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val text1: TextView = view.findViewById(android.R.id.text1)
-            val text2: TextView = view.findViewById(android.R.id.text2)
+            val tvEventIcon: TextView = view.findViewById(R.id.tvEventIcon)
+            val tvNickname: TextView = view.findViewById(R.id.tvNickname)
+            val tvTimestamp: TextView = view.findViewById(R.id.tvTimestamp)
+            val tvBssid: TextView = view.findViewById(R.id.tvBssid)
+            val chipEventType: com.google.android.material.chip.Chip = view.findViewById(R.id.chipEventType)
         }
     }
 }
