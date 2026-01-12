@@ -62,21 +62,59 @@ class WiFiDetectionService(context: Context) {
                 return
             }
 
-            val devices = scanResults.map { result ->
+            // Detect both standard networks AND mobile hotspots
+            val devices = scanResults.mapNotNull { result ->
+                val ssid = result.SSID ?: "Unknown"
+                val isHotspot = isLikelyMobileHotspot(ssid)
+
                 WiFiDevice(
-                    ssid = result.SSID ?: "Unknown",
+                    ssid = ssid,
                     bssid = result.BSSID ?: "00:00:00:00:00:00",
                     level = result.level,
-                    frequency = result.frequency
+                    frequency = result.frequency,
+                    nickname = if (isHotspot) "📱 $ssid (Hotspot)" else ssid
                 )
             }
 
             val presenceDetected = devices.any { it.level >= -70 }
-            notifyPresence(presenceDetected, devices, "Found ${devices.size} networks")
+
+            // More details including hotspot count
+            val hotspotCount = devices.count { it.nickname?.contains("Hotspot") == true }
+            val details = "Found ${devices.size} networks" +
+                         if (hotspotCount > 0) " ($hotspotCount hotspots)" else ""
+
+            notifyPresence(presenceDetected, devices, details)
 
         } catch (e: Exception) {
             Log.e(TAG, "Scan error", e)
         }
+    }
+
+    /**
+     * Detects if SSID looks like a mobile hotspot.
+     * Mobile hotspots typically have patterns like:
+     * - "iPhone", "Android", "Samsung", etc.
+     * - End with numbers or alphanumerics
+     * - No spaces or special chars (usually)
+     */
+    private fun isLikelyMobileHotspot(ssid: String): Boolean {
+        val lowerSsid = ssid.lowercase()
+
+        // Common mobile hotspot patterns
+        val mobilePatterns = listOf(
+            "iphone", "android", "samsung", "xiaomi", "redmi",
+            "oneplus", "pixel", "motorola", "huawei", "poco",
+            "nokia", "realme", "vivo", "oppo", "honor",
+            "personal", "hotspot", "moto", "galaxy", "note"
+        )
+
+        // Check if contains mobile patterns
+        val containsMobilePattern = mobilePatterns.any { lowerSsid.contains(it) }
+
+        // Check if SSID is very short (typical for hotspots)
+        val isShortName = ssid.length < 15 && !ssid.contains("_") && !ssid.contains("-")
+
+        return containsMobilePattern || (isShortName && ssid.matches(Regex("[A-Za-z0-9]+")))
     }
 
     private fun notifyPresence(detected: Boolean, devices: List<WiFiDevice>, details: String) {
@@ -86,7 +124,7 @@ class WiFiDetectionService(context: Context) {
     }
 
     fun isScanning(): Boolean = isScanning
-    
+
     fun destroy() {
         stopScanning()
         scope.cancel()

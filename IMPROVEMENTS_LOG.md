@@ -163,7 +163,7 @@ Gradiente Fundo:        ▓▓▓▓▓ → ▒▒▒▒▒ → ░░░░░
 
 Status Cards:
 ✅ Sucesso:             🟢 #34D399
-⚠️ Warning:             🟠 #F59E0B  
+⚠️ Warning:             🟠 #F59E0B
 ❌ Danger:              🔴 #EF4444
 📡 Primary:             🟪 #7C3AED
 ```

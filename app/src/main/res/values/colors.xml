@@ -5,33 +5,33 @@
     <color name="primary_bright">#818CF8</color>
     <color name="primary_dark">#4F46E5</color>
     <color name="primary_vibrant">#7C3AED</color>
-    
+
     <color name="accent_color">#EC4899</color>
     <color name="accent_bright">#F43F5E</color>
-    
+
     <color name="success_color">#10B981</color>
     <color name="success_bright">#34D399</color>
-    
+
     <color name="danger_color">#EF4444</color>
     <color name="warning_color">#F59E0B</color>
-    
+
     <color name="background">#0F172A</color>
     <color name="background_dark">#020617</color>
     <color name="surface">#1E293B</color>
     <color name="surface_light">#334155</color>
-    
+
     <color name="dark_text">#F8FAFC</color>
     <color name="light_text">#94A3B8</color>
     <color name="white">#FFFFFF</color>
-    
+
     <color name="presence_detected">#10B981</color>
     <color name="presence_not_detected">#64748B</color>
-    
+
     <!-- Card and Border colors -->
     <color name="card_background">#1E293B</color>
     <color name="card_background_elevated">#334155</color>
     <color name="border_color">#334155</color>
-    
+
     <!-- Gradients support -->
     <color name="gradient_start">#6366F1</color>
     <color name="gradient_mid">#7C3AED</color>
