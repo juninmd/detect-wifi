@@ -19,7 +19,7 @@ class WiFiHotspotDetectionService(private val context: Context) {
         private const val SCAN_INTERVAL = 5000L // 5 seconds
     }
 
-    private val wifiManager: WifiManager? = 
+    private val wifiManager: WifiManager? =
         context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
     private val mainHandler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(Dispatchers.Main + Job())
@@ -43,7 +43,7 @@ class WiFiHotspotDetectionService(private val context: Context) {
         if (isScanning) return
         isScanning = true
         Log.i(TAG, "🔥 Starting hotspot detection...")
-        
+
         scanJob = scope.launch {
             while (isActive) {
                 performScan()
@@ -70,7 +70,7 @@ class WiFiHotspotDetectionService(private val context: Context) {
                 if (isMobileHotspot(ssid)) {
                     val bssid = result.BSSID ?: "00:00:00:00:00:00"
                     val signal = result.level
-                    
+
                     detectedHotspots[bssid] = System.currentTimeMillis()
                     mainHandler.post {
                         hotspotListener?.onHotspotDetected(ssid, bssid, signal)
@@ -90,14 +90,14 @@ class WiFiHotspotDetectionService(private val context: Context) {
 
     private fun isMobileHotspot(ssid: String): Boolean {
         val lowerSsid = ssid.lowercase()
-        
+
         val mobilePatterns = listOf(
             "iphone", "android", "samsung", "xiaomi", "redmi",
             "oneplus", "pixel", "motorola", "huawei", "poco",
             "nokia", "realme", "vivo", "oppo", "honor",
             "personal", "hotspot", "moto", "galaxy", "note"
         )
-        
+
         return mobilePatterns.any { lowerSsid.contains(it) }
     }
 

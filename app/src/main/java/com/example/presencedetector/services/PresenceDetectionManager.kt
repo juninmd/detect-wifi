@@ -26,13 +26,16 @@ class PresenceDetectionManager(private val context: Context) {
     }
 
     private val wifiService = WiFiDetectionService(context)
+    private val bluetoothService = BluetoothDetectionService(context)
     private val mainHandler = Handler(Looper.getMainLooper())
     private val preferences = PreferencesUtil(context)
     private val telegramService = TelegramService(context)
 
     private var presenceListener: PresenceListener? = null
     private var wifiPresenceDetected = false
+    private var bluetoothPresenceDetected = false
     private var lastWifiDetection = 0L
+    private var lastBluetoothDetection = 0L
     private var lastPresenceState = false
 
     // Track timestamps for individual devices
@@ -52,6 +55,7 @@ class PresenceDetectionManager(private val context: Context) {
     }
 
     private fun setupListeners() {
+        // WiFi Detection Listener
         wifiService.setPresenceListener { detected, devices, details ->
             wifiPresenceDetected = detected
             currentWifiDevices = devices
@@ -64,6 +68,15 @@ class PresenceDetectionManager(private val context: Context) {
 
             if (detected) lastWifiDetection = System.currentTimeMillis()
             evaluateGlobalPresence("WiFi", details)
+        }
+
+        // Bluetooth Detection Listener
+        bluetoothService.setPresenceListener { detected, details ->
+            bluetoothPresenceDetected = detected
+            if (detected) lastBluetoothDetection = System.currentTimeMillis()
+            
+            Log.i(TAG, "Bluetooth detection: $detected - $details")
+            evaluateGlobalPresence("Bluetooth", details)
         }
     }
 
@@ -206,18 +219,26 @@ class PresenceDetectionManager(private val context: Context) {
     }
 
     fun startDetection() {
+        Log.i(TAG, "Starting WiFi and Bluetooth detection...")
         wifiService.startScanning()
+        bluetoothService.startScanning()
     }
 
     fun stopDetection() {
+        Log.i(TAG, "Stopping WiFi and Bluetooth detection...")
         wifiService.stopScanning()
+        bluetoothService.stopScanning()
         lastSeenMap.clear()
         departureNotifiedMap.clear()
     }
 
     private fun evaluateGlobalPresence(method: String, details: String) {
         val now = System.currentTimeMillis()
-        val isCurrentlyDetected = (wifiPresenceDetected && (now - lastWifiDetection) < DETECTION_TIMEOUT)
+        
+        // Check both WiFi and Bluetooth detection methods
+        val isWifiDetected = wifiPresenceDetected && (now - lastWifiDetection) < DETECTION_TIMEOUT
+        val isBluetoothDetected = bluetoothPresenceDetected && (now - lastBluetoothDetection) < DETECTION_TIMEOUT
+        val isCurrentlyDetected = isWifiDetected || isBluetoothDetected
 
         if (isCurrentlyDetected) {
             lastTimeSomeoneWasPresent = now
@@ -275,6 +296,7 @@ class PresenceDetectionManager(private val context: Context) {
     fun getDetectionStatus(): String {
         return buildString {
             append("WiFi: ${if (wifiService.isScanning()) "Active" else "Off"}")
+            append(" | Bluetooth: ${if (bluetoothService.isScanning()) "Active" else "Off"}")
             append(" | Present: ${if (lastPresenceState) "YES" else "NO"}")
         }
     }
@@ -282,5 +304,6 @@ class PresenceDetectionManager(private val context: Context) {
     fun destroy() {
         stopDetection()
         wifiService.destroy()
+        bluetoothService.destroy()
     }
 }

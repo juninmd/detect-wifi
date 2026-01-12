@@ -92,7 +92,7 @@ Networks detected:
 val devices = scanResults.mapNotNull { result ->
     val ssid = result.SSID
     val isHotspot = isLikelyMobileHotspot(ssid)
-    
+
     WiFiDevice(
         ssid = ssid,
         bssid = result.BSSID,
@@ -233,5 +233,5 @@ Impacto estimado: **< 1%** de bateria adicional
 
 ---
 
-**BUILD STATUS**: ✅ SUCCESS  
+**BUILD STATUS**: ✅ SUCCESS
 **FEATURE**: PRODUCTION READY
