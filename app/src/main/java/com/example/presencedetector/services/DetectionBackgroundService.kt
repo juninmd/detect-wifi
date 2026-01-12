@@ -2,9 +2,12 @@ package com.example.presencedetector.services
 
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Binder
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.example.presencedetector.utils.NotificationUtil
 
 /**
@@ -40,23 +43,48 @@ class DetectionBackgroundService : Service() {
         Log.i(TAG, "🚀 Background service started (flags=$flags, startId=$startId)")
 
         if (!isRunning) {
+            // Check permissions before starting
+            if (!hasRequiredPermissions()) {
+                Log.e(TAG, "❌ Missing required permissions for background service")
+                stopSelf()
+                return START_NOT_STICKY
+            }
+
             isRunning = true
 
-            // Create foreground notification to keep service alive
-            val notification = NotificationUtil.createForegroundNotification(
-                this,
-                "🔍 Presence Detector Active",
-                "Scanning for devices..."
-            )
-            startForeground(NOTIFICATION_ID, notification)
+            try {
+                // Create foreground notification to keep service alive
+                val notification = NotificationUtil.createForegroundNotification(
+                    this,
+                    "🔍 Presence Detector Active",
+                    "Scanning for devices..."
+                )
 
-            // Start detection
-            detectionManager?.startDetection()
-            Log.i(TAG, "✅ Presence detection started in background")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
+                } else {
+                    startForeground(NOTIFICATION_ID, notification)
+                }
+
+                // Start detection
+                detectionManager?.startDetection()
+                Log.i(TAG, "✅ Presence detection started in background")
+
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Failed to start foreground service", e)
+                isRunning = false
+                stopSelf()
+                return START_NOT_STICKY
+            }
         }
 
         // START_STICKY: Restarts service if killed by system
         return START_STICKY
+    }
+
+    private fun hasRequiredPermissions(): Boolean {
+        val fineLocation = ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+        return fineLocation == android.content.pm.PackageManager.PERMISSION_GRANTED
     }
 
     override fun onBind(intent: Intent?): IBinder = binder
