@@ -75,6 +75,11 @@ class RadarView @JvmOverloads constructor(
         invalidate()
     }
 
+    // Alias for compatibility
+    fun setDevices(newDevices: List<WiFiDevice>) {
+        updateDevices(newDevices)
+    }
+
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         removeCallbacks(animator)

@@ -50,7 +50,8 @@ class WifiRadarActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         
         adapter = WifiAdapter(
-            onItemClick = { device -> openDeviceDetails(device) }
+            onItemClick = { device -> showEditDialog(device) },
+            onItemLongClick = { device -> showDeviceInfoDialog(device) }
         )
         recyclerView.adapter = adapter
 
@@ -69,14 +70,82 @@ class WifiRadarActivity : AppCompatActivity() {
         }
     }
 
-    private fun openDeviceDetails(device: WiFiDevice) {
-        val intent = android.content.Intent(this, DeviceDetailActivity::class.java).apply {
-            putExtra(DeviceDetailActivity.EXTRA_BSSID, device.bssid)
-            putExtra(DeviceDetailActivity.EXTRA_SSID, device.ssid)
-            putExtra(DeviceDetailActivity.EXTRA_SIGNAL, device.level)
-            putExtra(DeviceDetailActivity.EXTRA_LAST_SEEN, device.lastSeen)
+    private fun showDeviceInfoDialog(device: WiFiDevice) {
+        val nickname = preferences.getNickname(device.bssid) ?: "No nickname"
+        val historyCount = preferences.getDetectionHistoryCount(device.bssid)
+        val lastSeenDate = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(device.lastSeen))
+        
+        val notifyArr = if (preferences.shouldNotifyArrival(device.bssid)) "🔔 Arrival On" else "🔕 Arrival Off"
+        val notifyDep = if (preferences.shouldNotifyDeparture(device.bssid)) "🔔 Leave On" else "🔕 Leave Off"
+        
+        val status = if (device.isHidden) "⚠️ Hidden Network" else "✅ Visible"
+        
+        val info = """
+            $status
+            📌 SSID: ${if (device.isHidden) "[HIDDEN]" else device.ssid}
+            🆔 BSSID: ${device.bssid}
+            🏷️ Nickname: $nickname
+            📂 Category: ${device.category.displayName}
+            📶 Signal: ${device.level} dBm
+            🕒 Last Seen: $lastSeenDate
+            📊 Days Detected: $historyCount days
+            $notifyArr | $notifyDep
+        """.trimIndent()
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Device Details")
+            .setMessage(info)
+            .setPositiveButton("Edit Profile") { _, _ -> showEditDialog(device) }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
+    private fun showEditDialog(device: WiFiDevice) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_edit_nickname, null)
+        val etNickname = dialogView.findViewById<EditText>(R.id.etNickname)
+        val tvBssid = dialogView.findViewById<TextView>(R.id.tvBssid)
+        val cbNotifyArrival = dialogView.findViewById<MaterialCheckBox>(R.id.cbNotifyArrival)
+        val cbNotifyDeparture = dialogView.findViewById<MaterialCheckBox>(R.id.cbNotifyDeparture)
+        val rgCategories = dialogView.findViewById<RadioGroup>(R.id.rgCategories)
+        
+        tvBssid.text = "BSSID: ${device.bssid}"
+        etNickname.setText(preferences.getNickname(device.bssid) ?: device.ssid)
+        cbNotifyArrival.isChecked = preferences.shouldNotifyArrival(device.bssid)
+        cbNotifyDeparture.isChecked = preferences.shouldNotifyDeparture(device.bssid)
+
+        val categories = DeviceCategory.values()
+        categories.forEach { category ->
+            val rb = MaterialRadioButton(this).apply {
+                id = View.generateViewId()
+                text = "${category.iconRes} ${category.displayName}"
+                setTextColor(getColor(R.color.dark_text))
+                tag = category
+                setPadding(0, 12, 0, 12)
+            }
+            rgCategories.addView(rb)
+            if (category == device.category) {
+                rgCategories.check(rb.id)
+            }
         }
-        startActivity(intent)
+
+        MaterialAlertDialogBuilder(this)
+            .setView(dialogView)
+            .setPositiveButton("Save") { _, _ ->
+                val newNickname = etNickname.text.toString()
+                preferences.saveNickname(device.bssid, newNickname)
+                
+                val checkedId = rgCategories.checkedRadioButtonId
+                val selectedRb = rgCategories.findViewById<MaterialRadioButton>(checkedId)
+                val selectedCategory = selectedRb?.tag as? DeviceCategory ?: device.category
+                
+                preferences.saveManualCategory(device.bssid, selectedCategory)
+                preferences.setNotifyArrival(device.bssid, cbNotifyArrival.isChecked)
+                preferences.setNotifyDeparture(device.bssid, cbNotifyDeparture.isChecked)
+                
+                adapter.notifyDataSetChanged()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     override fun onStart() {
@@ -90,7 +159,8 @@ class WifiRadarActivity : AppCompatActivity() {
     }
 
     inner class WifiAdapter(
-        private val onItemClick: (WiFiDevice) -> Unit
+        private val onItemClick: (WiFiDevice) -> Unit,
+        private val onItemLongClick: (WiFiDevice) -> Unit
     ) : RecyclerView.Adapter<WifiAdapter.ViewHolder>() {
         private var devices: List<WiFiDevice> = emptyList()
 
@@ -118,7 +188,6 @@ class WifiRadarActivity : AppCompatActivity() {
                 holder.tvName.text = nickname ?: device.ssid
             }
 
-            // Highlight nicknamed devices with a different color
             if (nickname != null) {
                 holder.tvName.setTextColor(getColor(R.color.primary_color))
             } else {
@@ -135,6 +204,10 @@ class WifiRadarActivity : AppCompatActivity() {
             }
             
             holder.itemView.setOnClickListener { onItemClick(device) }
+            holder.itemView.setOnLongClickListener {
+                onItemLongClick(device)
+                true
+            }
         }
 
         override fun getItemCount(): Int = devices.size
