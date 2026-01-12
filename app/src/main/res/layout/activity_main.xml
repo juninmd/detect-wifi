@@ -140,7 +140,7 @@
                 android:layout_height="wrap_content"
                 android:alignmentMode="alignMargins"
                 android:columnCount="2"
-                android:rowCount="2">
+                android:rowCount="3">
 
                 <!-- Known People Card - Green Tint -->
                 <com.google.android.material.card.MaterialCardView
@@ -204,6 +204,27 @@
                         <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_menu_preferences" app:tint="@color/white"/>
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="⚙️ Settings" android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" android:textColor="@color/white" android:textStyle="bold"/>
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Config" android:textAppearance="@style/TextAppearance.Material3.LabelLarge" android:textColor="#E0E0FF" android:layout_marginTop="4dp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Security Monitoring Card - Red/Alert -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnSecuritySettings"
+                    android:layout_width="0dp"
+                    android:layout_height="150dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="6dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="#C62828">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+                        <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_menu_camera" app:tint="@color/white"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="🎥 Security" android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" android:textColor="@color/white" android:textStyle="bold"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="RTSP Cameras" android:textAppearance="@style/TextAppearance.Material3.LabelLarge" android:textColor="#FFCDD2" android:layout_marginTop="4dp"/>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

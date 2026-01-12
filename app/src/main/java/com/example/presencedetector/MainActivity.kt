@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.presencedetector.model.WiFiDevice
+import com.example.presencedetector.security.ui.SecuritySettingsActivity
 import com.example.presencedetector.services.DetectionBackgroundService
 import com.example.presencedetector.services.PresenceDetectionManager
 import com.example.presencedetector.utils.NotificationUtil
@@ -35,6 +36,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnOpenRadarFromGrid: MaterialCardView
     private lateinit var btnSettings: MaterialCardView
     private lateinit var btnOpenHistory: MaterialCardView
+    private lateinit var btnSecuritySettings: MaterialCardView
     private lateinit var statusIndicator: ImageView
     private lateinit var statusText: TextView
     private lateinit var statusDetails: TextView
@@ -99,6 +101,12 @@ class MainActivity : AppCompatActivity() {
 
         btnOpenHistory.setOnClickListener {
             startActivity(Intent(this, HistoryActivity::class.java))
+        }
+
+        // Security Monitoring (RTSP Cameras)
+        btnSecuritySettings = findViewById(R.id.btnSecuritySettings)
+        btnSecuritySettings.setOnClickListener {
+            startActivity(Intent(this, com.example.presencedetector.security.ui.CameraDashboardActivity::class.java))
         }
     }
 

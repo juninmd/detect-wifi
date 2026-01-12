@@ -46,6 +46,7 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     private val lastNotificationTimeMap = mutableMapOf<String, Long>() // Debounce notifications
     private val hasNotifiedArrivalMap = mutableMapOf<String, Boolean>() // Track if already notified arrival
     private val lastDepartureTimeMap = mutableMapOf<String, Long>() // Track when device last left
+    private val deviceTypes = mutableMapOf<String, com.example.presencedetector.model.DeviceSource>() // Track device source (WiFi/Bluetooth)
 
     private var lastTimeSomeoneWasPresent = System.currentTimeMillis()
     private var currentWifiDevices: List<WiFiDevice> = emptyList()
@@ -88,7 +89,10 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
         processSmartDeviceEvents(allDevices)
 
         // Track history for all devices
-        allDevices.forEach { preferences.trackDetection(it.bssid) }
+        allDevices.forEach { 
+            preferences.trackDetection(it.bssid)
+            deviceTypes[it.bssid] = it.source
+        }
 
         evaluateGlobalPresence(method, details)
     }
@@ -244,6 +248,13 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     }
 
     private fun sendArrivalNotification(device: WiFiDevice) {
+        // Filter: Only notify for Bluetooth devices (or manual override)
+        // User requested: "só notificar dispositivos bluetooth ou presença na camera"
+        if (device.source == com.example.presencedetector.model.DeviceSource.WIFI) {
+            Log.d(TAG, "Skipping arrival notification for WiFi device: ${device.ssid}")
+            return
+        }
+
         val nickname = preferences.getNickname(device.bssid) ?: device.ssid
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         // Use manual category if available, otherwise auto-classified
@@ -261,6 +272,13 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     }
 
     private fun sendDepartureNotification(bssid: String, device: WiFiDevice?) {
+        // Filter: Only notify for Bluetooth devices
+        val source = device?.source ?: deviceTypes[bssid]
+        if (source == com.example.presencedetector.model.DeviceSource.WIFI) {
+            Log.d(TAG, "Skipping departure notification for WiFi device: $bssid")
+            return
+        }
+
         val nickname = preferences.getNickname(bssid) ?: device?.ssid ?: "Known Device"
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         // Use manual category if available
