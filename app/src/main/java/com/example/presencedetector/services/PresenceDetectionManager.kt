@@ -42,6 +42,7 @@ class PresenceDetectionManager(private val context: Context) {
     private val lastSeenMap = mutableMapOf<String, Long>()
     private val departureNotifiedMap = mutableMapOf<String, Boolean>()
     private val lastNotificationTimeMap = mutableMapOf<String, Long>() // Debounce notifications
+    private val hasNotifiedArrivalMap = mutableMapOf<String, Boolean>() // Track if already notified arrival
 
     private var lastTimeSomeoneWasPresent = System.currentTimeMillis()
     private var currentWifiDevices: List<WiFiDevice> = emptyList()
@@ -74,7 +75,7 @@ class PresenceDetectionManager(private val context: Context) {
         bluetoothService.setPresenceListener { detected, details ->
             bluetoothPresenceDetected = detected
             if (detected) lastBluetoothDetection = System.currentTimeMillis()
-            
+
             Log.i(TAG, "Bluetooth detection: $detected - $details")
             evaluateGlobalPresence("Bluetooth", details)
         }
@@ -91,6 +92,7 @@ class PresenceDetectionManager(private val context: Context) {
         validDevices.forEach { device ->
             val bssid = device.bssid
             val lastSeen = lastSeenMap[bssid] ?: 0L
+            val wasNotifiedArrival = hasNotifiedArrivalMap[bssid] ?: false
 
             // LOG ARRIVAL if device was gone for > 5 minutes (or first time seen)
             if (lastSeen == 0L || (now - lastSeen) > ABSENCE_THRESHOLD) {
@@ -102,11 +104,13 @@ class PresenceDetectionManager(private val context: Context) {
                     handleSecurityThreat(device)
                 }
 
-                // Notify Arrival if enabled and debounce window passed
-                if (preferences.shouldNotifyOnPresence() && preferences.shouldNotifyArrival(bssid)) {
+                // Notify Arrival ONLY if this is the first time we're notifying about this arrival cycle
+                // (Not repeatedly while device is still present)
+                if (!wasNotifiedArrival && preferences.shouldNotifyOnPresence() && preferences.shouldNotifyArrival(bssid)) {
                     if (canSendNotification(bssid)) {
                         sendArrivalNotification(device)
                         lastNotificationTimeMap[bssid] = now
+                        hasNotifiedArrivalMap[bssid] = true
                     }
                 }
             }
@@ -134,6 +138,7 @@ class PresenceDetectionManager(private val context: Context) {
                         }
                     }
                     departureNotifiedMap[bssid] = true
+                    hasNotifiedArrivalMap[bssid] = false  // Reset arrival notification flag for next arrival
                 }
             }
         }
@@ -230,11 +235,12 @@ class PresenceDetectionManager(private val context: Context) {
         bluetoothService.stopScanning()
         lastSeenMap.clear()
         departureNotifiedMap.clear()
+        hasNotifiedArrivalMap.clear()
     }
 
     private fun evaluateGlobalPresence(method: String, details: String) {
         val now = System.currentTimeMillis()
-        
+
         // Check both WiFi and Bluetooth detection methods
         val isWifiDetected = wifiPresenceDetected && (now - lastWifiDetection) < DETECTION_TIMEOUT
         val isBluetoothDetected = bluetoothPresenceDetected && (now - lastBluetoothDetection) < DETECTION_TIMEOUT

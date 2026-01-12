@@ -32,7 +32,7 @@ Mudanças principais:
 private fun evaluateGlobalPresence(method: String, details: String) {
     val isWifiDetected = wifiPresenceDetected && (now - lastWifiDetection) < 30s
     val isBluetoothDetected = bluetoothPresenceDetected && (now - lastBluetoothDetection) < 30s
-    
+
     // Detecta presença se QUALQUER método encontrar dispositivos
     val isCurrentlyDetected = isWifiDetected || isBluetoothDetected
 }

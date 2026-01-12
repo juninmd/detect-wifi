@@ -19,4 +19,7 @@
     <!-- Messages -->
     <string name="presence_detected">People Detected!</string>
     <string name="no_presence">No one home</string>
+
+    <!-- Menu -->
+    <string name="refresh">Refresh</string>
 </resources>
