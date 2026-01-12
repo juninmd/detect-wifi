@@ -18,9 +18,11 @@ import java.util.Locale
  */
 class PresenceDetectionManager(private val context: Context) {
     companion object {
-        private const val TAG = "PresenceDetectionManager"
+        private const val TAG = "PresenceDetection"
         private const val DETECTION_TIMEOUT = 30000L // 30 seconds
         private const val ABSENCE_THRESHOLD = 5 * 60 * 1000L // 5 minutes
+        private const val NOTIFICATION_DEBOUNCE_WINDOW = 30000L // 30 seconds - ignore duplicate notifs
+        private const val MIN_SIGNAL_THRESHOLD = -90 // dBm - ignore weak signals
     }
 
     private val wifiService = WiFiDetectionService(context)
@@ -36,6 +38,7 @@ class PresenceDetectionManager(private val context: Context) {
     // Track timestamps for individual devices
     private val lastSeenMap = mutableMapOf<String, Long>()
     private val departureNotifiedMap = mutableMapOf<String, Boolean>()
+    private val lastNotificationTimeMap = mutableMapOf<String, Long>() // Debounce notifications
     
     private var lastTimeSomeoneWasPresent = System.currentTimeMillis()
     private var currentWifiDevices: List<WiFiDevice> = emptyList()
@@ -68,8 +71,11 @@ class PresenceDetectionManager(private val context: Context) {
         val now = System.currentTimeMillis()
         val detectedBssids = detectedDevices.map { it.bssid }.toSet()
 
+        // Filter out weak signals to reduce noise
+        val validDevices = detectedDevices.filter { it.level >= MIN_SIGNAL_THRESHOLD }
+
         // 1. Handle Arrivals and Updates
-        detectedDevices.forEach { device ->
+        validDevices.forEach { device ->
             val bssid = device.bssid
             val lastSeen = lastSeenMap[bssid] ?: 0L
 
@@ -83,9 +89,12 @@ class PresenceDetectionManager(private val context: Context) {
                     handleSecurityThreat(device)
                 }
 
-                // Notify Arrival if enabled
+                // Notify Arrival if enabled and debounce window passed
                 if (preferences.shouldNotifyOnPresence() && preferences.shouldNotifyArrival(bssid)) {
-                    sendArrivalNotification(device)
+                    if (canSendNotification(bssid)) {
+                        sendArrivalNotification(device)
+                        lastNotificationTimeMap[bssid] = now
+                    }
                 }
             }
             
@@ -105,13 +114,24 @@ class PresenceDetectionManager(private val context: Context) {
                     preferences.logEvent(bssid, "Left")
                     
                     if (preferences.shouldNotifyOnPresence() && preferences.shouldNotifyDeparture(bssid)) {
-                        val device = currentWifiDevices.find { it.bssid == bssid }
-                        sendDepartureNotification(bssid, device)
+                        if (canSendNotification(bssid)) {
+                            val device = currentWifiDevices.find { it.bssid == bssid }
+                            sendDepartureNotification(bssid, device)
+                            lastNotificationTimeMap[bssid] = now
+                        }
                     }
                     departureNotifiedMap[bssid] = true
                 }
             }
         }
+    }
+
+    /**
+     * Check if enough time has passed since last notification to avoid spam.
+     */
+    private fun canSendNotification(bssid: String): Boolean {
+        val lastTime = lastNotificationTimeMap[bssid] ?: 0L
+        return (System.currentTimeMillis() - lastTime) >= NOTIFICATION_DEBOUNCE_WINDOW
     }
 
     private fun handleSecurityThreat(device: WiFiDevice) {
@@ -147,32 +167,36 @@ class PresenceDetectionManager(private val context: Context) {
     private fun sendArrivalNotification(device: WiFiDevice) {
         val nickname = preferences.getNickname(device.bssid) ?: device.ssid
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-        val category = device.category.displayName
+        // Use manual category if available, otherwise auto-classified
+        val category = preferences.getManualCategory(device.bssid) ?: device.category
+        val categoryDisplay = category.displayName
         
         if (preferences.isCriticalAlertEnabled(device.bssid)) {
              playSecurityAlarm()
         }
 
-        val title = "🔔 ${device.category.iconRes} Detected: $nickname"
-        val message = "Just arrived at $time. Signal strength is ${device.level}dBm. Recognized as $category."
+        val title = "🔔 ${category.iconRes} Detected: $nickname"
+        val message = "Just arrived at $time. Signal strength is ${device.level}dBm. Recognized as $categoryDisplay."
         
         NotificationUtil.sendPresenceNotification(context, title, message, true)
 
         if (preferences.isTelegramAlertEnabled(device.bssid) && preferences.isTelegramEnabled()) {
-             telegramService.sendMessage("🔔 $nickname ($category) arrived at $time. Signal: ${device.level}dBm")
+             telegramService.sendMessage("🔔 $nickname ($categoryDisplay) arrived at $time. Signal: ${device.level}dBm")
         }
     }
 
     private fun sendDepartureNotification(bssid: String, device: WiFiDevice?) {
         val nickname = preferences.getNickname(bssid) ?: device?.ssid ?: "Known Device"
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        // Use manual category if available
+        val category = preferences.getManualCategory(bssid) ?: device?.category ?: com.example.presencedetector.model.DeviceCategory.UNKNOWN
         
         if (preferences.isCriticalAlertEnabled(bssid)) {
              playSecurityAlarm()
         }
 
         val title = "🚪 Device Left: $nickname"
-        val message = "No longer detected as of $time. ${device?.category?.iconRes ?: "📱"} signal has dropped."
+        val message = "No longer detected as of $time. ${category.iconRes} signal has dropped."
         
         NotificationUtil.sendPresenceNotification(context, title, message, false)
 
@@ -232,7 +256,11 @@ class PresenceDetectionManager(private val context: Context) {
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val title = if (peoplePresent) "🏠 Presence Detected" else "🏠 Area Clear"
         val message = if (peoplePresent) {
-            val names = relevantDevices.joinToString(", ") { preferences.getNickname(it.bssid) ?: "" }
+            val names = relevantDevices.joinToString(", ") { device ->
+                val nickname = preferences.getNickname(device.bssid)
+                val category = preferences.getManualCategory(device.bssid) ?: device.category
+                "$nickname ${category.iconRes}"
+            }
             "At $time: $names detected."
         } else {
             "All tracked devices have left the area."

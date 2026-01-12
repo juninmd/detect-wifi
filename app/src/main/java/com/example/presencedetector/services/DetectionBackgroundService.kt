@@ -10,10 +10,11 @@ import com.example.presencedetector.utils.NotificationUtil
 /**
  * Background service for continuous presence detection.
  * Runs even when the app is not in the foreground.
+ * Ensures service keeps running via START_STICKY even when device is locked.
  */
 class DetectionBackgroundService : Service() {
     companion object {
-        private const val TAG = "DetectionBackgroundService"
+        private const val TAG = "DetectionBgService"
         private const val NOTIFICATION_ID = 1
     }
 
@@ -27,7 +28,7 @@ class DetectionBackgroundService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        Log.i(TAG, "Background service created")
+        Log.i(TAG, "🚀 Background service created")
 
         detectionManager = PresenceDetectionManager(this)
         detectionManager?.setPresenceListener { peoplePresent, method, _, details ->
@@ -36,21 +37,25 @@ class DetectionBackgroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.i(TAG, "Background service started")
+        Log.i(TAG, "🚀 Background service started (flags=$flags, startId=$startId)")
 
         if (!isRunning) {
             isRunning = true
 
-            // Criar notificação para foreground
-            val notification = NotificationUtil.createForegroundNotification(this)
+            // Create foreground notification to keep service alive
+            val notification = NotificationUtil.createForegroundNotification(
+                this,
+                "🔍 Presence Detector Active",
+                "Scanning for devices..."
+            )
             startForeground(NOTIFICATION_ID, notification)
 
-            // Iniciar detecção
+            // Start detection
             detectionManager?.startDetection()
-            Log.i(TAG, "Presence detection started in background")
+            Log.i(TAG, "✅ Presence detection started in background")
         }
 
-        // START_STICKY: Reinicia o serviço se for morto pelo sistema
+        // START_STICKY: Restarts service if killed by system
         return START_STICKY
     }
 
@@ -58,11 +63,19 @@ class DetectionBackgroundService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.i(TAG, "Background service destroyed")
+        Log.i(TAG, "⚠️ Background service destroyed - will restart")
 
         isRunning = false
         detectionManager?.stopDetection()
         detectionManager?.destroy()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        Log.i(TAG, "📱 Task removed - restarting service")
+        // Try to restart when user swipes app away
+        val restartService = Intent(applicationContext, DetectionBackgroundService::class.java)
+        startService(restartService)
     }
 
     private fun updateForegroundNotification(peoplePresent: Boolean, method: String, details: String) {
@@ -71,13 +84,13 @@ class DetectionBackgroundService : Service() {
                 NotificationUtil.createForegroundNotification(
                     this,
                     "✓ Presença Detectada",
-                    "Método: $method"
+                    "$method • $details"
                 )
             } else {
                 NotificationUtil.createForegroundNotification(
                     this,
                     "✗ Nenhuma Presença",
-                    "Método: $method"
+                    "$method • Aguardando..."
                 )
             }
 
