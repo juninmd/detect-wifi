@@ -113,6 +113,11 @@ class PresenceDetectionManager(private val context: Context) {
                         hasNotifiedArrivalMap[bssid] = true
                     }
                 }
+
+                // Send Telegram notification (independent of system notification)
+                if (!wasNotifiedArrival && preferences.isTelegramAlertEnabled(bssid)) {
+                    sendArrivalTelegramAlert(device)
+                }
             }
 
             lastSeenMap[bssid] = now
@@ -137,6 +142,13 @@ class PresenceDetectionManager(private val context: Context) {
                             lastNotificationTimeMap[bssid] = now
                         }
                     }
+
+                    // Send Telegram notification (independent of system notification)
+                    if (preferences.isTelegramAlertEnabled(bssid)) {
+                        val device = currentWifiDevices.find { it.bssid == bssid }
+                        sendDepartureTelegramAlert(bssid, device)
+                    }
+
                     departureNotifiedMap[bssid] = true
                     hasNotifiedArrivalMap[bssid] = false  // Reset arrival notification flag for next arrival
                 }
@@ -197,10 +209,6 @@ class PresenceDetectionManager(private val context: Context) {
         val message = "Just arrived at $time. Signal strength is ${device.level}dBm. Recognized as $categoryDisplay."
 
         NotificationUtil.sendPresenceNotification(context, title, message, true)
-
-        if (preferences.isTelegramAlertEnabled(device.bssid) && preferences.isTelegramEnabled()) {
-             telegramService.sendMessage("🔔 $nickname ($categoryDisplay) arrived at $time. Signal: ${device.level}dBm")
-        }
     }
 
     private fun sendDepartureNotification(bssid: String, device: WiFiDevice?) {
@@ -217,10 +225,30 @@ class PresenceDetectionManager(private val context: Context) {
         val message = "No longer detected as of $time. ${category.iconRes} signal has dropped."
 
         NotificationUtil.sendPresenceNotification(context, title, message, false)
+    }
 
-        if (preferences.isTelegramAlertEnabled(bssid) && preferences.isTelegramEnabled()) {
-             telegramService.sendMessage("🚪 $nickname left at $time.")
-        }
+    private fun sendArrivalTelegramAlert(device: WiFiDevice) {
+        if (!preferences.isTelegramEnabled()) return
+
+        val nickname = preferences.getNickname(device.bssid) ?: device.ssid
+        val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        val category = preferences.getManualCategory(device.bssid) ?: device.category
+        val categoryDisplay = category.displayName
+
+        val message = "🔔 $nickname ($categoryDisplay) arrived at $time. Signal: ${device.level}dBm"
+        telegramService.sendMessage(message)
+        Log.d(TAG, "Sent Telegram arrival alert for $nickname")
+    }
+
+    private fun sendDepartureTelegramAlert(bssid: String, device: WiFiDevice?) {
+        if (!preferences.isTelegramEnabled()) return
+
+        val nickname = preferences.getNickname(bssid) ?: device?.ssid ?: "Known Device"
+        val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+
+        val message = "🚪 $nickname left at $time."
+        telegramService.sendMessage(message)
+        Log.d(TAG, "Sent Telegram departure alert for $nickname")
     }
 
     fun startDetection() {
