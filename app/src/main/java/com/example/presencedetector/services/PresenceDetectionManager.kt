@@ -16,7 +16,7 @@ import java.util.Locale
 /**
  * Enhanced presence detection service with smart debouncing.
  */
-class PresenceDetectionManager(private val context: Context) {
+class PresenceDetectionManager(private val context: Context, private val areNotificationsEnabled: Boolean = true) {
     companion object {
         private const val TAG = "PresenceDetection"
         private const val DETECTION_TIMEOUT = 30000L // 30 seconds
@@ -109,25 +109,27 @@ class PresenceDetectionManager(private val context: Context) {
             if (lastSeen == 0L || (now - lastSeen) > ABSENCE_THRESHOLD) {
                 preferences.logEvent(bssid, "Arrived")
 
-                // Security Check for NEW devices (only if not seen before in history)
-                val isNewDevice = preferences.getDetectionHistoryCount(bssid) == 0
-                if (isNewDevice && preferences.isSecurityAlertEnabled()) {
-                    handleSecurityThreat(device)
-                }
-
-                // Notify Arrival ONLY if this is the first time we're notifying about this arrival cycle
-                // (Not repeatedly while device is still present)
-                if (!wasNotifiedArrival && preferences.shouldNotifyOnPresence() && preferences.shouldNotifyArrival(bssid)) {
-                    if (canSendNotification(bssid)) {
-                        sendArrivalNotification(device)
-                        lastNotificationTimeMap[bssid] = now
-                        hasNotifiedArrivalMap[bssid] = true
+                if (areNotificationsEnabled) {
+                    // Security Check for NEW devices (only if not seen before in history)
+                    val isNewDevice = preferences.getDetectionHistoryCount(bssid) == 0
+                    if (isNewDevice && preferences.isSecurityAlertEnabled()) {
+                        handleSecurityThreat(device)
                     }
-                }
 
-                // Send Telegram notification (independent of system notification)
-                if (!wasNotifiedArrival && preferences.isTelegramAlertEnabled(bssid)) {
-                    sendArrivalTelegramAlert(device)
+                    // Notify Arrival ONLY if this is the first time we're notifying about this arrival cycle
+                    // (Not repeatedly while device is still present)
+                    if (!wasNotifiedArrival && preferences.shouldNotifyOnPresence() && preferences.shouldNotifyArrival(bssid)) {
+                        if (canSendNotification(bssid)) {
+                            sendArrivalNotification(device)
+                            lastNotificationTimeMap[bssid] = now
+                            hasNotifiedArrivalMap[bssid] = true
+                        }
+                    }
+
+                    // Send Telegram notification (independent of system notification)
+                    if (!wasNotifiedArrival && preferences.isTelegramAlertEnabled(bssid)) {
+                        sendArrivalTelegramAlert(device)
+                    }
                 }
             }
 
@@ -147,19 +149,21 @@ class PresenceDetectionManager(private val context: Context) {
                     preferences.logEvent(bssid, "Left")
                     lastDepartureTimeMap[bssid] = now  // Record departure time for dynamic debounce
 
-                    if (preferences.shouldNotifyOnPresence() && preferences.shouldNotifyDeparture(bssid)) {
-                        if (canSendNotification(bssid)) {
-                            // Try to find device info from last known state if possible, or create dummy
-                            val device = (currentWifiDevices + currentBluetoothDevices).find { it.bssid == bssid }
-                            sendDepartureNotification(bssid, device)
-                            lastNotificationTimeMap[bssid] = now
+                    if (areNotificationsEnabled) {
+                        if (preferences.shouldNotifyOnPresence() && preferences.shouldNotifyDeparture(bssid)) {
+                            if (canSendNotification(bssid)) {
+                                // Try to find device info from last known state if possible, or create dummy
+                                val device = (currentWifiDevices + currentBluetoothDevices).find { it.bssid == bssid }
+                                sendDepartureNotification(bssid, device)
+                                lastNotificationTimeMap[bssid] = now
+                            }
                         }
-                    }
 
-                    // Send Telegram notification (independent of system notification)
-                    if (preferences.isTelegramAlertEnabled(bssid)) {
-                        val device = (currentWifiDevices + currentBluetoothDevices).find { it.bssid == bssid }
-                        sendDepartureTelegramAlert(bssid, device)
+                        // Send Telegram notification (independent of system notification)
+                        if (preferences.isTelegramAlertEnabled(bssid)) {
+                            val device = (currentWifiDevices + currentBluetoothDevices).find { it.bssid == bssid }
+                            sendDepartureTelegramAlert(bssid, device)
+                        }
                     }
 
                     departureNotifiedMap[bssid] = true
@@ -331,7 +335,7 @@ class PresenceDetectionManager(private val context: Context) {
 
         if (finalPresenceState != lastPresenceState) {
             lastPresenceState = finalPresenceState
-            if (shouldSendGlobalNotification()) {
+            if (shouldSendGlobalNotification() && areNotificationsEnabled) {
                 sendGlobalNotification(finalPresenceState, method, details)
             }
         }

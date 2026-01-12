@@ -30,7 +30,7 @@ class DetectionBackgroundService : Service() {
         super.onCreate()
         Log.i(TAG, "🚀 Background service created")
 
-        detectionManager = PresenceDetectionManager(this)
+        detectionManager = PresenceDetectionManager(this, true)
         detectionManager?.setPresenceListener { peoplePresent, method, _, details ->
             updateForegroundNotification(peoplePresent, method, details)
         }
