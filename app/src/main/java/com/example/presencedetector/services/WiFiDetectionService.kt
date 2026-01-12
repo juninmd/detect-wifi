@@ -2,18 +2,19 @@ package com.example.presencedetector.services
 
 import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import androidx.annotation.RequiresPermission
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
 import com.example.presencedetector.model.WiFiDevice
 
 /**
  * WiFi-based presence detection service.
  */
-class WiFiDetectionService(context: Context) {
+class WiFiDetectionService(private val context: Context) {
     companion object {
         private const val TAG = "WiFiDetector"
         private const val SCAN_INTERVAL = 3000L // Updated to 3 seconds as requested
@@ -53,8 +54,14 @@ class WiFiDetectionService(context: Context) {
         isScanning = false
     }
 
-    @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+    // Removed @RequiresPermission to handle it safely inside
     private suspend fun performScan() {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+             Log.w(TAG, "Skipping scan: Location permission not granted")
+             notifyPresence(false, emptyList(), "Permission Denied")
+             return
+        }
+
         try {
             val scanResults = wifiManager?.scanResults
             if (scanResults.isNullOrEmpty()) {
