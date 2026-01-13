@@ -1,12 +1,18 @@
 package com.example.presencedetector.services
 
 import android.content.Context
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioAttributes
+import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.example.presencedetector.model.WiFiDevice
+import com.example.presencedetector.receivers.NotificationActionReceiver
 import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil
 import java.text.SimpleDateFormat
@@ -33,6 +39,15 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     private val mainHandler = Handler(Looper.getMainLooper())
     private val preferences = PreferencesUtil(context)
     private val telegramService = TelegramService(context)
+
+    private var currentRingtone: Ringtone? = null
+    private val stopAlarmReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == NotificationActionReceiver.ACTION_STOP_ALARM) {
+                stopAlarm()
+            }
+        }
+    }
 
     private var presenceListener: PresenceListener? = null
     private var wifiPresenceDetected = false
@@ -61,6 +76,12 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     }
 
     init {
+        val filter = IntentFilter(NotificationActionReceiver.ACTION_STOP_ALARM)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(stopAlarmReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            context.registerReceiver(stopAlarmReceiver, filter)
+        }
         setupListeners()
     }
 
@@ -242,7 +263,18 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
         if (device.level < -80) return
         val time = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
         val msg = "⚠️ SECURITY ALERT: New Unknown Network detected! SSID: ${device.ssid} (${device.level}dBm) at $time"
-        NotificationUtil.sendPresenceNotification(context, "⚠️ SECURITY THREAT", msg, true)
+
+        // Action to Stop Alarm
+        val notificationId = 1001
+        val stopIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+            action = NotificationActionReceiver.ACTION_STOP_ALARM
+            putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+        }
+        val pendingStopIntent = PendingIntent.getBroadcast(
+            context, 0, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        NotificationUtil.sendPresenceNotification(context, "⚠️ SECURITY THREAT", msg, true, "STOP ALARM", pendingStopIntent, notificationId)
         telegramService.sendMessage(msg)
         if (preferences.isSecuritySoundEnabled() && preferences.isCurrentTimeInSecuritySchedule()) {
             playSecurityAlarm()
@@ -252,19 +284,29 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     private fun playSecurityAlarm() {
         try {
             val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            val ringtone = RingtoneManager.getRingtone(context, alarmSound)
+            currentRingtone = RingtoneManager.getRingtone(context, alarmSound)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                ringtone.audioAttributes = AudioAttributes.Builder()
+                currentRingtone?.audioAttributes = AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ALARM)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build()
             }
-            ringtone.play()
+            currentRingtone?.play()
             Handler(Looper.getMainLooper()).postDelayed({
-                if (ringtone.isPlaying) ringtone.stop()
-            }, 5000)
+                stopAlarm()
+            }, 10000) // Increase to 10s or until stopped
         } catch (e: Exception) {
             Log.e(TAG, "Failed to play alarm", e)
+        }
+    }
+
+    private fun stopAlarm() {
+        try {
+            if (currentRingtone?.isPlaying == true) {
+                currentRingtone?.stop()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to stop alarm", e)
         }
     }
 
@@ -446,6 +488,11 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     }
 
     fun destroy() {
+        try {
+            context.unregisterReceiver(stopAlarmReceiver)
+        } catch (e: Exception) {
+            // Ignore if not registered
+        }
         stopDetection()
         wifiService.destroy()
         bluetoothService.destroy()

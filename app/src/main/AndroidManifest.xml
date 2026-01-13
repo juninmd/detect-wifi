@@ -30,6 +30,7 @@
     <!-- For Android 14+ (API 34+) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.CAMERA" />
 
     <!-- Declare that the camera feature is used, but not required -->
@@ -101,6 +102,22 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="camera" />
+
+        <!-- Anti-Theft Service (Motion Detection) -->
+        <service
+            android:name=".services.AntiTheftService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="anti_theft_protection" />
+        </service>
+
+        <receiver android:name=".receivers.NotificationActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.presencedetector.ACTION_STOP_ALARM" />
+            </intent-filter>
+        </receiver>
 
     </application>
 
