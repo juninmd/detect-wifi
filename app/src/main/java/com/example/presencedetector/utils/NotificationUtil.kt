@@ -96,7 +96,10 @@ object NotificationUtil {
         context: Context,
         title: String,
         message: String,
-        isImportantEvent: Boolean
+        isImportantEvent: Boolean,
+        actionTitle: String? = null,
+        actionIntent: PendingIntent? = null,
+        notificationId: Int? = null
     ) {
         createNotificationChannels(context)
 
@@ -119,7 +122,7 @@ object NotificationUtil {
             R.drawable.ic_notification_alert
         }
 
-        val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(message)
             .setSmallIcon(icon)
@@ -128,9 +131,17 @@ object NotificationUtil {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setVibrate(longArrayOf(0, 500, 250, 500))
             .setDefaults(NotificationCompat.DEFAULT_ALL)
-            .build()
+
+        if (actionTitle != null && actionIntent != null) {
+            builder.addAction(R.drawable.ic_status_inactive, actionTitle, actionIntent)
+            // If it has an action (like Stop Alarm), make it sticky/alerting
+            builder.setFullScreenIntent(pendingIntent, true)
+        }
+
+        val notification = builder.build()
 
         val notificationManager = context.getSystemService(NotificationManager::class.java)
-        notificationManager?.notify(System.currentTimeMillis().toInt(), notification)
+        val finalId = notificationId ?: System.currentTimeMillis().toInt()
+        notificationManager?.notify(finalId, notification)
     }
 }

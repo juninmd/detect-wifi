@@ -28,6 +28,7 @@ class PreferencesUtil(context: Context) {
         private const val KEY_SECURITY_SOUND_ENABLED = "security_sound_enabled"
         private const val KEY_SECURITY_START_TIME = "security_start_time"
         private const val KEY_SECURITY_END_TIME = "security_end_time"
+        private const val KEY_ANTI_THEFT_ARMED = "anti_theft_armed"
 
         private const val PREFIX_HISTORY = "history_"
         private const val PREFIX_NICKNAME = "nickname_"
@@ -118,6 +119,14 @@ class PreferencesUtil(context: Context) {
         val (startStr, endStr) = getSecuritySchedule()
         val now = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         return if (startStr > endStr) now >= startStr || now <= endStr else now in startStr..endStr
+    }
+
+    fun setAntiTheftArmed(armed: Boolean) {
+        preferences.edit().putBoolean(KEY_ANTI_THEFT_ARMED, armed).apply()
+    }
+
+    fun isAntiTheftArmed(): Boolean {
+        return preferences.getBoolean(KEY_ANTI_THEFT_ARMED, false)
     }
 
     fun saveNickname(bssid: String, nickname: String) {

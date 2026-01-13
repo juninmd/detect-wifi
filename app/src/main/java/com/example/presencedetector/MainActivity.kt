@@ -16,6 +16,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.presencedetector.model.WiFiDevice
 import com.example.presencedetector.security.ui.SecuritySettingsActivity
+import com.example.presencedetector.services.AntiTheftService
 import com.example.presencedetector.services.DetectionBackgroundService
 import com.example.presencedetector.services.PresenceDetectionManager
 import com.example.presencedetector.utils.NotificationUtil
@@ -37,6 +38,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnSettings: MaterialCardView
     private lateinit var btnOpenHistory: MaterialCardView
     private lateinit var btnSecuritySettings: MaterialCardView
+    private lateinit var btnAntiTheft: MaterialCardView
     private lateinit var statusIndicator: ImageView
     private lateinit var statusText: TextView
     private lateinit var statusDetails: TextView
@@ -47,6 +49,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvCountKnown: TextView
     private lateinit var tvNamesKnown: TextView
     private lateinit var tvCountUnknown: TextView
+    private lateinit var tvAntiTheftStatus: TextView
+    private lateinit var ivAntiTheftIcon: ImageView
 
     private var detectionManager: PresenceDetectionManager? = null
     private var isDetecting = false
@@ -66,6 +70,11 @@ class MainActivity : AppCompatActivity() {
         setupDetectionManager()
     }
 
+    override fun onResume() {
+        super.onResume()
+        updateAntiTheftUI()
+    }
+
     private fun initializeViews() {
         startButton = findViewById(R.id.startButton)
         stopButton = findViewById(R.id.stopButton)
@@ -82,6 +91,13 @@ class MainActivity : AppCompatActivity() {
         tvCountKnown = findViewById(R.id.tvCountKnown)
         tvNamesKnown = findViewById(R.id.tvNamesKnown)
         tvCountUnknown = findViewById(R.id.tvCountUnknown)
+
+        // Anti-Theft
+        btnAntiTheft = findViewById(R.id.btnAntiTheft)
+        tvAntiTheftStatus = findViewById(R.id.tvAntiTheftStatus)
+        ivAntiTheftIcon = findViewById(R.id.ivAntiTheftIcon)
+        btnAntiTheft.setOnClickListener { toggleAntiTheft() }
+        updateAntiTheftUI()
 
         cbNotifyPresence.isChecked = preferences.shouldNotifyOnPresence()
         cbNotifyPresence.setOnCheckedChangeListener { _, isChecked ->
@@ -107,6 +123,43 @@ class MainActivity : AppCompatActivity() {
         btnSecuritySettings = findViewById(R.id.btnSecuritySettings)
         btnSecuritySettings.setOnClickListener {
             startActivity(Intent(this, com.example.presencedetector.security.ui.CameraDashboardActivity::class.java))
+        }
+    }
+
+    private fun toggleAntiTheft() {
+        val currentlyArmed = preferences.isAntiTheftArmed()
+        if (currentlyArmed) {
+            // Disarm
+            val serviceIntent = Intent(this, AntiTheftService::class.java).apply {
+                action = AntiTheftService.ACTION_STOP
+            }
+            startService(serviceIntent)
+            preferences.setAntiTheftArmed(false)
+            addLog("Mobile Security Disarmed")
+        } else {
+            // Arm
+            val serviceIntent = Intent(this, AntiTheftService::class.java).apply {
+                action = AntiTheftService.ACTION_START
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+            preferences.setAntiTheftArmed(true)
+            addLog("Mobile Security Armed")
+        }
+        updateAntiTheftUI()
+    }
+
+    private fun updateAntiTheftUI() {
+        val armed = preferences.isAntiTheftArmed()
+        if (armed) {
+            tvAntiTheftStatus.text = "Armed (Motion)"
+            ivAntiTheftIcon.setImageResource(R.drawable.ic_status_active)
+        } else {
+            tvAntiTheftStatus.text = "Tap to Arm"
+            ivAntiTheftIcon.setImageResource(android.R.drawable.ic_lock_idle_lock)
         }
     }
 
