@@ -20,6 +20,7 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     companion object {
         private const val TAG = "PresenceDetection"
         private const val DETECTION_TIMEOUT = 30000L // 30 seconds
+        private const val EXTERNAL_DETECTION_TIMEOUT = 30000L // 30 seconds for camera events
         private const val ABSENCE_THRESHOLD = 30 * 60 * 1000L // 30 minutes - for logging/tracking
         private const val LONG_ABSENCE_THRESHOLD = 30 * 60 * 1000L // 30 minutes - triggers immediate notification on return
         private const val NOTIFICATION_DEBOUNCE_WINDOW = 5 * 60 * 1000L // 5 minutes - prevent spam when device oscillates
@@ -36,8 +37,11 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     private var presenceListener: PresenceListener? = null
     private var wifiPresenceDetected = false
     private var bluetoothPresenceDetected = false
+    private var externalPresenceDetected = false
     private var lastWifiDetection = 0L
     private var lastBluetoothDetection = 0L
+    private var lastExternalDetection = 0L
+    private var lastExternalDetectionName = ""
     private var lastPresenceState = false
 
     // Track timestamps for individual devices
@@ -79,6 +83,23 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
 
             Log.i(TAG, "Bluetooth detection: $detected - $details")
             updateAndProcessDevices("Bluetooth", details)
+        }
+    }
+
+    fun handleExternalPresence(source: String, name: String) {
+        externalPresenceDetected = true
+        lastExternalDetection = System.currentTimeMillis()
+        lastExternalDetectionName = name
+        Log.i(TAG, "External presence detection ($source): $name")
+        updateAndProcessDevices("Camera", "Detected by $name")
+
+        // Also log this event
+        preferences.logEvent("camera_$name", "Detected on Camera")
+
+        // Telegram notification for camera
+        if (preferences.isTelegramEnabled()) {
+             val time = SimpleDateFormat("HH:mm", Locale.US).format(Date())
+             telegramService.sendMessage("📹 Camera Detection: Person detected on $name at $time")
         }
     }
 
@@ -219,7 +240,7 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
 
     private fun handleSecurityThreat(device: WiFiDevice) {
         if (device.level < -80) return
-        val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        val time = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
         val msg = "⚠️ SECURITY ALERT: New Unknown Network detected! SSID: ${device.ssid} (${device.level}dBm) at $time"
         NotificationUtil.sendPresenceNotification(context, "⚠️ SECURITY THREAT", msg, true)
         telegramService.sendMessage(msg)
@@ -298,7 +319,7 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
         if (!preferences.isTelegramEnabled()) return
 
         val nickname = preferences.getNickname(device.bssid) ?: device.ssid
-        val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        val time = SimpleDateFormat("HH:mm", Locale.US).format(Date())
         val category = preferences.getManualCategory(device.bssid) ?: device.category
         val categoryDisplay = category.displayName
 
@@ -311,7 +332,7 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
         if (!preferences.isTelegramEnabled()) return
 
         val nickname = preferences.getNickname(bssid) ?: device?.ssid ?: "Known Device"
-        val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        val time = SimpleDateFormat("HH:mm", Locale.US).format(Date())
 
         val message = "🚪 $nickname left at $time."
         telegramService.sendMessage(message)
@@ -340,7 +361,9 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
         // Check both WiFi and Bluetooth detection methods
         val isWifiDetected = wifiPresenceDetected && (now - lastWifiDetection) < DETECTION_TIMEOUT
         val isBluetoothDetected = bluetoothPresenceDetected && (now - lastBluetoothDetection) < DETECTION_TIMEOUT
-        val isCurrentlyDetected = isWifiDetected || isBluetoothDetected
+        val isExternalDetected = externalPresenceDetected && (now - lastExternalDetection) < EXTERNAL_DETECTION_TIMEOUT
+
+        val isCurrentlyDetected = isWifiDetected || isBluetoothDetected || isExternalDetected
 
         if (isCurrentlyDetected) {
             lastTimeSomeoneWasPresent = now
@@ -355,7 +378,18 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
         if (finalPresenceState != lastPresenceState) {
             lastPresenceState = finalPresenceState
             if (shouldSendGlobalNotification() && areNotificationsEnabled) {
-                sendGlobalNotification(finalPresenceState, method, details)
+                // Determine what triggered the change for the notification text
+                val detectionDetails = if (isCurrentlyDetected) {
+                    when {
+                        isExternalDetected -> "Camera: $lastExternalDetectionName"
+                        isBluetoothDetected -> "Bluetooth Device"
+                        isWifiDetected -> "WiFi Device"
+                        else -> details
+                    }
+                } else {
+                    details
+                }
+                sendGlobalNotification(finalPresenceState, method, detectionDetails)
             }
         }
 
@@ -376,16 +410,22 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
 
     private fun sendGlobalNotification(peoplePresent: Boolean, method: String, details: String) {
         val relevantDevices = (currentWifiDevices + currentBluetoothDevices).filter { preferences.getNickname(it.bssid) != null }
-        if (peoplePresent && relevantDevices.isEmpty()) return
+        if (peoplePresent && relevantDevices.isEmpty() && method != "Camera") return
+
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val title = if (peoplePresent) "🏠 Presence Detected" else "🏠 Area Clear"
+
         val message = if (peoplePresent) {
-            val names = relevantDevices.joinToString(", ") { device ->
-                val nickname = preferences.getNickname(device.bssid)
-                val category = preferences.getManualCategory(device.bssid) ?: device.category
-                "$nickname ${category.iconRes}"
+            if (method == "Camera") {
+                "At $time: Person detected by camera."
+            } else {
+                val names = relevantDevices.joinToString(", ") { device ->
+                    val nickname = preferences.getNickname(device.bssid)
+                    val category = preferences.getManualCategory(device.bssid) ?: device.category
+                    "$nickname ${category.iconRes}"
+                }
+                "At $time: $names detected."
             }
-            "At $time: $names detected."
         } else {
             "All tracked devices have left the area."
         }
@@ -400,6 +440,7 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
         return buildString {
             append("WiFi: ${if (wifiService.isScanning()) "Active" else "Off"}")
             append(" | Bluetooth: ${if (bluetoothService.isScanning()) "Active" else "Off"}")
+            append(" | Camera: ${if (externalPresenceDetected) "Active" else "None"}")
             append(" | Present: ${if (lastPresenceState) "YES" else "NO"}")
         }
     }
