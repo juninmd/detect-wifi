@@ -97,7 +97,7 @@ class CameraDashboardActivity : AppCompatActivity() {
         }
         
         settings = settings.copy(channels = updatedChannels)
-        settings.save(this)
+        DetectionSettings.save(this, settings)
         
         // Recarrega lista
         loadCameras()
