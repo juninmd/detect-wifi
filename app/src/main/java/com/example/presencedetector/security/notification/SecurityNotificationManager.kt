@@ -60,16 +60,10 @@ class SecurityNotificationManager(private val context: Context) {
      * @param snapshot Opcional: Imagem do frame onde a pessoa foi detectada
      */
     fun showDetectionNotification(channel: CameraChannel, snapshot: Bitmap? = null) {
-        // TODO: Corrigir a implementação da notificação para ser compatível com a nova CameraStreamActivity
-        // O código abaixo foi comentado para permitir o build do projeto, pois as constantes
-        // EXTRA_CHANNEL_ID, EXTRA_CHANNEL_NAME e EXTRA_RTSP_URL não existem mais na CameraStreamActivity.
-
-        /*
         // Intent para abrir a câmera específica quando clicar na notificação
         val intent = Intent(context, CameraStreamActivity::class.java).apply {
-            putExtra(CameraStreamActivity.EXTRA_CHANNEL_ID, channel.id)
-            putExtra(CameraStreamActivity.EXTRA_CHANNEL_NAME, channel.name)
-            putExtra(CameraStreamActivity.EXTRA_RTSP_URL, channel.rtspUrl)
+            putExtra(CameraStreamActivity.EXTRA_CAMERA_URL, channel.rtspUrl)
+            putExtra(CameraStreamActivity.EXTRA_CAMERA_NAME, channel.name)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
@@ -102,16 +96,14 @@ class SecurityNotificationManager(private val context: Context) {
         }
 
         try {
-            NotificationManagerCompat.from(context).notify(
-                NOTIFICATION_ID_BASE + channel.id,
-                builder.build()
-            )
+            // Check permission is handled by caller or assumed granted if notification service is running
+             val notificationManager = NotificationManagerCompat.from(context)
+             notificationManager.notify(NOTIFICATION_ID_BASE + channel.id, builder.build())
         } catch (e: SecurityException) {
             // Permissão POST_NOTIFICATIONS não concedida em Android 13+
             android.util.Log.e("SecurityNotificationManager", 
                 "Sem permissão para notificações: ${e.message}")
         }
-        */
     }
 
     /**

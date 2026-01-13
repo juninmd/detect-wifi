@@ -1,13 +1,17 @@
 package com.example.presencedetector.services
 
 import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.example.presencedetector.security.service.CameraMonitoringService
 import com.example.presencedetector.utils.NotificationUtil
 
 /**
@@ -24,6 +28,7 @@ class DetectionBackgroundService : Service() {
     private val binder = LocalBinder()
     private var detectionManager: PresenceDetectionManager? = null
     private var isRunning = false
+    private var cameraPresenceReceiver: BroadcastReceiver? = null
 
     inner class LocalBinder : Binder() {
         fun getService(): DetectionBackgroundService = this@DetectionBackgroundService
@@ -36,6 +41,28 @@ class DetectionBackgroundService : Service() {
         detectionManager = PresenceDetectionManager(this, true)
         detectionManager?.setPresenceListener { peoplePresent, method, _, details ->
             updateForegroundNotification(peoplePresent, method, details)
+        }
+
+        // Register receiver for camera presence events
+        registerCameraReceiver()
+    }
+
+    private fun registerCameraReceiver() {
+        cameraPresenceReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == CameraMonitoringService.ACTION_CAMERA_PRESENCE) {
+                    val cameraName = intent.getStringExtra(CameraMonitoringService.EXTRA_CAMERA_NAME) ?: "Unknown Camera"
+                    Log.i(TAG, "Received camera presence broadcast from $cameraName")
+                    detectionManager?.handleExternalPresence("Camera", cameraName)
+                }
+            }
+        }
+
+        val filter = IntentFilter(CameraMonitoringService.ACTION_CAMERA_PRESENCE)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(cameraPresenceReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(cameraPresenceReceiver, filter)
         }
     }
 
@@ -96,6 +123,11 @@ class DetectionBackgroundService : Service() {
         isRunning = false
         detectionManager?.stopDetection()
         detectionManager?.destroy()
+
+        if (cameraPresenceReceiver != null) {
+            unregisterReceiver(cameraPresenceReceiver)
+            cameraPresenceReceiver = null
+        }
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
