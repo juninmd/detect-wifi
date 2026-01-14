@@ -26,6 +26,9 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var etSecurityStart: TextInputEditText
     private lateinit var etSecurityEnd: TextInputEditText
 
+    private lateinit var sliderSensitivity: com.google.android.material.slider.Slider
+    private lateinit var tvSensitivityValue: android.widget.TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
@@ -58,6 +61,9 @@ class SettingsActivity : AppCompatActivity() {
         switchSecuritySound = findViewById(R.id.switchSecuritySound)
         etSecurityStart = findViewById(R.id.etSecurityStart)
         etSecurityEnd = findViewById(R.id.etSecurityEnd)
+
+        sliderSensitivity = findViewById(R.id.sliderSensitivity)
+        tvSensitivityValue = findViewById(R.id.tvSensitivityValue)
     }
 
     private fun loadSettings() {
@@ -73,6 +79,10 @@ class SettingsActivity : AppCompatActivity() {
         val schedule = preferences.getSecuritySchedule()
         etSecurityStart.setText(schedule.first)
         etSecurityEnd.setText(schedule.second)
+
+        val sensitivity = preferences.getAntiTheftSensitivity()
+        sliderSensitivity.value = sensitivity
+        updateSensitivityText(sensitivity)
     }
 
     private fun setupListeners() {
@@ -103,6 +113,21 @@ class SettingsActivity : AppCompatActivity() {
         // Time Pickers
         etSecurityStart.setOnClickListener { showTimePicker(etSecurityStart) }
         etSecurityEnd.setOnClickListener { showTimePicker(etSecurityEnd) }
+
+        // Sensitivity Slider
+        sliderSensitivity.addOnChangeListener { _, value, _ ->
+            preferences.setAntiTheftSensitivity(value)
+            updateSensitivityText(value)
+        }
+    }
+
+    private fun updateSensitivityText(value: Float) {
+        val label = when {
+            value < 1.0 -> "High ($value)"
+            value < 2.5 -> "Medium ($value)"
+            else -> "Low ($value)"
+        }
+        tvSensitivityValue.text = label
     }
 
     private fun showTimePicker(editText: TextInputEditText) {

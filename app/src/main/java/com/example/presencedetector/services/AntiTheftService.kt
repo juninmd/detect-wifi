@@ -23,8 +23,9 @@ import androidx.core.app.NotificationCompat
 import com.example.presencedetector.MainActivity
 import com.example.presencedetector.R
 import com.example.presencedetector.receivers.NotificationActionReceiver
+import com.example.presencedetector.utils.MotionDetector
 import com.example.presencedetector.utils.NotificationUtil
-import kotlin.math.sqrt
+import com.example.presencedetector.utils.PreferencesUtil
 
 class AntiTheftService : Service(), SensorEventListener {
 
@@ -34,11 +35,12 @@ class AntiTheftService : Service(), SensorEventListener {
         const val ACTION_STOP = "com.example.presencedetector.action.STOP_ANTITHEFT"
         private const val NOTIFICATION_ID = 999
         private const val ALARM_NOTIFICATION_ID = 1000
-        private const val MOVEMENT_THRESHOLD = 1.5f // m/s^2 delta
         private const val GRACE_PERIOD_MS = 5000L // Time to put phone down after arming
     }
 
     private lateinit var sensorManager: SensorManager
+    private lateinit var preferences: PreferencesUtil
+    private var motionDetector: MotionDetector? = null
     private var accelerometer: Sensor? = null
     private var isArmed = false
     private var isAlarmPlaying = false
@@ -59,6 +61,7 @@ class AntiTheftService : Service(), SensorEventListener {
 
     override fun onCreate() {
         super.onCreate()
+        preferences = PreferencesUtil(this)
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
@@ -81,7 +84,10 @@ class AntiTheftService : Service(), SensorEventListener {
     private fun startMonitoring() {
         if (isArmed) return
 
-        Log.d(TAG, "Anti-Theft Armed")
+        val sensitivity = preferences.getAntiTheftSensitivity()
+        motionDetector = MotionDetector(sensitivity)
+        Log.d(TAG, "Anti-Theft Armed with sensitivity: $sensitivity")
+
         isArmed = true
         firstReading = true
         armingTime = System.currentTimeMillis()
@@ -143,15 +149,8 @@ class AntiTheftService : Service(), SensorEventListener {
         val z = event.values[2]
 
         if (!firstReading) {
-            val deltaX = kotlin.math.abs(x - lastX)
-            val deltaY = kotlin.math.abs(y - lastY)
-            val deltaZ = kotlin.math.abs(z - lastZ)
-
-            // Calculate total magnitude of change
-            val totalDelta = sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ)
-
-            if (totalDelta > MOVEMENT_THRESHOLD) {
-                Log.w(TAG, "Motion Detected! Delta: $totalDelta")
+            if (motionDetector?.isMotionDetected(x, y, z, lastX, lastY, lastZ) == true) {
+                Log.w(TAG, "Motion Detected!")
                 triggerAlarm()
             }
         } else {

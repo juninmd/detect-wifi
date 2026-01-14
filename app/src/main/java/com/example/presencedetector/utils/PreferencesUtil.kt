@@ -29,6 +29,7 @@ class PreferencesUtil(context: Context) {
         private const val KEY_SECURITY_START_TIME = "security_start_time"
         private const val KEY_SECURITY_END_TIME = "security_end_time"
         private const val KEY_ANTI_THEFT_ARMED = "anti_theft_armed"
+        private const val KEY_ANTI_THEFT_SENSITIVITY = "anti_theft_sensitivity"
 
         private const val PREFIX_HISTORY = "history_"
         private const val PREFIX_NICKNAME = "nickname_"
@@ -127,6 +128,14 @@ class PreferencesUtil(context: Context) {
 
     fun isAntiTheftArmed(): Boolean {
         return preferences.getBoolean(KEY_ANTI_THEFT_ARMED, false)
+    }
+
+    fun setAntiTheftSensitivity(sensitivity: Float) {
+        preferences.edit().putFloat(KEY_ANTI_THEFT_SENSITIVITY, sensitivity).apply()
+    }
+
+    fun getAntiTheftSensitivity(): Float {
+        return preferences.getFloat(KEY_ANTI_THEFT_SENSITIVITY, 1.5f)
     }
 
     fun saveNickname(bssid: String, nickname: String) {
