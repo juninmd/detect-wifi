@@ -1,6 +1,7 @@
 package com.example.presencedetector
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -68,6 +69,7 @@ class MainActivity : AppCompatActivity() {
             requestPermissions()
         }
         setupDetectionManager()
+        checkBatteryOptimization()
     }
 
     override fun onResume() {
@@ -160,6 +162,24 @@ class MainActivity : AppCompatActivity() {
         } else {
             tvAntiTheftStatus.text = "Tap to Arm"
             ivAntiTheftIcon.setImageResource(android.R.drawable.ic_lock_idle_lock)
+        }
+    }
+
+    private fun checkBatteryOptimization() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+            val packageName = packageName
+            if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setTitle("Battery Optimization")
+                    .setMessage("To ensure reliable detection in the background, please disable battery optimizations for this app.")
+                    .setPositiveButton("Open Settings") { _, _ ->
+                        val intent = Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                        startActivity(intent)
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
         }
     }
 

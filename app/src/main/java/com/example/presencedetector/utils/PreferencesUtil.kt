@@ -17,6 +17,7 @@ class PreferencesUtil(context: Context) {
         private const val KEY_DETECTION_ENABLED = "detection_enabled"
         private const val KEY_FOREGROUND_SERVICE = "foreground_service"
         private const val KEY_NOTIFY_ON_PRESENCE = "notify_on_presence"
+        private const val KEY_NOTIFY_WIFI_ARRIVAL = "notify_wifi_arrival"
 
         // Telegram Settings
         private const val KEY_TELEGRAM_ENABLED = "telegram_enabled"
@@ -60,6 +61,15 @@ class PreferencesUtil(context: Context) {
 
     fun shouldNotifyOnPresence(): Boolean {
         return preferences.getBoolean(KEY_NOTIFY_ON_PRESENCE, true)
+    }
+
+    fun setNotifyWifiArrival(enabled: Boolean) {
+        preferences.edit().putBoolean(KEY_NOTIFY_WIFI_ARRIVAL, enabled).apply()
+    }
+
+    fun shouldNotifyWifiArrival(): Boolean {
+        // Default to FALSE to match previous behavior
+        return preferences.getBoolean(KEY_NOTIFY_WIFI_ARRIVAL, false)
     }
 
     fun setNotifyArrival(bssid: String, notify: Boolean) {

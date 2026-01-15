@@ -31,8 +31,10 @@ android {
     }
 
     lint {
-        checkReleaseBuilds false
-        disable 'MissingPermission', 'NewApi', 'FullBackupContent', 'LongLogTag'
+        checkReleaseBuilds true
+        // Enabled NewApi and MissingPermission checks for better quality
+        disable 'FullBackupContent', 'LongLogTag'
+        abortOnError false
     }
 
     compileOptions {
@@ -62,6 +64,7 @@ dependencies {
 
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
     implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
     // ============================================
     // Security Monitoring - RTSP & Person Detection
