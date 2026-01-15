@@ -16,6 +16,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var preferences: PreferencesUtil
     private lateinit var telegramService: TelegramService
 
+    private lateinit var switchNotifyWifi: MaterialSwitch
     private lateinit var switchTelegram: MaterialSwitch
     private lateinit var etTelegramToken: TextInputEditText
     private lateinit var etTelegramChatId: TextInputEditText
@@ -49,6 +50,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun initializeViews() {
+        switchNotifyWifi = findViewById(R.id.switchNotifyWifi)
         switchTelegram = findViewById(R.id.switchTelegram)
         etTelegramToken = findViewById(R.id.etTelegramToken)
         etTelegramChatId = findViewById(R.id.etTelegramChatId)
@@ -61,6 +63,9 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun loadSettings() {
+        // Notifications
+        switchNotifyWifi.isChecked = preferences.shouldNotifyWifiArrival()
+
         // Telegram
         switchTelegram.isChecked = preferences.isTelegramEnabled()
         etTelegramToken.setText(preferences.getTelegramToken())
@@ -77,6 +82,10 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         // Auto-save on change for switches
+        switchNotifyWifi.setOnCheckedChangeListener { _, isChecked ->
+            preferences.setNotifyWifiArrival(isChecked)
+        }
+
         switchTelegram.setOnCheckedChangeListener { _, isChecked ->
             preferences.setTelegramEnabled(isChecked)
         }
