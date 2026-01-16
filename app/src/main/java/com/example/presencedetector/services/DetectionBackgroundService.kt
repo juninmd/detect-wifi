@@ -29,6 +29,7 @@ class DetectionBackgroundService : Service() {
     private var detectionManager: PresenceDetectionManager? = null
     private var isRunning = false
     private var cameraPresenceReceiver: BroadcastReceiver? = null
+    private var batteryReceiver: BroadcastReceiver? = null
 
     inner class LocalBinder : Binder() {
         fun getService(): DetectionBackgroundService = this@DetectionBackgroundService
@@ -45,6 +46,32 @@ class DetectionBackgroundService : Service() {
 
         // Register receiver for camera presence events
         registerCameraReceiver()
+        registerBatteryReceiver()
+    }
+
+    private fun registerBatteryReceiver() {
+        batteryReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == Intent.ACTION_BATTERY_LOW) {
+                    Log.w(TAG, "Battery low! Sending warning.")
+                    sendBatteryWarningNotification()
+                }
+            }
+        }
+        registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_LOW))
+    }
+
+    private fun sendBatteryWarningNotification() {
+        NotificationUtil.createNotificationChannels(this)
+        val notification = androidx.core.app.NotificationCompat.Builder(this, "presence_alerts_channel")
+            .setContentTitle("⚠️ Battery Low")
+            .setContentText("Battery is low. Presence detection may stop.")
+            .setSmallIcon(R.drawable.ic_status_inactive) // Using existing icon
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+            .build()
+
+        val notificationManager = getSystemService(android.app.NotificationManager::class.java)
+        notificationManager?.notify(2001, notification)
     }
 
     private fun registerCameraReceiver() {
@@ -127,6 +154,11 @@ class DetectionBackgroundService : Service() {
         if (cameraPresenceReceiver != null) {
             unregisterReceiver(cameraPresenceReceiver)
             cameraPresenceReceiver = null
+        }
+
+        if (batteryReceiver != null) {
+            unregisterReceiver(batteryReceiver)
+            batteryReceiver = null
         }
     }
 

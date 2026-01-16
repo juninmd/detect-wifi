@@ -105,6 +105,7 @@
             android:foregroundServiceType="camera" />
 
         <!-- Anti-Theft Service (Motion Detection) -->
+        <!-- Android 14: Uses specialUse for anti-theft protection -->
         <service
             android:name=".services.AntiTheftService"
             android:enabled="true"
