@@ -24,6 +24,7 @@ import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.checkbox.MaterialCheckBox
+import com.google.android.material.switchmaterial.SwitchMaterial
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -33,13 +34,17 @@ class MainActivity : AppCompatActivity() {
         private const val PERMISSION_REQUEST_CODE = 100
     }
 
+    // Controls
     private lateinit var startButton: Button
     private lateinit var stopButton: Button
+
+    // Cards
     private lateinit var btnOpenRadarFromGrid: MaterialCardView
     private lateinit var btnSettings: MaterialCardView
     private lateinit var btnOpenHistory: MaterialCardView
     private lateinit var btnSecuritySettings: MaterialCardView
-    private lateinit var btnAntiTheft: MaterialCardView
+
+    // Status
     private lateinit var statusIndicator: ImageView
     private lateinit var statusText: TextView
     private lateinit var statusDetails: TextView
@@ -50,8 +55,18 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvCountKnown: TextView
     private lateinit var tvNamesKnown: TextView
     private lateinit var tvCountUnknown: TextView
+
+    // Anti-Theft (Motion)
+    private lateinit var btnAntiTheft: MaterialCardView
     private lateinit var tvAntiTheftStatus: TextView
     private lateinit var ivAntiTheftIcon: ImageView
+    private lateinit var switchAntiTheft: SwitchMaterial
+
+    // Anti-Theft (Charger)
+    private lateinit var btnChargerAlarm: MaterialCardView
+    private lateinit var tvChargerStatus: TextView
+    private lateinit var ivChargerIcon: ImageView
+    private lateinit var switchCharger: SwitchMaterial
 
     private var detectionManager: PresenceDetectionManager? = null
     private var isDetecting = false
@@ -74,7 +89,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        updateAntiTheftUI()
+        updateSecurityUI()
     }
 
     private fun initializeViews() {
@@ -94,12 +109,25 @@ class MainActivity : AppCompatActivity() {
         tvNamesKnown = findViewById(R.id.tvNamesKnown)
         tvCountUnknown = findViewById(R.id.tvCountUnknown)
 
-        // Anti-Theft
+        // Anti-Theft (Motion)
         btnAntiTheft = findViewById(R.id.btnAntiTheft)
         tvAntiTheftStatus = findViewById(R.id.tvAntiTheftStatus)
         ivAntiTheftIcon = findViewById(R.id.ivAntiTheftIcon)
-        btnAntiTheft.setOnClickListener { toggleAntiTheft() }
-        updateAntiTheftUI()
+        switchAntiTheft = findViewById(R.id.switchAntiTheft)
+
+        btnAntiTheft.setOnClickListener { toggleMotionAlarm() }
+        switchAntiTheft.setOnClickListener { toggleMotionAlarm() } // Ensure switch click also toggles
+
+        // Anti-Theft (Charger)
+        btnChargerAlarm = findViewById(R.id.btnChargerAlarm)
+        tvChargerStatus = findViewById(R.id.tvChargerStatus)
+        ivChargerIcon = findViewById(R.id.ivChargerIcon)
+        switchCharger = findViewById(R.id.switchCharger)
+
+        btnChargerAlarm.setOnClickListener { toggleChargerAlarm() }
+        switchCharger.setOnClickListener { toggleChargerAlarm() }
+
+        updateSecurityUI()
 
         cbNotifyPresence.isChecked = preferences.shouldNotifyOnPresence()
         cbNotifyPresence.setOnCheckedChangeListener { _, isChecked ->
@@ -128,7 +156,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun toggleAntiTheft() {
+    private fun toggleMotionAlarm() {
         val currentlyArmed = preferences.isAntiTheftArmed()
         if (currentlyArmed) {
             // Disarm
@@ -137,7 +165,7 @@ class MainActivity : AppCompatActivity() {
             }
             startService(serviceIntent)
             preferences.setAntiTheftArmed(false)
-            addLog("Mobile Security Disarmed")
+            addLog("Motion Alarm Disarmed")
         } else {
             // Arm
             val serviceIntent = Intent(this, AntiTheftService::class.java).apply {
@@ -149,19 +177,62 @@ class MainActivity : AppCompatActivity() {
                 startService(serviceIntent)
             }
             preferences.setAntiTheftArmed(true)
-            addLog("Mobile Security Armed")
+            addLog("Motion Alarm Armed")
         }
-        updateAntiTheftUI()
+        updateSecurityUI()
     }
 
-    private fun updateAntiTheftUI() {
-        val armed = preferences.isAntiTheftArmed()
-        if (armed) {
+    private fun toggleChargerAlarm() {
+        val currentlyArmed = preferences.isChargerAlarmArmed()
+        if (currentlyArmed) {
+            // Disarm
+            val serviceIntent = Intent(this, AntiTheftService::class.java).apply {
+                action = AntiTheftService.ACTION_STOP_CHARGER_MODE
+            }
+            startService(serviceIntent)
+            preferences.setChargerAlarmArmed(false)
+            addLog("Charger Alarm Disarmed")
+        } else {
+            // Arm
+            val serviceIntent = Intent(this, AntiTheftService::class.java).apply {
+                action = AntiTheftService.ACTION_START_CHARGER_MODE
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+            preferences.setChargerAlarmArmed(true)
+            addLog("Charger Alarm Armed")
+        }
+        updateSecurityUI()
+    }
+
+    private fun updateSecurityUI() {
+        // Motion UI
+        val motionArmed = preferences.isAntiTheftArmed()
+        switchAntiTheft.isChecked = motionArmed
+        if (motionArmed) {
             tvAntiTheftStatus.text = "Armed (Motion)"
             ivAntiTheftIcon.setImageResource(R.drawable.ic_status_active)
+            ivAntiTheftIcon.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
         } else {
             tvAntiTheftStatus.text = "Tap to Arm"
             ivAntiTheftIcon.setImageResource(android.R.drawable.ic_lock_idle_lock)
+            ivAntiTheftIcon.setColorFilter(ContextCompat.getColor(this, R.color.status_inactive))
+        }
+
+        // Charger UI
+        val chargerArmed = preferences.isChargerAlarmArmed()
+        switchCharger.isChecked = chargerArmed
+        if (chargerArmed) {
+            tvChargerStatus.text = "Armed (Charger)"
+            ivChargerIcon.setImageResource(R.drawable.ic_status_active)
+            ivChargerIcon.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
+        } else {
+            tvChargerStatus.text = "Tap to Arm"
+            ivChargerIcon.setImageResource(R.drawable.ic_battery_alert)
+            ivChargerIcon.setColorFilter(ContextCompat.getColor(this, R.color.status_inactive))
         }
     }
 

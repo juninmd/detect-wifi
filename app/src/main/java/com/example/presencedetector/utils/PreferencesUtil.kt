@@ -30,6 +30,7 @@ class PreferencesUtil(context: Context) {
         private const val KEY_SECURITY_START_TIME = "security_start_time"
         private const val KEY_SECURITY_END_TIME = "security_end_time"
         private const val KEY_ANTI_THEFT_ARMED = "anti_theft_armed"
+        private const val KEY_CHARGER_ALARM_ARMED = "charger_alarm_armed"
 
         private const val PREFIX_HISTORY = "history_"
         private const val PREFIX_NICKNAME = "nickname_"
@@ -137,6 +138,14 @@ class PreferencesUtil(context: Context) {
 
     fun isAntiTheftArmed(): Boolean {
         return preferences.getBoolean(KEY_ANTI_THEFT_ARMED, false)
+    }
+
+    fun setChargerAlarmArmed(armed: Boolean) {
+        preferences.edit().putBoolean(KEY_CHARGER_ALARM_ARMED, armed).apply()
+    }
+
+    fun isChargerAlarmArmed(): Boolean {
+        return preferences.getBoolean(KEY_CHARGER_ALARM_ARMED, false)
     }
 
     fun saveNickname(bssid: String, nickname: String) {
