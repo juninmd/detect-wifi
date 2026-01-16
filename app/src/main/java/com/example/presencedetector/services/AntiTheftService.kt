@@ -32,6 +32,8 @@ class AntiTheftService : Service(), SensorEventListener {
         const val ACTION_STOP = "com.example.presencedetector.action.STOP_ANTITHEFT"
         const val ACTION_START_CHARGER_MODE = "com.example.presencedetector.action.START_CHARGER_ANTITHEFT"
         const val ACTION_STOP_CHARGER_MODE = "com.example.presencedetector.action.STOP_CHARGER_ANTITHEFT"
+        const val ACTION_START_POCKET_MODE = "com.example.presencedetector.action.START_POCKET_ANTITHEFT"
+        const val ACTION_STOP_POCKET_MODE = "com.example.presencedetector.action.STOP_POCKET_ANTITHEFT"
 
         private const val NOTIFICATION_ID = 999
         private const val ALARM_NOTIFICATION_ID = 1000
@@ -41,10 +43,13 @@ class AntiTheftService : Service(), SensorEventListener {
 
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
+    private var proximitySensor: Sensor? = null
 
     // States
     private var isMotionArmed = false
     private var isChargerArmed = false
+    private var isPocketArmed = false
+    private var isPocketSecured = false // True if sensor was covered after arming
     private var isAlarmPlaying = false
 
     // Sensor data
@@ -80,6 +85,7 @@ class AntiTheftService : Service(), SensorEventListener {
         super.onCreate()
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
 
         // Register receiver for stop command
         val filter = IntentFilter(NotificationActionReceiver.ACTION_STOP_ALARM)
@@ -96,8 +102,38 @@ class AntiTheftService : Service(), SensorEventListener {
             ACTION_STOP -> stopMotionMonitoring()
             ACTION_START_CHARGER_MODE -> startChargerMonitoring()
             ACTION_STOP_CHARGER_MODE -> stopChargerMonitoring()
+            ACTION_START_POCKET_MODE -> startPocketMonitoring()
+            ACTION_STOP_POCKET_MODE -> stopPocketMonitoring()
         }
         return START_STICKY
+    }
+
+    private fun startPocketMonitoring() {
+        if (isPocketArmed) return
+        Log.d(TAG, "Pocket Anti-Theft Armed")
+        isPocketArmed = true
+        isPocketSecured = false // Reset secured state
+
+        updateForegroundNotification()
+
+        proximitySensor?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+    }
+
+    private fun stopPocketMonitoring() {
+        if (!isPocketArmed) return
+        Log.d(TAG, "Pocket Anti-Theft Disarmed")
+        isPocketArmed = false
+        // Only unregister if motion is also not using sensors (but here we register separate sensors ideally, or share listener)
+        // Since we implement SensorEventListener on the Service, we can just unregister the specific sensor if we tracked it,
+        // but unregisterListener(this, sensor) is safer.
+        proximitySensor?.let {
+            sensorManager.unregisterListener(this, it)
+        }
+
+        if (isAlarmPlaying) stopAlarm()
+        checkIfServiceShouldStop()
     }
 
     private fun startMotionMonitoring() {
@@ -157,7 +193,7 @@ class AntiTheftService : Service(), SensorEventListener {
     }
 
     private fun checkIfServiceShouldStop() {
-        if (!isMotionArmed && !isChargerArmed) {
+        if (!isMotionArmed && !isChargerArmed && !isPocketArmed) {
             stopAlarm()
             stopForeground(true)
             stopSelf()
@@ -172,11 +208,15 @@ class AntiTheftService : Service(), SensorEventListener {
         val appIntent = Intent(this, MainActivity::class.java)
         val pendingAppIntent = PendingIntent.getActivity(this, 0, appIntent, PendingIntent.FLAG_IMMUTABLE)
 
-        val statusText = when {
-            isMotionArmed && isChargerArmed -> "Motion & Charger Detectors Active"
-            isMotionArmed -> "Motion Detector Active"
-            isChargerArmed -> "Charger Detector Active"
-            else -> "Security Service Running"
+        val activeServices = mutableListOf<String>()
+        if (isMotionArmed) activeServices.add("Motion")
+        if (isChargerArmed) activeServices.add("Charger")
+        if (isPocketArmed) activeServices.add("Pocket")
+
+        val statusText = if (activeServices.isNotEmpty()) {
+            "${activeServices.joinToString(", ")} Protection Active"
+        } else {
+            "Security Service Running"
         }
 
         val builder = NotificationCompat.Builder(this, "presence_detection_channel")
@@ -194,8 +234,35 @@ class AntiTheftService : Service(), SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        if (!isMotionArmed || event == null) return
+        if (event == null) return
 
+        if (event.sensor.type == Sensor.TYPE_ACCELEROMETER && isMotionArmed) {
+            handleMotionSensor(event)
+        } else if (event.sensor.type == Sensor.TYPE_PROXIMITY && isPocketArmed) {
+            handlePocketSensor(event)
+        }
+    }
+
+    private fun handlePocketSensor(event: SensorEvent) {
+        val distance = event.values[0]
+        val maxRange = event.sensor.maximumRange
+
+        // If something is close (e.g. inside pocket)
+        if (distance < maxRange) {
+            if (!isPocketSecured) {
+                isPocketSecured = true
+                Log.d(TAG, "Pocket Mode: SECURED (Covered)")
+            }
+        } else {
+            // If sensor is uncovered
+            if (isPocketSecured) {
+                Log.w(TAG, "Pocket Mode: UNCOVERED! Triggering Alarm.")
+                triggerAlarm("Removed from Pocket!")
+            }
+        }
+    }
+
+    private fun handleMotionSensor(event: SensorEvent) {
         // Grace period to set the phone down
         if (System.currentTimeMillis() - armingTime < GRACE_PERIOD_MS) {
             lastX = event.values[0]
@@ -316,6 +383,7 @@ class AntiTheftService : Service(), SensorEventListener {
         }
 
         stopMotionMonitoring()
+        stopPocketMonitoring()
         super.onDestroy()
     }
 

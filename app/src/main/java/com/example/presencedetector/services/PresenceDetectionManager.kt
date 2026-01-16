@@ -274,7 +274,16 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
             context, 0, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        NotificationUtil.sendPresenceNotification(context, "⚠️ SECURITY THREAT", msg, true, "STOP ALARM", pendingStopIntent, notificationId)
+        NotificationUtil.sendPresenceNotification(
+            context,
+            "⚠️ SECURITY THREAT",
+            msg,
+            true,
+            "STOP ALARM",
+            pendingStopIntent,
+            notificationId,
+            R.drawable.ic_notification_alert
+        )
         telegramService.sendMessage(msg)
         if (preferences.isSecuritySoundEnabled() && preferences.isCurrentTimeInSecuritySchedule()) {
             playSecurityAlarm()

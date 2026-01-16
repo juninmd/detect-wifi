@@ -68,6 +68,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var ivChargerIcon: ImageView
     private lateinit var switchCharger: SwitchMaterial
 
+    // Anti-Theft (Pocket)
+    private lateinit var btnPocketMode: MaterialCardView
+    private lateinit var tvPocketStatus: TextView
+    private lateinit var ivPocketIcon: ImageView
+    private lateinit var switchPocket: SwitchMaterial
+
     private var detectionManager: PresenceDetectionManager? = null
     private var isDetecting = false
     private lateinit var preferences: PreferencesUtil
@@ -126,6 +132,15 @@ class MainActivity : AppCompatActivity() {
 
         btnChargerAlarm.setOnClickListener { toggleChargerAlarm() }
         switchCharger.setOnClickListener { toggleChargerAlarm() }
+
+        // Anti-Theft (Pocket)
+        btnPocketMode = findViewById(R.id.btnPocketMode)
+        tvPocketStatus = findViewById(R.id.tvPocketStatus)
+        ivPocketIcon = findViewById(R.id.ivPocketIcon)
+        switchPocket = findViewById(R.id.switchPocket)
+
+        btnPocketMode.setOnClickListener { togglePocketMode() }
+        switchPocket.setOnClickListener { togglePocketMode() }
 
         updateSecurityUI()
 
@@ -208,6 +223,32 @@ class MainActivity : AppCompatActivity() {
         updateSecurityUI()
     }
 
+    private fun togglePocketMode() {
+        val currentlyArmed = preferences.isPocketModeArmed()
+        if (currentlyArmed) {
+            // Disarm
+            val serviceIntent = Intent(this, AntiTheftService::class.java).apply {
+                action = AntiTheftService.ACTION_STOP_POCKET_MODE
+            }
+            startService(serviceIntent)
+            preferences.setPocketModeArmed(false)
+            addLog("Pocket Mode Disarmed")
+        } else {
+            // Arm
+            val serviceIntent = Intent(this, AntiTheftService::class.java).apply {
+                action = AntiTheftService.ACTION_START_POCKET_MODE
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+            preferences.setPocketModeArmed(true)
+            addLog("Pocket Mode Armed")
+        }
+        updateSecurityUI()
+    }
+
     private fun updateSecurityUI() {
         // Motion UI
         val motionArmed = preferences.isAntiTheftArmed()
@@ -233,6 +274,19 @@ class MainActivity : AppCompatActivity() {
             tvChargerStatus.text = "Tap to Arm"
             ivChargerIcon.setImageResource(R.drawable.ic_battery_alert)
             ivChargerIcon.setColorFilter(ContextCompat.getColor(this, R.color.status_inactive))
+        }
+
+        // Pocket UI
+        val pocketArmed = preferences.isPocketModeArmed()
+        switchPocket.isChecked = pocketArmed
+        if (pocketArmed) {
+            tvPocketStatus.text = "Armed (Pocket)"
+            ivPocketIcon.setImageResource(R.drawable.ic_status_active)
+            ivPocketIcon.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
+        } else {
+            tvPocketStatus.text = "Tap to Arm"
+            ivPocketIcon.setImageResource(R.drawable.ic_status_inactive)
+            ivPocketIcon.setColorFilter(ContextCompat.getColor(this, R.color.status_inactive))
         }
     }
 
