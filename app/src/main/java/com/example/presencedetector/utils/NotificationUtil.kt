@@ -17,9 +17,9 @@ import com.example.presencedetector.R
  */
 object NotificationUtil {
     private const val TAG = "NotificationUtil"
-    private const val CHANNEL_ID = "presence_detection_channel"
+    const val CHANNEL_ID = "presence_detection_channel"
     private const val CHANNEL_NAME = "Presence Detection"
-    private const val ALERT_CHANNEL_ID = "presence_alerts_channel"
+    const val ALERT_CHANNEL_ID = "presence_alerts_channel"
     private const val ALERT_CHANNEL_NAME = "Presence Alerts"
 
     fun createNotificationChannels(context: Context) {

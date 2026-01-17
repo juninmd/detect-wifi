@@ -124,6 +124,27 @@ class MainActivity : AppCompatActivity() {
         btnSecuritySettings.setOnClickListener {
             startActivity(Intent(this, com.example.presencedetector.security.ui.CameraDashboardActivity::class.java))
         }
+
+        val btnPanic = findViewById<View>(R.id.btnPanic)
+        btnPanic.setOnClickListener {
+            triggerPanicMode()
+        }
+    }
+
+    private fun triggerPanicMode() {
+        Toast.makeText(this, "🆘 PANIC MODE ACTIVATED!", Toast.LENGTH_LONG).show()
+
+        // 1. Send Telegram Alert
+        val telegramService = com.example.presencedetector.services.TelegramService(this)
+        telegramService.sendMessage("🆘 SOS ALERT! Panic button pressed on main dashboard!")
+
+        // 2. Play Alarm Sound (Optional - strictly for panic)
+        // For now, we just alert externally to avoid accidental deafening, or we could trigger the AntiTheft alarm.
+
+        // 3. Log event
+        val timestamp = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
+        detectionLog.append("\n[$timestamp] 🆘 PANIC BUTTON PRESSED")
+        logScrollView.post { logScrollView.fullScroll(View.FOCUS_DOWN) }
     }
 
     private fun toggleAntiTheft() {

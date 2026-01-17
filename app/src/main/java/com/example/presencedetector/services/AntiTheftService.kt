@@ -26,6 +26,9 @@ import com.example.presencedetector.receivers.NotificationActionReceiver
 import com.example.presencedetector.utils.MotionDetector
 import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class AntiTheftService : Service(), SensorEventListener {
 
@@ -40,6 +43,7 @@ class AntiTheftService : Service(), SensorEventListener {
 
     private lateinit var sensorManager: SensorManager
     private lateinit var preferences: PreferencesUtil
+    private lateinit var telegramService: TelegramService
     private var motionDetector: MotionDetector? = null
     private var accelerometer: Sensor? = null
     private var isArmed = false
@@ -62,6 +66,7 @@ class AntiTheftService : Service(), SensorEventListener {
     override fun onCreate() {
         super.onCreate()
         preferences = PreferencesUtil(this)
+        telegramService = TelegramService(this)
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
@@ -118,7 +123,7 @@ class AntiTheftService : Service(), SensorEventListener {
         }
         val pendingStopIntent = PendingIntent.getService(this, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE)
 
-        val builder = NotificationCompat.Builder(this, "presence_detection_channel")
+        val builder = NotificationCompat.Builder(this, NotificationUtil.CHANNEL_ID)
             .setContentTitle("🛡️ Mobile Security Active")
             .setContentText("Motion detector is armed.")
             .setSmallIcon(R.drawable.ic_status_active)
@@ -172,7 +177,11 @@ class AntiTheftService : Service(), SensorEventListener {
 
         Log.w(TAG, "TRIGGERING ALARM")
 
-        // 1. Play Sound
+        // 1. Send Telegram Alert
+        val time = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
+        telegramService.sendMessage("🚨 ANTI-THEFT ALARM: Motion detected on device at $time!")
+
+        // 2. Play Sound
         try {
             val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
             alarmRingtone = RingtoneManager.getRingtone(applicationContext, alarmUri)
@@ -187,7 +196,7 @@ class AntiTheftService : Service(), SensorEventListener {
             Log.e(TAG, "Error playing alarm", e)
         }
 
-        // 2. Show Alert Notification with Action to Stop
+        // 3. Show Alert Notification with Action to Stop
         showAlarmNotification()
     }
 
@@ -203,7 +212,7 @@ class AntiTheftService : Service(), SensorEventListener {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(this, "presence_alerts_channel")
+        val notification = NotificationCompat.Builder(this, NotificationUtil.ALERT_CHANNEL_ID)
             .setContentTitle("🚨 THEFT ALERT!")
             .setContentText("Motion detected on your device!")
             .setSmallIcon(R.drawable.ic_notification_alert)
