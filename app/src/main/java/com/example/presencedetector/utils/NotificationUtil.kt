@@ -99,8 +99,7 @@ object NotificationUtil {
         isImportantEvent: Boolean,
         actionTitle: String? = null,
         actionIntent: PendingIntent? = null,
-        notificationId: Int? = null,
-        iconResId: Int? = null
+        notificationId: Int? = null
     ) {
         createNotificationChannels(context)
 
@@ -117,7 +116,7 @@ object NotificationUtil {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val icon = iconResId ?: if (isImportantEvent) {
+        val icon = if (isImportantEvent) {
             R.drawable.ic_notification
         } else {
             R.drawable.ic_notification_alert

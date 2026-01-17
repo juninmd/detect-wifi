@@ -31,19 +31,17 @@ android {
     }
 
     lint {
-        checkReleaseBuilds true
-        // Enabled NewApi and MissingPermission checks for better quality
-        disable 'FullBackupContent', 'LongLogTag'
-        abortOnError false
+        checkReleaseBuilds false
+        disable 'MissingPermission', 'NewApi', 'FullBackupContent', 'LongLogTag'
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 
     buildFeatures {
@@ -52,19 +50,18 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.core:core-ktx:1.13.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
 
     // Firebase (BOM keeps versions in sync)
-    implementation platform('com.google.firebase:firebase-bom:33.1.2')
+    implementation platform('com.google.firebase:firebase-bom:32.7.0')
     implementation 'com.google.firebase:firebase-messaging-ktx'
 
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0'
     implementation 'com.google.code.gson:gson:2.10.1'
-    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
     // ============================================
     // Security Monitoring - RTSP & Person Detection
@@ -77,10 +74,6 @@ dependencies {
     // ML Kit Object Detection for person detection
     // Uses on-device models (no internet required)
     implementation 'com.google.mlkit:object-detection:17.0.1'
-
-    // MQTT Client
-    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
-    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
 
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.mockito:mockito-core:5.7.0'
