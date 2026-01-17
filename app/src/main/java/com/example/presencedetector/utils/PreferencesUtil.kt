@@ -17,7 +17,6 @@ class PreferencesUtil(context: Context) {
         private const val KEY_DETECTION_ENABLED = "detection_enabled"
         private const val KEY_FOREGROUND_SERVICE = "foreground_service"
         private const val KEY_NOTIFY_ON_PRESENCE = "notify_on_presence"
-        private const val KEY_NOTIFY_WIFI_ARRIVAL = "notify_wifi_arrival"
 
         // Telegram Settings
         private const val KEY_TELEGRAM_ENABLED = "telegram_enabled"
@@ -30,19 +29,7 @@ class PreferencesUtil(context: Context) {
         private const val KEY_SECURITY_START_TIME = "security_start_time"
         private const val KEY_SECURITY_END_TIME = "security_end_time"
         private const val KEY_ANTI_THEFT_ARMED = "anti_theft_armed"
-        private const val KEY_CHARGER_ALARM_ARMED = "charger_alarm_armed"
-        private const val KEY_POCKET_MODE_ARMED = "pocket_mode_armed"
-
-        // Appearance
-        private const val KEY_APP_THEME = "app_theme" // 0=System, 1=Light, 2=Dark
-
-        // MQTT
-        private const val KEY_MQTT_ENABLED = "mqtt_enabled"
-        private const val KEY_MQTT_HOST = "mqtt_host"
-        private const val KEY_MQTT_PORT = "mqtt_port"
-        private const val KEY_MQTT_TOPIC = "mqtt_topic"
-        private const val KEY_MQTT_USER = "mqtt_user"
-        private const val KEY_MQTT_PASS = "mqtt_pass"
+        private const val KEY_ANTI_THEFT_SENSITIVITY = "anti_theft_sensitivity"
 
         private const val PREFIX_HISTORY = "history_"
         private const val PREFIX_NICKNAME = "nickname_"
@@ -74,15 +61,6 @@ class PreferencesUtil(context: Context) {
 
     fun shouldNotifyOnPresence(): Boolean {
         return preferences.getBoolean(KEY_NOTIFY_ON_PRESENCE, true)
-    }
-
-    fun setNotifyWifiArrival(enabled: Boolean) {
-        preferences.edit().putBoolean(KEY_NOTIFY_WIFI_ARRIVAL, enabled).apply()
-    }
-
-    fun shouldNotifyWifiArrival(): Boolean {
-        // Default to FALSE to match previous behavior
-        return preferences.getBoolean(KEY_NOTIFY_WIFI_ARRIVAL, false)
     }
 
     fun setNotifyArrival(bssid: String, notify: Boolean) {
@@ -144,24 +122,6 @@ class PreferencesUtil(context: Context) {
         return if (startStr > endStr) now >= startStr || now <= endStr else now in startStr..endStr
     }
 
-    // Appearance
-    fun setAppTheme(theme: Int) = preferences.edit().putInt(KEY_APP_THEME, theme).apply()
-    fun getAppTheme(): Int = preferences.getInt(KEY_APP_THEME, 0) // 0=System
-
-    // MQTT
-    fun setMqttEnabled(enabled: Boolean) = preferences.edit().putBoolean(KEY_MQTT_ENABLED, enabled).apply()
-    fun isMqttEnabled() = preferences.getBoolean(KEY_MQTT_ENABLED, false)
-    fun setMqttHost(host: String) = preferences.edit().putString(KEY_MQTT_HOST, host).apply()
-    fun getMqttHost(): String = preferences.getString(KEY_MQTT_HOST, "") ?: ""
-    fun setMqttPort(port: String) = preferences.edit().putString(KEY_MQTT_PORT, port).apply()
-    fun getMqttPort(): String = preferences.getString(KEY_MQTT_PORT, "1883") ?: "1883"
-    fun setMqttTopic(topic: String) = preferences.edit().putString(KEY_MQTT_TOPIC, topic).apply()
-    fun getMqttTopic(): String = preferences.getString(KEY_MQTT_TOPIC, "home/presence") ?: "home/presence"
-    fun setMqttUser(user: String) = preferences.edit().putString(KEY_MQTT_USER, user).apply()
-    fun getMqttUser(): String = preferences.getString(KEY_MQTT_USER, "") ?: ""
-    fun setMqttPass(pass: String) = preferences.edit().putString(KEY_MQTT_PASS, pass).apply()
-    fun getMqttPass(): String = preferences.getString(KEY_MQTT_PASS, "") ?: ""
-
     fun setAntiTheftArmed(armed: Boolean) {
         preferences.edit().putBoolean(KEY_ANTI_THEFT_ARMED, armed).apply()
     }
@@ -170,20 +130,12 @@ class PreferencesUtil(context: Context) {
         return preferences.getBoolean(KEY_ANTI_THEFT_ARMED, false)
     }
 
-    fun setChargerAlarmArmed(armed: Boolean) {
-        preferences.edit().putBoolean(KEY_CHARGER_ALARM_ARMED, armed).apply()
+    fun setAntiTheftSensitivity(sensitivity: Float) {
+        preferences.edit().putFloat(KEY_ANTI_THEFT_SENSITIVITY, sensitivity).apply()
     }
 
-    fun isChargerAlarmArmed(): Boolean {
-        return preferences.getBoolean(KEY_CHARGER_ALARM_ARMED, false)
-    }
-
-    fun setPocketModeArmed(armed: Boolean) {
-        preferences.edit().putBoolean(KEY_POCKET_MODE_ARMED, armed).apply()
-    }
-
-    fun isPocketModeArmed(): Boolean {
-        return preferences.getBoolean(KEY_POCKET_MODE_ARMED, false)
+    fun getAntiTheftSensitivity(): Float {
+        return preferences.getFloat(KEY_ANTI_THEFT_SENSITIVITY, 1.5f)
     }
 
     fun saveNickname(bssid: String, nickname: String) {

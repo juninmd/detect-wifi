@@ -16,10 +16,6 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var preferences: PreferencesUtil
     private lateinit var telegramService: TelegramService
 
-    private lateinit var cardAppearance: com.google.android.material.card.MaterialCardView
-    private lateinit var tvCurrentTheme: android.widget.TextView
-
-    private lateinit var switchNotifyWifi: MaterialSwitch
     private lateinit var switchTelegram: MaterialSwitch
     private lateinit var etTelegramToken: TextInputEditText
     private lateinit var etTelegramChatId: TextInputEditText
@@ -30,13 +26,8 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var etSecurityStart: TextInputEditText
     private lateinit var etSecurityEnd: TextInputEditText
 
-    // MQTT
-    private lateinit var switchMqtt: MaterialSwitch
-    private lateinit var etMqttHost: TextInputEditText
-    private lateinit var etMqttPort: TextInputEditText
-    private lateinit var etMqttTopic: TextInputEditText
-    private lateinit var etMqttUser: TextInputEditText
-    private lateinit var etMqttPass: TextInputEditText
+    private lateinit var sliderSensitivity: com.google.android.material.slider.Slider
+    private lateinit var tvSensitivityValue: android.widget.TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,10 +52,6 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun initializeViews() {
-        cardAppearance = findViewById(R.id.cardAppearance)
-        tvCurrentTheme = findViewById(R.id.tvCurrentTheme)
-
-        switchNotifyWifi = findViewById(R.id.switchNotifyWifi)
         switchTelegram = findViewById(R.id.switchTelegram)
         etTelegramToken = findViewById(R.id.etTelegramToken)
         etTelegramChatId = findViewById(R.id.etTelegramChatId)
@@ -75,21 +62,11 @@ class SettingsActivity : AppCompatActivity() {
         etSecurityStart = findViewById(R.id.etSecurityStart)
         etSecurityEnd = findViewById(R.id.etSecurityEnd)
 
-        // MQTT
-        switchMqtt = findViewById(R.id.switchMqtt)
-        etMqttHost = findViewById(R.id.etMqttHost)
-        etMqttPort = findViewById(R.id.etMqttPort)
-        etMqttTopic = findViewById(R.id.etMqttTopic)
-        etMqttUser = findViewById(R.id.etMqttUser)
-        etMqttPass = findViewById(R.id.etMqttPass)
+        sliderSensitivity = findViewById(R.id.sliderSensitivity)
+        tvSensitivityValue = findViewById(R.id.tvSensitivityValue)
     }
 
     private fun loadSettings() {
-        updateThemeText()
-
-        // Notifications
-        switchNotifyWifi.isChecked = preferences.shouldNotifyWifiArrival()
-
         // Telegram
         switchTelegram.isChecked = preferences.isTelegramEnabled()
         etTelegramToken.setText(preferences.getTelegramToken())
@@ -103,35 +80,13 @@ class SettingsActivity : AppCompatActivity() {
         etSecurityStart.setText(schedule.first)
         etSecurityEnd.setText(schedule.second)
 
-        // MQTT
-        switchMqtt.isChecked = preferences.isMqttEnabled()
-        etMqttHost.setText(preferences.getMqttHost())
-        etMqttPort.setText(preferences.getMqttPort())
-        etMqttTopic.setText(preferences.getMqttTopic())
-        etMqttUser.setText(preferences.getMqttUser())
-        etMqttPass.setText(preferences.getMqttPass())
-    }
-
-    private fun updateThemeText() {
-        val theme = preferences.getAppTheme()
-        tvCurrentTheme.text = "Current: " + when(theme) {
-            1 -> "Light Mode"
-            2 -> "Dark Mode"
-            else -> "System Default"
-        }
+        val sensitivity = preferences.getAntiTheftSensitivity()
+        sliderSensitivity.value = sensitivity
+        updateSensitivityText(sensitivity)
     }
 
     private fun setupListeners() {
-        // Appearance
-        cardAppearance.setOnClickListener {
-            showThemeDialog()
-        }
-
         // Auto-save on change for switches
-        switchNotifyWifi.setOnCheckedChangeListener { _, isChecked ->
-            preferences.setNotifyWifiArrival(isChecked)
-        }
-
         switchTelegram.setOnCheckedChangeListener { _, isChecked ->
             preferences.setTelegramEnabled(isChecked)
         }
@@ -155,39 +110,24 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        // MQTT
-        switchMqtt.setOnCheckedChangeListener { _, isChecked ->
-            preferences.setMqttEnabled(isChecked)
-        }
-
         // Time Pickers
         etSecurityStart.setOnClickListener { showTimePicker(etSecurityStart) }
         etSecurityEnd.setOnClickListener { showTimePicker(etSecurityEnd) }
+
+        // Sensitivity Slider
+        sliderSensitivity.addOnChangeListener { _, value, _ ->
+            preferences.setAntiTheftSensitivity(value)
+            updateSensitivityText(value)
+        }
     }
 
-    private fun showThemeDialog() {
-        val themes = arrayOf("System Default", "Light Mode", "Dark Mode")
-        val checkedItem = preferences.getAppTheme()
-
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-            .setTitle("Choose Theme")
-            .setSingleChoiceItems(themes, checkedItem) { dialog, which ->
-                preferences.setAppTheme(which)
-                updateThemeText()
-                dialog.dismiss()
-
-                // Recreate the task stack to ensure all activities update
-                val intent = packageManager.getLaunchIntentForPackage(packageName)
-                if (intent != null) {
-                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                    startActivity(intent)
-                    finish()
-                } else {
-                    recreate()
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
+    private fun updateSensitivityText(value: Float) {
+        val label = when {
+            value < 1.0 -> "High ($value)"
+            value < 2.5 -> "Medium ($value)"
+            else -> "Low ($value)"
+        }
+        tvSensitivityValue.text = label
     }
 
     private fun showTimePicker(editText: TextInputEditText) {
@@ -216,26 +156,9 @@ class SettingsActivity : AppCompatActivity() {
         )
     }
 
-    private fun saveMqttSettings() {
-        val newHost = etMqttHost.text.toString().trim()
-        val oldHost = preferences.getMqttHost()
-
-        preferences.setMqttHost(newHost)
-        preferences.setMqttPort(etMqttPort.text.toString().trim())
-        preferences.setMqttTopic(etMqttTopic.text.toString().trim())
-        preferences.setMqttUser(etMqttUser.text.toString().trim())
-        preferences.setMqttPass(etMqttPass.text.toString().trim())
-
-        // If host changed, suggest restart
-        if (newHost != oldHost && newHost.isNotEmpty()) {
-             Toast.makeText(this, "MQTT Settings saved. Please restart detection to reconnect.", Toast.LENGTH_LONG).show()
-        }
-    }
-
     override fun onPause() {
         super.onPause()
         saveTelegramSettings()
         saveSecuritySchedule()
-        saveMqttSettings()
     }
 }

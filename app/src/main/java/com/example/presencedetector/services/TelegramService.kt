@@ -6,24 +6,18 @@ import com.example.presencedetector.utils.PreferencesUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.FormBody
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import java.util.concurrent.TimeUnit
+import java.io.OutputStreamWriter
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
 
 /**
- * Service to handle Telegram notifications using OkHttp.
+ * Service to handle Telegram notifications.
  */
 class TelegramService(private val context: Context) {
     companion object {
         private const val TAG = "TelegramService"
-
-        // Share client to use connection pooling
-        private val client = OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .writeTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .build()
+        private const val TIMEOUT = 10000 // 10 seconds
     }
 
     private val preferences = PreferencesUtil(context)
@@ -42,28 +36,39 @@ class TelegramService(private val context: Context) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val urlString = "https://api.telegram.org/bot$token/sendMessage"
+                val url = URL(urlString)
+                val conn = url.openConnection() as HttpURLConnection
 
-                val formBody = FormBody.Builder()
-                    .add("chat_id", chatId)
-                    .add("text", message)
-                    .build()
+                conn.requestMethod = "POST"
+                conn.doOutput = true
+                conn.connectTimeout = TIMEOUT
+                conn.readTimeout = TIMEOUT
+                conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
 
-                val request = Request.Builder()
-                    .url(urlString)
-                    .post(formBody)
-                    .build()
+                val data = "chat_id=" + URLEncoder.encode(chatId, "UTF-8") +
+                           "&text=" + URLEncoder.encode(message, "UTF-8")
 
                 Log.d(TAG, "Sending message to chatId: $chatId")
 
-                client.newCall(request).execute().use { response ->
-                    if (response.isSuccessful) {
-                        Log.d(TAG, "Message sent successfully")
-                    } else {
-                        Log.e(TAG, "Failed to send message: ${response.code} ${response.message}")
-                        val errorBody = response.body?.string()
-                        Log.e(TAG, "Error response: $errorBody")
+                OutputStreamWriter(conn.outputStream).use { writer ->
+                    writer.write(data)
+                    writer.flush()
+                }
+
+                val responseCode = conn.responseCode
+                if (responseCode == 200) {
+                    Log.d(TAG, "Message sent successfully")
+                } else {
+                    Log.e(TAG, "Failed to send message: $responseCode")
+                    try {
+                        val errorStream = conn.errorStream
+                        val response = errorStream?.bufferedReader()?.use { it.readText() }
+                        Log.e(TAG, "Error response: $response")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Could not read error stream", e)
                     }
                 }
+                conn.disconnect()
 
             } catch (e: Exception) {
                 Log.e(TAG, "Error sending Telegram message", e)

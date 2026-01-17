@@ -39,7 +39,6 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     private val mainHandler = Handler(Looper.getMainLooper())
     private val preferences = PreferencesUtil(context)
     private val telegramService = TelegramService(context)
-    private val mqttManager = MqttManager(context)
 
     private var currentRingtone: Ringtone? = null
     private val stopAlarmReceiver = object : BroadcastReceiver() {
@@ -275,16 +274,7 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
             context, 0, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        NotificationUtil.sendPresenceNotification(
-            context,
-            "⚠️ SECURITY THREAT",
-            msg,
-            true,
-            "STOP ALARM",
-            pendingStopIntent,
-            notificationId,
-            R.drawable.ic_notification_alert
-        )
+        NotificationUtil.sendPresenceNotification(context, "⚠️ SECURITY THREAT", msg, true, "STOP ALARM", pendingStopIntent, notificationId)
         telegramService.sendMessage(msg)
         if (preferences.isSecuritySoundEnabled() && preferences.isCurrentTimeInSecuritySchedule()) {
             playSecurityAlarm()
@@ -323,7 +313,7 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     private fun sendArrivalNotification(device: WiFiDevice) {
         // Filter: Only notify for Bluetooth devices (or manual override)
         // User requested: "só notificar dispositivos bluetooth ou presença na camera"
-        if (device.source == com.example.presencedetector.model.DeviceSource.WIFI && !preferences.shouldNotifyWifiArrival()) {
+        if (device.source == com.example.presencedetector.model.DeviceSource.WIFI) {
             Log.d(TAG, "Skipping arrival notification for WiFi device: ${device.ssid}")
             return
         }
@@ -347,7 +337,7 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     private fun sendDepartureNotification(bssid: String, device: WiFiDevice?) {
         // Filter: Only notify for Bluetooth devices
         val source = device?.source ?: deviceTypes[bssid]
-        if (source == com.example.presencedetector.model.DeviceSource.WIFI && !preferences.shouldNotifyWifiArrival()) {
+        if (source == com.example.presencedetector.model.DeviceSource.WIFI) {
             Log.d(TAG, "Skipping departure notification for WiFi device: $bssid")
             return
         }
@@ -368,24 +358,12 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     }
 
     private fun sendArrivalTelegramAlert(device: WiFiDevice) {
-        val nickname = preferences.getNickname(device.bssid) ?: device.ssid
-        val category = preferences.getManualCategory(device.bssid) ?: device.category
-        val categoryDisplay = category.displayName
-
-        // MQTT Publish
-        if (preferences.isMqttEnabled()) {
-             val json = org.json.JSONObject()
-             json.put("device", nickname)
-             json.put("bssid", device.bssid)
-             json.put("category", categoryDisplay)
-             json.put("event", "arrival")
-             json.put("signal", device.level)
-             mqttManager.publish("arrival", json.toString())
-        }
-
         if (!preferences.isTelegramEnabled()) return
 
+        val nickname = preferences.getNickname(device.bssid) ?: device.ssid
         val time = SimpleDateFormat("HH:mm", Locale.US).format(Date())
+        val category = preferences.getManualCategory(device.bssid) ?: device.category
+        val categoryDisplay = category.displayName
 
         val message = "🔔 $nickname ($categoryDisplay) arrived at $time. Signal: ${device.level}dBm"
         telegramService.sendMessage(message)
@@ -393,22 +371,9 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     }
 
     private fun sendDepartureTelegramAlert(bssid: String, device: WiFiDevice?) {
-        val nickname = preferences.getNickname(bssid) ?: device?.ssid ?: "Known Device"
-        val category = preferences.getManualCategory(bssid) ?: device?.category ?: com.example.presencedetector.model.DeviceCategory.UNKNOWN
-        val categoryDisplay = category.displayName
-
-        // MQTT Publish
-        if (preferences.isMqttEnabled()) {
-             val json = org.json.JSONObject()
-             json.put("device", nickname)
-             json.put("bssid", bssid)
-             json.put("category", categoryDisplay)
-             json.put("event", "departure")
-             mqttManager.publish("departure", json.toString())
-        }
-
         if (!preferences.isTelegramEnabled()) return
 
+        val nickname = preferences.getNickname(bssid) ?: device?.ssid ?: "Known Device"
         val time = SimpleDateFormat("HH:mm", Locale.US).format(Date())
 
         val message = "🚪 $nickname left at $time."
@@ -420,14 +385,12 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
         Log.i(TAG, "Starting WiFi and Bluetooth detection...")
         wifiService.startScanning()
         bluetoothService.startScanning()
-        mqttManager.connect()
     }
 
     fun stopDetection() {
         Log.i(TAG, "Stopping WiFi and Bluetooth detection...")
         wifiService.stopScanning()
         bluetoothService.stopScanning()
-        mqttManager.disconnect()
         lastSeenMap.clear()
         departureNotifiedMap.clear()
         hasNotifiedArrivalMap.clear()

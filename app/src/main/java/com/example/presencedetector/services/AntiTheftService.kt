@@ -7,7 +7,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.ServiceInfo
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -16,14 +15,17 @@ import android.media.AudioAttributes
 import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.presencedetector.MainActivity
 import com.example.presencedetector.R
 import com.example.presencedetector.receivers.NotificationActionReceiver
+import com.example.presencedetector.utils.MotionDetector
 import com.example.presencedetector.utils.NotificationUtil
-import kotlin.math.sqrt
+import com.example.presencedetector.utils.PreferencesUtil
 
 class AntiTheftService : Service(), SensorEventListener {
 
@@ -31,29 +33,17 @@ class AntiTheftService : Service(), SensorEventListener {
         private const val TAG = "AntiTheftService"
         const val ACTION_START = "com.example.presencedetector.action.START_ANTITHEFT"
         const val ACTION_STOP = "com.example.presencedetector.action.STOP_ANTITHEFT"
-        const val ACTION_START_CHARGER_MODE = "com.example.presencedetector.action.START_CHARGER_ANTITHEFT"
-        const val ACTION_STOP_CHARGER_MODE = "com.example.presencedetector.action.STOP_CHARGER_ANTITHEFT"
-        const val ACTION_START_POCKET_MODE = "com.example.presencedetector.action.START_POCKET_ANTITHEFT"
-        const val ACTION_STOP_POCKET_MODE = "com.example.presencedetector.action.STOP_POCKET_ANTITHEFT"
-
         private const val NOTIFICATION_ID = 999
         private const val ALARM_NOTIFICATION_ID = 1000
-        private const val MOVEMENT_THRESHOLD = 1.5f // m/s^2 delta
         private const val GRACE_PERIOD_MS = 5000L // Time to put phone down after arming
     }
 
     private lateinit var sensorManager: SensorManager
+    private lateinit var preferences: PreferencesUtil
+    private var motionDetector: MotionDetector? = null
     private var accelerometer: Sensor? = null
-    private var proximitySensor: Sensor? = null
-
-    // States
-    private var isMotionArmed = false
-    private var isChargerArmed = false
-    private var isPocketArmed = false
-    private var isPocketSecured = false // True if sensor was covered after arming
+    private var isArmed = false
     private var isAlarmPlaying = false
-
-    // Sensor data
     private var lastX = 0f
     private var lastY = 0f
     private var lastZ = 0f
@@ -61,8 +51,6 @@ class AntiTheftService : Service(), SensorEventListener {
     private var armingTime = 0L
 
     private var alarmRingtone: Ringtone? = null
-
-    // Receivers
     private val stopAlarmReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == NotificationActionReceiver.ACTION_STOP_ALARM) {
@@ -71,81 +59,41 @@ class AntiTheftService : Service(), SensorEventListener {
         }
     }
 
-    private val powerReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == Intent.ACTION_POWER_DISCONNECTED) {
-                if (isChargerArmed) {
-                    Log.w(TAG, "Charger disconnected while armed! Triggering alarm.")
-                    triggerAlarm("Charger Disconnected!")
-                }
-            }
-        }
-    }
-
     override fun onCreate() {
         super.onCreate()
+        preferences = PreferencesUtil(this)
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
 
         // Register receiver for stop command
-        val filter = IntentFilter(NotificationActionReceiver.ACTION_STOP_ALARM)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(stopAlarmReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            registerReceiver(stopAlarmReceiver, IntentFilter(NotificationActionReceiver.ACTION_STOP_ALARM), Context.RECEIVER_NOT_EXPORTED)
         } else {
-            registerReceiver(stopAlarmReceiver, filter)
+            registerReceiver(stopAlarmReceiver, IntentFilter(NotificationActionReceiver.ACTION_STOP_ALARM))
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> startMotionMonitoring()
-            ACTION_STOP -> stopMotionMonitoring()
-            ACTION_START_CHARGER_MODE -> startChargerMonitoring()
-            ACTION_STOP_CHARGER_MODE -> stopChargerMonitoring()
-            ACTION_START_POCKET_MODE -> startPocketMonitoring()
-            ACTION_STOP_POCKET_MODE -> stopPocketMonitoring()
+            ACTION_START -> startMonitoring()
+            ACTION_STOP -> stopMonitoring()
         }
         return START_STICKY
     }
 
-    private fun startPocketMonitoring() {
-        if (isPocketArmed) return
-        Log.d(TAG, "Pocket Anti-Theft Armed")
-        isPocketArmed = true
-        isPocketSecured = false // Reset secured state
+    private fun startMonitoring() {
+        if (isArmed) return
 
-        updateForegroundNotification()
+        val sensitivity = preferences.getAntiTheftSensitivity()
+        motionDetector = MotionDetector(sensitivity)
+        Log.d(TAG, "Anti-Theft Armed with sensitivity: $sensitivity")
 
-        proximitySensor?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
-        }
-    }
-
-    private fun stopPocketMonitoring() {
-        if (!isPocketArmed) return
-        Log.d(TAG, "Pocket Anti-Theft Disarmed")
-        isPocketArmed = false
-        // Only unregister if motion is also not using sensors (but here we register separate sensors ideally, or share listener)
-        // Since we implement SensorEventListener on the Service, we can just unregister the specific sensor if we tracked it,
-        // but unregisterListener(this, sensor) is safer.
-        proximitySensor?.let {
-            sensorManager.unregisterListener(this, it)
-        }
-
-        if (isAlarmPlaying) stopAlarm()
-        checkIfServiceShouldStop()
-    }
-
-    private fun startMotionMonitoring() {
-        if (isMotionArmed) return
-
-        Log.d(TAG, "Motion Anti-Theft Armed")
-        isMotionArmed = true
+        isArmed = true
         firstReading = true
         armingTime = System.currentTimeMillis()
 
-        updateForegroundNotification()
+        // Start Foreground
+        startForeground(NOTIFICATION_ID, createForegroundNotification())
 
         // Register Sensor
         accelerometer?.let {
@@ -153,117 +101,41 @@ class AntiTheftService : Service(), SensorEventListener {
         }
     }
 
-    private fun stopMotionMonitoring() {
-        if (!isMotionArmed) return
-        Log.d(TAG, "Motion Anti-Theft Disarmed")
-        isMotionArmed = false
+    private fun stopMonitoring() {
+        Log.d(TAG, "Anti-Theft Disarmed")
+        isArmed = false
+        stopAlarm()
         sensorManager.unregisterListener(this)
-
-        // If alarm was triggered by motion (implied as no specific reason tracking), stop it for good UX
-        if (isAlarmPlaying) stopAlarm()
-
-        checkIfServiceShouldStop()
+        stopForeground(true)
+        stopSelf()
     }
 
-    private fun startChargerMonitoring() {
-        if (isChargerArmed) return
-        Log.d(TAG, "Charger Anti-Theft Armed")
-        isChargerArmed = true
-
-        // Register Power Receiver
-        val filter = IntentFilter(Intent.ACTION_POWER_DISCONNECTED)
-        registerReceiver(powerReceiver, filter)
-
-        updateForegroundNotification()
-    }
-
-    private fun stopChargerMonitoring() {
-        if (!isChargerArmed) return
-        Log.d(TAG, "Charger Anti-Theft Disarmed")
-        isChargerArmed = false
-        try {
-            unregisterReceiver(powerReceiver)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error unregistering power receiver", e)
-        }
-
-        // If alarm was triggered by charger (implied), stop it for good UX
-        if (isAlarmPlaying) stopAlarm()
-
-        checkIfServiceShouldStop()
-    }
-
-    private fun checkIfServiceShouldStop() {
-        if (!isMotionArmed && !isChargerArmed && !isPocketArmed) {
-            stopAlarm()
-            stopForeground(true)
-            stopSelf()
-        } else {
-            updateForegroundNotification()
-        }
-    }
-
-    private fun updateForegroundNotification() {
+    private fun createForegroundNotification(): Notification {
         NotificationUtil.createNotificationChannels(this)
 
-        val appIntent = Intent(this, MainActivity::class.java)
-        val pendingAppIntent = PendingIntent.getActivity(this, 0, appIntent, PendingIntent.FLAG_IMMUTABLE)
-
-        val activeServices = mutableListOf<String>()
-        if (isMotionArmed) activeServices.add("Motion")
-        if (isChargerArmed) activeServices.add("Charger")
-        if (isPocketArmed) activeServices.add("Pocket")
-
-        val statusText = if (activeServices.isNotEmpty()) {
-            "${activeServices.joinToString(", ")} Protection Active"
-        } else {
-            "Security Service Running"
+        val stopIntent = Intent(this, AntiTheftService::class.java).apply {
+            action = ACTION_STOP
         }
+        val pendingStopIntent = PendingIntent.getService(this, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE)
 
         val builder = NotificationCompat.Builder(this, "presence_detection_channel")
             .setContentTitle("🛡️ Mobile Security Active")
-            .setContentText(statusText)
+            .setContentText("Motion detector is armed.")
             .setSmallIcon(R.drawable.ic_status_active)
             .setOngoing(true)
-            .setContentIntent(pendingAppIntent)
+            .addAction(R.drawable.ic_status_inactive, "Disarm", pendingStopIntent)
 
-        if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(NOTIFICATION_ID, builder.build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-        } else {
-            startForeground(NOTIFICATION_ID, builder.build())
-        }
+        // Add intent to open app
+        val appIntent = Intent(this, MainActivity::class.java)
+        val pendingAppIntent = PendingIntent.getActivity(this, 0, appIntent, PendingIntent.FLAG_IMMUTABLE)
+        builder.setContentIntent(pendingAppIntent)
+
+        return builder.build()
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        if (event == null) return
+        if (!isArmed || event == null) return
 
-        if (event.sensor.type == Sensor.TYPE_ACCELEROMETER && isMotionArmed) {
-            handleMotionSensor(event)
-        } else if (event.sensor.type == Sensor.TYPE_PROXIMITY && isPocketArmed) {
-            handlePocketSensor(event)
-        }
-    }
-
-    private fun handlePocketSensor(event: SensorEvent) {
-        val distance = event.values[0]
-        val maxRange = event.sensor.maximumRange
-
-        // If something is close (e.g. inside pocket)
-        if (distance < maxRange) {
-            if (!isPocketSecured) {
-                isPocketSecured = true
-                Log.d(TAG, "Pocket Mode: SECURED (Covered)")
-            }
-        } else {
-            // If sensor is uncovered
-            if (isPocketSecured) {
-                Log.w(TAG, "Pocket Mode: UNCOVERED! Triggering Alarm.")
-                triggerAlarm("Removed from Pocket!")
-            }
-        }
-    }
-
-    private fun handleMotionSensor(event: SensorEvent) {
         // Grace period to set the phone down
         if (System.currentTimeMillis() - armingTime < GRACE_PERIOD_MS) {
             lastX = event.values[0]
@@ -277,16 +149,9 @@ class AntiTheftService : Service(), SensorEventListener {
         val z = event.values[2]
 
         if (!firstReading) {
-            val deltaX = kotlin.math.abs(x - lastX)
-            val deltaY = kotlin.math.abs(y - lastY)
-            val deltaZ = kotlin.math.abs(z - lastZ)
-
-            // Calculate total magnitude of change
-            val totalDelta = sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ)
-
-            if (totalDelta > MOVEMENT_THRESHOLD) {
-                Log.w(TAG, "Motion Detected! Delta: $totalDelta")
-                triggerAlarm("Motion Detected!")
+            if (motionDetector?.isMotionDetected(x, y, z, lastX, lastY, lastZ) == true) {
+                Log.w(TAG, "Motion Detected!")
+                triggerAlarm()
             }
         } else {
             firstReading = false
@@ -301,11 +166,11 @@ class AntiTheftService : Service(), SensorEventListener {
         // No-op
     }
 
-    private fun triggerAlarm(reason: String) {
+    private fun triggerAlarm() {
         if (isAlarmPlaying) return
         isAlarmPlaying = true
 
-        Log.w(TAG, "TRIGGERING ALARM: $reason")
+        Log.w(TAG, "TRIGGERING ALARM")
 
         // 1. Play Sound
         try {
@@ -323,10 +188,10 @@ class AntiTheftService : Service(), SensorEventListener {
         }
 
         // 2. Show Alert Notification with Action to Stop
-        showAlarmNotification(reason)
+        showAlarmNotification()
     }
 
-    private fun showAlarmNotification(reason: String) {
+    private fun showAlarmNotification() {
         val stopActionIntent = Intent(this, NotificationActionReceiver::class.java).apply {
             action = NotificationActionReceiver.ACTION_STOP_ALARM
             putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, ALARM_NOTIFICATION_ID)
@@ -340,7 +205,7 @@ class AntiTheftService : Service(), SensorEventListener {
 
         val notification = NotificationCompat.Builder(this, "presence_alerts_channel")
             .setContentTitle("🚨 THEFT ALERT!")
-            .setContentText(reason)
+            .setContentText("Motion detected on your device!")
             .setSmallIcon(R.drawable.ic_notification_alert)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -373,18 +238,8 @@ class AntiTheftService : Service(), SensorEventListener {
     }
 
     override fun onDestroy() {
-        try {
-            unregisterReceiver(stopAlarmReceiver)
-        } catch (e: Exception) {}
-
-        if (isChargerArmed) {
-            try {
-                unregisterReceiver(powerReceiver)
-            } catch (e: Exception) {}
-        }
-
-        stopMotionMonitoring()
-        stopPocketMonitoring()
+        unregisterReceiver(stopAlarmReceiver)
+        stopMonitoring()
         super.onDestroy()
     }
 
