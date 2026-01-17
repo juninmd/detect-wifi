@@ -33,6 +33,17 @@ class PreferencesUtil(context: Context) {
         private const val KEY_CHARGER_ALARM_ARMED = "charger_alarm_armed"
         private const val KEY_POCKET_MODE_ARMED = "pocket_mode_armed"
 
+        // Appearance
+        private const val KEY_APP_THEME = "app_theme" // 0=System, 1=Light, 2=Dark
+
+        // MQTT
+        private const val KEY_MQTT_ENABLED = "mqtt_enabled"
+        private const val KEY_MQTT_HOST = "mqtt_host"
+        private const val KEY_MQTT_PORT = "mqtt_port"
+        private const val KEY_MQTT_TOPIC = "mqtt_topic"
+        private const val KEY_MQTT_USER = "mqtt_user"
+        private const val KEY_MQTT_PASS = "mqtt_pass"
+
         private const val PREFIX_HISTORY = "history_"
         private const val PREFIX_NICKNAME = "nickname_"
         private const val PREFIX_CATEGORY = "category_"
@@ -132,6 +143,24 @@ class PreferencesUtil(context: Context) {
         val now = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         return if (startStr > endStr) now >= startStr || now <= endStr else now in startStr..endStr
     }
+
+    // Appearance
+    fun setAppTheme(theme: Int) = preferences.edit().putInt(KEY_APP_THEME, theme).apply()
+    fun getAppTheme(): Int = preferences.getInt(KEY_APP_THEME, 0) // 0=System
+
+    // MQTT
+    fun setMqttEnabled(enabled: Boolean) = preferences.edit().putBoolean(KEY_MQTT_ENABLED, enabled).apply()
+    fun isMqttEnabled() = preferences.getBoolean(KEY_MQTT_ENABLED, false)
+    fun setMqttHost(host: String) = preferences.edit().putString(KEY_MQTT_HOST, host).apply()
+    fun getMqttHost(): String = preferences.getString(KEY_MQTT_HOST, "") ?: ""
+    fun setMqttPort(port: String) = preferences.edit().putString(KEY_MQTT_PORT, port).apply()
+    fun getMqttPort(): String = preferences.getString(KEY_MQTT_PORT, "1883") ?: "1883"
+    fun setMqttTopic(topic: String) = preferences.edit().putString(KEY_MQTT_TOPIC, topic).apply()
+    fun getMqttTopic(): String = preferences.getString(KEY_MQTT_TOPIC, "home/presence") ?: "home/presence"
+    fun setMqttUser(user: String) = preferences.edit().putString(KEY_MQTT_USER, user).apply()
+    fun getMqttUser(): String = preferences.getString(KEY_MQTT_USER, "") ?: ""
+    fun setMqttPass(pass: String) = preferences.edit().putString(KEY_MQTT_PASS, pass).apply()
+    fun getMqttPass(): String = preferences.getString(KEY_MQTT_PASS, "") ?: ""
 
     fun setAntiTheftArmed(armed: Boolean) {
         preferences.edit().putBoolean(KEY_ANTI_THEFT_ARMED, armed).apply()
