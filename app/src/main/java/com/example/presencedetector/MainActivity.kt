@@ -19,6 +19,7 @@ import com.example.presencedetector.security.ui.SecuritySettingsActivity
 import com.example.presencedetector.services.AntiTheftService
 import com.example.presencedetector.services.DetectionBackgroundService
 import com.example.presencedetector.services.PresenceDetectionManager
+import com.example.presencedetector.utils.BiometricAuthenticator
 import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil
 import com.google.android.material.card.MaterialCardView
@@ -150,26 +151,39 @@ class MainActivity : AppCompatActivity() {
     private fun toggleAntiTheft() {
         val currentlyArmed = preferences.isAntiTheftArmed()
         if (currentlyArmed) {
-            // Disarm
-            val serviceIntent = Intent(this, AntiTheftService::class.java).apply {
-                action = AntiTheftService.ACTION_STOP
-            }
-            startService(serviceIntent)
-            preferences.setAntiTheftArmed(false)
-            addLog("Mobile Security Disarmed")
-        } else {
-            // Arm
-            val serviceIntent = Intent(this, AntiTheftService::class.java).apply {
-                action = AntiTheftService.ACTION_START
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent)
+            if (preferences.isBiometricEnabled()) {
+                BiometricAuthenticator(this).authenticate(
+                    onSuccess = { performDisarm() }
+                )
             } else {
-                startService(serviceIntent)
+                performDisarm()
             }
-            preferences.setAntiTheftArmed(true)
-            addLog("Mobile Security Armed")
+        } else {
+            performArm()
         }
+    }
+
+    private fun performDisarm() {
+        val serviceIntent = Intent(this, AntiTheftService::class.java).apply {
+            action = AntiTheftService.ACTION_STOP
+        }
+        startService(serviceIntent)
+        preferences.setAntiTheftArmed(false)
+        addLog("Mobile Security Disarmed")
+        updateAntiTheftUI()
+    }
+
+    private fun performArm() {
+        val serviceIntent = Intent(this, AntiTheftService::class.java).apply {
+            action = AntiTheftService.ACTION_START
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+        preferences.setAntiTheftArmed(true)
+        addLog("Mobile Security Armed")
         updateAntiTheftUI()
     }
 

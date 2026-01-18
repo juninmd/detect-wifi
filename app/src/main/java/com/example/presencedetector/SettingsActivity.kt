@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.presencedetector.services.TelegramService
+import com.example.presencedetector.utils.BiometricAuthenticator
 import com.example.presencedetector.utils.PreferencesUtil
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.materialswitch.MaterialSwitch
@@ -26,6 +27,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var etSecurityStart: TextInputEditText
     private lateinit var etSecurityEnd: TextInputEditText
 
+    private lateinit var switchBiometric: MaterialSwitch
     private lateinit var sliderSensitivity: com.google.android.material.slider.Slider
     private lateinit var tvSensitivityValue: android.widget.TextView
 
@@ -62,6 +64,7 @@ class SettingsActivity : AppCompatActivity() {
         etSecurityStart = findViewById(R.id.etSecurityStart)
         etSecurityEnd = findViewById(R.id.etSecurityEnd)
 
+        switchBiometric = findViewById(R.id.switchBiometric)
         sliderSensitivity = findViewById(R.id.sliderSensitivity)
         tvSensitivityValue = findViewById(R.id.tvSensitivityValue)
     }
@@ -75,6 +78,7 @@ class SettingsActivity : AppCompatActivity() {
         // Security
         switchSecurityAlert.isChecked = preferences.isSecurityAlertEnabled()
         switchSecuritySound.isChecked = preferences.isSecuritySoundEnabled()
+        switchBiometric.isChecked = preferences.isBiometricEnabled()
 
         val schedule = preferences.getSecuritySchedule()
         etSecurityStart.setText(schedule.first)
@@ -97,6 +101,17 @@ class SettingsActivity : AppCompatActivity() {
 
         switchSecuritySound.setOnCheckedChangeListener { _, isChecked ->
             preferences.setSecuritySoundEnabled(isChecked)
+        }
+
+        switchBiometric.setOnCheckedChangeListener { view, isChecked ->
+            if (isChecked) {
+                if (!BiometricAuthenticator.isAvailable(this)) {
+                    view.isChecked = false
+                    Toast.makeText(this, "Biometric authentication not available", Toast.LENGTH_SHORT).show()
+                    return@setOnCheckedChangeListener
+                }
+            }
+            preferences.setBiometricEnabled(isChecked)
         }
 
         // Test Telegram Button

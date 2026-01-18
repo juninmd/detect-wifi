@@ -75,6 +75,9 @@ dependencies {
     // Uses on-device models (no internet required)
     implementation 'com.google.mlkit:object-detection:17.0.1'
 
+    // Biometric Authentication
+    implementation 'androidx.biometric:biometric:1.1.0'
+
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.mockito:mockito-core:5.7.0'
     testImplementation 'org.mockito.kotlin:mockito-kotlin:5.2.1'

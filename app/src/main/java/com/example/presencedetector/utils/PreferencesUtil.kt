@@ -30,6 +30,7 @@ class PreferencesUtil(context: Context) {
         private const val KEY_SECURITY_END_TIME = "security_end_time"
         private const val KEY_ANTI_THEFT_ARMED = "anti_theft_armed"
         private const val KEY_ANTI_THEFT_SENSITIVITY = "anti_theft_sensitivity"
+        private const val KEY_BIOMETRIC_ENABLED = "biometric_enabled"
 
         private const val PREFIX_HISTORY = "history_"
         private const val PREFIX_NICKNAME = "nickname_"
@@ -136,6 +137,14 @@ class PreferencesUtil(context: Context) {
 
     fun getAntiTheftSensitivity(): Float {
         return preferences.getFloat(KEY_ANTI_THEFT_SENSITIVITY, 1.5f)
+    }
+
+    fun setBiometricEnabled(enabled: Boolean) {
+        preferences.edit().putBoolean(KEY_BIOMETRIC_ENABLED, enabled).apply()
+    }
+
+    fun isBiometricEnabled(): Boolean {
+        return preferences.getBoolean(KEY_BIOMETRIC_ENABLED, false)
     }
 
     fun saveNickname(bssid: String, nickname: String) {
