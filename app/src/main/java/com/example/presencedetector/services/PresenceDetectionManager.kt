@@ -157,8 +157,8 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
                 preferences.logEvent(bssid, "Arrived")
 
                 if (areNotificationsEnabled) {
-                    // Security Check for NEW devices (only if not seen before in history)
-                    val isNewDevice = preferences.getDetectionHistoryCount(bssid) == 0
+                    // Security Check for NEW devices (only if not seen before in history AND no nickname)
+                    val isNewDevice = preferences.getDetectionHistoryCount(bssid) == 0 && preferences.getNickname(bssid) == null
                     if (isNewDevice && preferences.isSecurityAlertEnabled()) {
                         handleSecurityThreat(device)
                     }
@@ -274,7 +274,26 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
             context, 0, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        NotificationUtil.sendPresenceNotification(context, "⚠️ SECURITY THREAT", msg, true, "STOP ALARM", pendingStopIntent, notificationId)
+        val markSafeIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+            action = NotificationActionReceiver.ACTION_MARK_SAFE
+            putExtra(NotificationActionReceiver.EXTRA_BSSID, device.bssid)
+            putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+        }
+        val pendingMarkSafeIntent = PendingIntent.getBroadcast(
+            context, 1, markSafeIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        NotificationUtil.sendPresenceNotification(
+            context,
+            "⚠️ SECURITY THREAT",
+            msg,
+            true,
+            "STOP ALARM",
+            pendingStopIntent,
+            notificationId,
+            "MARK SAFE",
+            pendingMarkSafeIntent
+        )
         telegramService.sendMessage(msg)
         if (preferences.isSecuritySoundEnabled() && preferences.isCurrentTimeInSecuritySchedule()) {
             playSecurityAlarm()

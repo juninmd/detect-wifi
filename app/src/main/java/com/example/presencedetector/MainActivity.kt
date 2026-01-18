@@ -227,11 +227,11 @@ class MainActivity : AppCompatActivity() {
         if (isDetecting) {
             statusIndicator.setImageResource(R.drawable.ic_status_active)
             statusIndicator.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
-            statusText.text = "Active"
+            statusText.text = "System Active"
         } else {
             statusIndicator.setImageResource(R.drawable.ic_status_inactive)
-            statusIndicator.setColorFilter(null)
-            statusText.text = "Idle"
+            statusIndicator.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
+            statusText.text = "System Idle"
         }
 
         if (devices.isNotEmpty()) {
