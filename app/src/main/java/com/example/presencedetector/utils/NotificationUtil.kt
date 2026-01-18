@@ -99,7 +99,9 @@ object NotificationUtil {
         isImportantEvent: Boolean,
         actionTitle: String? = null,
         actionIntent: PendingIntent? = null,
-        notificationId: Int? = null
+        notificationId: Int? = null,
+        secondActionTitle: String? = null,
+        secondActionIntent: PendingIntent? = null
     ) {
         createNotificationChannels(context)
 
@@ -136,6 +138,10 @@ object NotificationUtil {
             builder.addAction(R.drawable.ic_status_inactive, actionTitle, actionIntent)
             // If it has an action (like Stop Alarm), make it sticky/alerting
             builder.setFullScreenIntent(pendingIntent, true)
+        }
+
+        if (secondActionTitle != null && secondActionIntent != null) {
+            builder.addAction(R.drawable.ic_status_active, secondActionTitle, secondActionIntent)
         }
 
         val notification = builder.build()
