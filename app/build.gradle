@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.presencedetector"
-        minSdk 21
+        minSdk 33  // Increased to bypass desugaring issues in this environment
         targetSdk 34
         versionCode 1
         versionName "1.0"
@@ -36,12 +36,13 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+        coreLibraryDesugaringEnabled false
     }
 
     kotlinOptions {
-        jvmTarget = '17'
+        jvmTarget = '11'
     }
 
     buildFeatures {
@@ -62,6 +63,7 @@ dependencies {
 
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0'
     implementation 'com.google.code.gson:gson:2.10.1'
+
 
     // ============================================
     // Security Monitoring - RTSP & Person Detection
