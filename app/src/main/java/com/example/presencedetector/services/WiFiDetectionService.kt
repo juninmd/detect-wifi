@@ -74,12 +74,22 @@ class WiFiDetectionService(private val context: Context) {
                 val ssid = result.SSID ?: "Unknown"
                 val isHotspot = isLikelyMobileHotspot(ssid)
 
+                // Extract WiFi Standard (API 30+)
+                val standard = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                    result.wifiStandard
+                } else {
+                    0
+                }
+
                 WiFiDevice(
                     ssid = ssid,
                     bssid = result.BSSID ?: "00:00:00:00:00:00",
                     level = result.level,
                     frequency = result.frequency,
-                    nickname = if (isHotspot) "📱 $ssid (Hotspot)" else ssid
+                    nickname = if (isHotspot) "📱 $ssid (Hotspot)" else ssid,
+                    capabilities = result.capabilities ?: "",
+                    channelWidth = result.channelWidth, // 0 if unknown
+                    standard = standard
                 )
             }
 

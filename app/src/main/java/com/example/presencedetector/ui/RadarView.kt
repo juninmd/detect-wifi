@@ -25,16 +25,16 @@ class RadarView @JvmOverloads constructor(
 
     // Paints
     private val circlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#3A3A3C")
+        color = Color.parseColor("#4D00FF00") // dragon_radar_grid
         style = Paint.Style.STROKE
-        strokeWidth = 2f
+        strokeWidth = 3f
     }
 
     private val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#3A3A3C")
+        color = Color.parseColor("#3300FF00") // Faint green
         style = Paint.Style.STROKE
         strokeWidth = 1f
-        pathEffect = android.graphics.DashPathEffect(floatArrayOf(10f, 10f), 0f)
+        pathEffect = android.graphics.DashPathEffect(floatArrayOf(15f, 15f), 0f)
     }
 
     private val sweepPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -46,30 +46,37 @@ class RadarView @JvmOverloads constructor(
     }
 
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#8E8E93")
+        color = Color.parseColor("#00FF00") // dragon_radar_green
         textSize = 28f
+        typeface = android.graphics.Typeface.MONOSPACE
         textAlign = Paint.Align.CENTER
+        setShadowLayer(5f, 0f, 0f, Color.parseColor("#8000FF00")) // Glow effect
+    }
+
+    private val backgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#CC001100") // dragon_radar_bg
+        style = Paint.Style.FILL
     }
 
     // State
     private var devices: List<WiFiDevice> = emptyList()
     private var scanAngle = 0f
-    private val animationSpeed = 2f
+    private val animationSpeed = 2.5f
     private var isAnimating = true
     private var pulsePhase = 0f
 
-    // Signal smoothing: store last known levels per BSSID for interpolation
+    // Signal smoothing
     private val smoothedLevels = mutableMapOf<String, Float>()
-    private val SMOOTHING_FACTOR = 0.3f // Lower = smoother, higher = more responsive
+    private val SMOOTHING_FACTOR = 0.25f 
 
     // Animation Loop
     private val animator = object : Runnable {
         override fun run() {
             if (isAnimating) {
                 scanAngle = (scanAngle + animationSpeed) % 360f
-                pulsePhase = (pulsePhase + 0.1f) % (2f * Math.PI.toFloat())
+                pulsePhase = (pulsePhase + 0.15f) % (2f * Math.PI.toFloat())
                 invalidate()
-                postDelayed(this, 16) // ~60 FPS
+                postDelayed(this, 16) 
             }
         }
     }
@@ -83,7 +90,6 @@ class RadarView @JvmOverloads constructor(
         invalidate()
     }
 
-    // Alias for compatibility
     fun setDevices(newDevices: List<WiFiDevice>) {
         updateDevices(newDevices)
     }
@@ -100,10 +106,6 @@ class RadarView @JvmOverloads constructor(
         post(animator)
     }
 
-    /**
-     * Smooth signal level using exponential moving average.
-     * Prevents devices from jumping around erratically.
-     */
     private fun getSmoothedLevel(bssid: String, currentLevel: Int): Float {
         val previous = smoothedLevels[bssid] ?: currentLevel.toFloat()
         val smoothed = previous + SMOOTHING_FACTOR * (currentLevel - previous)
@@ -111,10 +113,6 @@ class RadarView @JvmOverloads constructor(
         return smoothed
     }
 
-    /**
-     * Get consistent angle based on BSSID hash.
-     * Device will always appear at the same position around the radar.
-     */
     private fun getConsistentAngle(bssid: String): Float {
         return (abs(bssid.hashCode()) % 360).toFloat()
     }
@@ -124,22 +122,31 @@ class RadarView @JvmOverloads constructor(
 
         val centerX = width / 2f
         val centerY = height / 2f
-        val maxRadius = min(centerX, centerY) * 0.85f
+        val maxRadius = min(centerX, centerY) * 0.9f
+
+        // 0. Dragon Radar Background
+        canvas.drawCircle(centerX, centerY, maxRadius, backgroundPaint)
 
         // 1. Draw Radar Grid
-        // Outer circle
+        // Outer rim
+        circlePaint.strokeWidth = 5f
+        circlePaint.color = Color.parseColor("#00FF00")
+        circlePaint.setShadowLayer(10f, 0f, 0f, Color.parseColor("#8000FF00")) // Neon Glow
         canvas.drawCircle(centerX, centerY, maxRadius, circlePaint)
-        // Inner circles with distance labels
+        circlePaint.clearShadowLayer()
+        
+        // Inner circles
         canvas.drawCircle(centerX, centerY, maxRadius * 0.66f, gridPaint)
         canvas.drawCircle(centerX, centerY, maxRadius * 0.33f, gridPaint)
+        
         // Crosshairs
         canvas.drawLine(centerX - maxRadius, centerY, centerX + maxRadius, centerY, gridPaint)
         canvas.drawLine(centerX, centerY - maxRadius, centerX, centerY + maxRadius, gridPaint)
 
-        // 2. Draw Scanning Sweep
+        // 2. Draw Scanning Sweep (Green Gradient)
         val sweepGradient = SweepGradient(centerX, centerY,
-            intArrayOf(Color.TRANSPARENT, Color.parseColor("#4D7FFE00"), Color.parseColor("#4D7FFE")),
-            floatArrayOf(0f, 0.75f, 1f)
+            intArrayOf(Color.TRANSPARENT, Color.parseColor("#003300"), Color.parseColor("#00FF00")),
+            floatArrayOf(0f, 0.5f, 1f)
         )
         sweepPaint.shader = sweepGradient
 
@@ -148,13 +155,11 @@ class RadarView @JvmOverloads constructor(
         canvas.drawCircle(centerX, centerY, maxRadius, sweepPaint)
         canvas.restore()
 
-        // 3. Draw Devices with improved positioning
+        // 3. Draw Devices
         devices.forEach { device ->
-            // Get consistent angle based on BSSID (device always in same position)
             val angleDeg = getConsistentAngle(device.bssid)
             val angleRad = Math.toRadians(angleDeg.toDouble())
 
-            // Smooth signal level to prevent jumping
             val smoothedLevel = getSmoothedLevel(device.bssid, device.level)
             val clampedLevel = smoothedLevel.coerceIn(-90f, -30f)
             val normalizedDist = 1f - ((clampedLevel + 90f) / 60f)
@@ -163,37 +168,43 @@ class RadarView @JvmOverloads constructor(
             val dx = centerX + (radius * cos(angleRad)).toFloat()
             val dy = centerY + (radius * sin(angleRad)).toFloat()
 
-            // Device Color based on source type and known status
             val isKnown = device.nickname != null
+            // Dragon Radar Colors: Gold for DragonBalls (unknowns?), Cyan for Allies (known)
             val color = when {
-                device.source == DeviceSource.BLUETOOTH -> if (isKnown) Color.parseColor("#007AFF") else Color.parseColor("#5856D6")
-                isKnown -> Color.parseColor("#34C759") // Green for known WiFi
-                else -> Color.parseColor("#FF9500") // Orange for unknown WiFi
+                 isKnown -> Color.parseColor("#00FFFF") 
+                 else -> Color.parseColor("#FFD700") 
             }
 
-            // Pulsing glow effect for known devices (simulates active detection)
-            val pulseScale = 1f + 0.3f * sin(pulsePhase + angleDeg / 30f)
+            val pulseScale = 1f + 0.2f * sin(pulsePhase + angleDeg / 20f)
             
-            // Draw Glow (larger for known devices, pulsing)
+            // Glow
             devicePaint.color = color
-            devicePaint.alpha = if (isKnown) 60 else 30
-            val glowRadius = if (isKnown) 25f * pulseScale else 18f
+            devicePaint.alpha = 80
+            val glowRadius = if (isKnown) 20f * pulseScale else 14f * pulseScale
             canvas.drawCircle(dx, dy, glowRadius, devicePaint)
 
-            // Draw Dot
-            devicePaint.color = color
+            // Core
             devicePaint.alpha = 255
-            val dotRadius = if (isKnown) 12f else 8f
+            val dotRadius = if (isKnown) 10f else 7f
             canvas.drawCircle(dx, dy, dotRadius, devicePaint)
 
-            // Draw Label
-            val label = device.nickname ?: device.ssid.take(8)
-            canvas.drawText(label, dx, dy + 40f, textPaint)
+            // Label
+            val label = device.nickname ?: "" // Only show nickname on map to reduce clutter
+            if (label.isNotEmpty()) {
+                canvas.drawText(label, dx, dy + 35f, textPaint)
+            }
         }
 
-        // Center User Dot
-        devicePaint.color = Color.parseColor("#007AFF")
-        canvas.drawCircle(centerX, centerY, 8f, devicePaint)
+        // Center User Arrow
+        val arrowPath = android.graphics.Path().apply {
+            moveTo(centerX, centerY - 15f)
+            lineTo(centerX - 10f, centerY + 10f)
+            lineTo(centerX, centerY + 5f) // Indent
+            lineTo(centerX + 10f, centerY + 10f)
+            close()
+        }
+        devicePaint.color = Color.RED
+        canvas.drawPath(arrowPath, devicePaint)
     }
 }
 

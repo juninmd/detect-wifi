@@ -36,4 +36,13 @@
     <color name="gradient_start">#6366F1</color>
     <color name="gradient_mid">#7C3AED</color>
     <color name="gradient_end">#EC4899</color>
+
+    <!-- Dragon Radar Theme -->
+    <color name="dragon_radar_green">#00FF00</color>
+    <color name="dragon_radar_grid">#4D00FF00</color> <!-- 30% alpha -->
+    <color name="dragon_radar_bg">#CC001100</color>
+    <color name="dragon_radar_scan">#8000FF00</color>
+    <color name="dragon_blip_unknown">#FFD700</color> <!-- Gold -->
+    <color name="dragon_blip_known">#00FFFF</color> <!-- Cyan -->
+    <color name="dragon_blip_hostile">#FF0000</color> <!-- Red -->
 </resources>

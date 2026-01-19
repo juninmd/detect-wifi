@@ -36,12 +36,10 @@ class WifiRadarActivity : AppCompatActivity() {
     private lateinit var preferences: PreferencesUtil
     private lateinit var adapter: WifiAdapter
 
-    // Summary card views
-    private lateinit var tvTotalDevices: TextView
-    private lateinit var tvKnownDevices: TextView
-    private lateinit var tvPersonDevices: TextView
-    private lateinit var tvApplianceDevices: TextView
-    private lateinit var chipGroupCategories: ChipGroup
+    // Summary card views removed for Dragon Radar UI
+    // private lateinit var tvTotalDevices: TextView
+    // ...
+
 
     // Sorting
     enum class SortOrder {
@@ -67,17 +65,13 @@ class WifiRadarActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.wifiRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Initialize summary card views from included layout
-        val summaryCard = findViewById<View>(R.id.card_summary)
-        tvTotalDevices = summaryCard.findViewById(R.id.tvTotalDevices)
-        tvKnownDevices = summaryCard.findViewById(R.id.tvKnownDevices)
-        tvPersonDevices = summaryCard.findViewById(R.id.tvPersonDevices)
-        tvApplianceDevices = summaryCard.findViewById(R.id.tvApplianceDevices)
-        chipGroupCategories = summaryCard.findViewById(R.id.chipGroupCategories)
+        // Summary card removed
+        // val summaryCard = findViewById<View>(R.id.card_summary)
+        // ...
 
 
         adapter = WifiAdapter(
-            onItemClick = { device -> showEditDialog(device) },
+            onItemClick = { device -> showDeviceInfoDialog(device) },
             onItemLongClick = { device -> showDeviceInfoDialog(device) }
         )
         recyclerView.adapter = adapter
@@ -93,7 +87,7 @@ class WifiRadarActivity : AppCompatActivity() {
                 }
                 adapter.updateDevices(processedDevices, currentSortOrder)
                 radarView.updateDevices(processedDevices)
-                updateSummary(processedDevices)
+                // updateSummary(processedDevices)
             }
         }
     }
@@ -131,35 +125,11 @@ class WifiRadarActivity : AppCompatActivity() {
             .show()
     }
 
+    /*
     private fun updateSummary(devices: List<WiFiDevice>) {
-        val total = devices.size
-        val known = devices.count { preferences.getNickname(it.bssid) != null }
-        val people = devices.count { (preferences.getManualCategory(it.bssid) ?: it.category) == DeviceCategory.SMARTPHONE }
-        val appliances = devices.count { (preferences.getManualCategory(it.bssid) ?: it.category) == DeviceCategory.SMART_LIGHT }
-
-        tvTotalDevices.text = total.toString()
-        tvKnownDevices.text = known.toString()
-        tvPersonDevices.text = people.toString()
-        tvApplianceDevices.text = appliances.toString()
-
-        // Update category chips
-        chipGroupCategories.removeAllViews()
-        val categoryStats = mutableMapOf<DeviceCategory, Int>()
-        devices.forEach { device ->
-            val category = preferences.getManualCategory(device.bssid) ?: device.category
-            categoryStats[category] = (categoryStats[category] ?: 0) + 1
-        }
-
-        categoryStats.forEach { (category, count) ->
-            val chip = Chip(this).apply {
-                text = "${category.iconRes} ${category.displayName} ($count)"
-                isEnabled = false
-                setTextColor(getColor(R.color.dark_text))
-                chipIcon = null
-            }
-            chipGroupCategories.addView(chip)
-        }
+        ...
     }
+    */
 
     private fun forceRefreshDevices() {
         // Force WiFi scan to update device list
@@ -167,33 +137,17 @@ class WifiRadarActivity : AppCompatActivity() {
     }
 
     private fun showDeviceInfoDialog(device: WiFiDevice) {
-        val nickname = preferences.getNickname(device.bssid) ?: "No nickname"
-        val historyCount = preferences.getDetectionHistoryCount(device.bssid)
-        val lastSeenDate = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(device.lastSeen))
-
-        val notifyArr = if (preferences.shouldNotifyArrival(device.bssid)) "🔔 Arrival On" else "🔕 Arrival Off"
-        val notifyDep = if (preferences.shouldNotifyDeparture(device.bssid)) "🔔 Leave On" else "🔕 Leave Off"
-
-        val status = if (device.isHidden) "⚠️ Hidden Network" else "✅ Visible"
-
-        val info = """
-            $status
-            📌 SSID: ${if (device.isHidden) "[HIDDEN]" else device.ssid}
-            🆔 BSSID: ${device.bssid}
-            🏷️ Nickname: $nickname
-            📂 Category: ${device.category.displayName}
-            📶 Signal: ${device.level} dBm
-            🕒 Last Seen: $lastSeenDate
-            📊 Days Detected: $historyCount days
-            $notifyArr | $notifyDep
-        """.trimIndent()
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Device Details")
-            .setMessage(info)
-            .setPositiveButton("Edit Profile") { _, _ -> showEditDialog(device) }
-            .setNegativeButton("Close", null)
-            .show()
+        val intent = android.content.Intent(this, DeviceDetailActivity::class.java).apply {
+            putExtra(DeviceDetailActivity.EXTRA_BSSID, device.bssid)
+            putExtra(DeviceDetailActivity.EXTRA_SSID, device.ssid)
+            putExtra(DeviceDetailActivity.EXTRA_SIGNAL, device.level)
+            putExtra(DeviceDetailActivity.EXTRA_LAST_SEEN, device.lastSeen)
+            // Ideally passing the standard via intent if Parcelable or extra field
+            // But since WiFiDevice is a data class, we can make it Parcelable or just pass the int
+            putExtra("extra_standard", device.standard)
+            putExtra("extra_channel_width", device.channelWidth)
+        }
+        startActivity(intent)
     }
 
     private fun showEditDialog(device: WiFiDevice) {

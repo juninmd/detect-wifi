@@ -32,6 +32,8 @@ class DeviceDetailActivity : AppCompatActivity() {
     private var ssid: String = ""
     private var signal: Int = 0
     private var lastSeen: Long = 0
+    private var wifiStandard: Int = 0
+    private var wifiChannelWidth: Int = 0
 
     // Views
     private lateinit var tvIconLarge: TextView
@@ -49,6 +51,9 @@ class DeviceDetailActivity : AppCompatActivity() {
     private lateinit var btnSave: Button
     private lateinit var tvHistoryCount: TextView
 
+    private lateinit var tvWifiStandard: TextView
+    private lateinit var signalGraphView: com.example.presencedetector.ui.SignalGraphView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_device_detail)
@@ -60,6 +65,12 @@ class DeviceDetailActivity : AppCompatActivity() {
         ssid = intent.getStringExtra(EXTRA_SSID) ?: "Unknown"
         signal = intent.getIntExtra(EXTRA_SIGNAL, -100)
         lastSeen = intent.getLongExtra(EXTRA_LAST_SEEN, System.currentTimeMillis())
+        val standard = intent.getIntExtra("extra_standard", 0)
+        val channelWidth = intent.getIntExtra("extra_channel_width", 0)
+        
+        // Store these to use in loadData (add fields first)
+        this.wifiStandard = standard
+        this.wifiChannelWidth = channelWidth
 
         if (bssid.isEmpty()) {
             finish()
@@ -89,6 +100,8 @@ class DeviceDetailActivity : AppCompatActivity() {
         tvStatusValue = findViewById(R.id.tvStatusValue)
         tvSignalValue = findViewById(R.id.tvSignalValue)
         tvLastSeenValue = findViewById(R.id.tvLastSeenValue)
+        tvWifiStandard = findViewById(R.id.tvWifiStandard) // New
+        signalGraphView = findViewById(R.id.signalGraphView) // New
         etEditNickname = findViewById(R.id.etEditNickname)
         rgCategory = findViewById(R.id.rgCategory)
         cbNotifyArrival = findViewById(R.id.cbNotifyArrival)
@@ -126,10 +139,24 @@ class DeviceDetailActivity : AppCompatActivity() {
         tvSignalValue.text = "$signal dBm"
         val timeStr = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(lastSeen))
         tvLastSeenValue.text = timeStr
+        
+        // WiFi Standard
+        val stdStr = when (wifiStandard) {
+            4 -> "WiFi 4 (802.11n)"
+            5 -> "WiFi 5 (802.11ac)"
+            6 -> "WiFi 6 (802.11ax)"
+            7 -> "WiFi 7 (802.11be)"
+            else -> if (wifiStandard > 0) "Standard: $wifiStandard" else "Legacy/Unknown"
+        }
+        val widthStr = if (wifiChannelWidth > 0) " | ${wifiChannelWidth}MHz" else ""
+        tvWifiStandard.text = "$stdStr$widthStr" 
 
         // History
         val historyCount = preferences.getDetectionHistoryCount(bssid)
         tvHistoryCount.text = "Detected on $historyCount different days"
+        
+        // Initialize Graph
+        signalGraphView.setDevice(bssid)
 
         // Notifications
         cbNotifyArrival.isChecked = preferences.shouldNotifyArrival(bssid)

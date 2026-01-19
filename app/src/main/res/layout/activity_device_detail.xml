@@ -68,7 +68,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Status Card -->
+                <!-- Status Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -123,6 +123,30 @@
                          <TextView android:text="Last Seen" android:textColor="#666666" android:textSize="12sp"/>
                          <TextView android:id="@+id/tvLastSeenValue" android:text="Just now" android:textColor="#333333" android:textSize="16sp"/>
                     </LinearLayout>
+                    
+                    <LinearLayout
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:orientation="vertical"
+                         android:layout_marginTop="12dp">
+                         <TextView android:text="WiFi Standard" android:textColor="#666666" android:textSize="12sp"/>
+                         <TextView android:id="@+id/tvWifiStandard" android:text="WiFi 5 (ac)" android:textColor="#333333" android:textSize="16sp"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Signal History"
+                        android:textColor="#666666"
+                        android:textSize="12sp"
+                        android:layout_marginTop="16dp"/>
+                    
+                    <com.example.presencedetector.ui.SignalGraphView
+                        android:id="@+id/signalGraphView"
+                        android:layout_width="match_parent"
+                        android:layout_height="120dp"
+                        android:layout_marginTop="8dp"
+                        android:background="#EEEEEE"/>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

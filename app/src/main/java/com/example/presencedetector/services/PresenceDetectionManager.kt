@@ -134,6 +134,9 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
         allDevices.forEach { 
             preferences.trackDetection(it.bssid)
             deviceTypes[it.bssid] = it.source
+            
+            // Add to live signal history for graphing
+            SignalHistoryManager.addPoint(it.bssid, it.level)
         }
 
         evaluateGlobalPresence(method, details)
