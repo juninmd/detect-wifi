@@ -280,26 +280,43 @@ class AntiTheftService : Service(), SensorEventListener {
     }
 
     private fun showAlarmNotification() {
-        val stopActionIntent = Intent(this, NotificationActionReceiver::class.java).apply {
-            action = NotificationActionReceiver.ACTION_STOP_ALARM
-            putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, ALARM_NOTIFICATION_ID)
+        // Action 1: Disarm (Secure - opens App)
+        val disarmIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra(MainActivity.EXTRA_DISARM_REQUEST, true)
+            putExtra(MainActivity.EXTRA_NOTIFICATION_ID, ALARM_NOTIFICATION_ID)
         }
-        val pendingStopIntent = PendingIntent.getBroadcast(
+        val pendingDisarmIntent = PendingIntent.getActivity(
             this,
-            1,
-            stopActionIntent,
+            ALARM_NOTIFICATION_ID,
+            disarmIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Action 2: Call Emergency (Dialer)
+        val emergencyIntent = Intent(Intent.ACTION_DIAL).apply {
+            data = android.net.Uri.parse("tel:190") // 190 (Brazil) / 112 (EU) - Standard Emergency
+        }
+        val pendingEmergencyIntent = PendingIntent.getActivity(
+            this,
+            ALARM_NOTIFICATION_ID + 1,
+            emergencyIntent,
+            PendingIntent.FLAG_IMMUTABLE
         )
 
         val notification = NotificationCompat.Builder(this, NotificationUtil.ALERT_CHANNEL_ID)
             .setContentTitle("🚨 THEFT ALERT!")
-            .setContentText("Motion detected on your device!")
+            .setContentText("Motion detected! Tap to Disarm.")
             .setSmallIcon(R.drawable.ic_notification_alert)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setFullScreenIntent(pendingStopIntent, true) // Try to wake screen
-            .addAction(R.drawable.ic_status_inactive, "STOP ALARM", pendingStopIntent)
-            .setDeleteIntent(pendingStopIntent) // Stop if dismissed
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setFullScreenIntent(pendingDisarmIntent, true) // Try to wake screen and show
+            .addAction(R.drawable.ic_status_inactive, "UNLOCK & DISARM", pendingDisarmIntent)
+            .addAction(android.R.drawable.ic_menu_call, "EMERGENCY CALL", pendingEmergencyIntent)
+            .setDeleteIntent(pendingDisarmIntent) // If dismissed, try to open app to ensure user sees it? Or just let it be.
+            .setAutoCancel(false)
+            .setOngoing(true) // Cannot be swiped away easily while alarming
             .build()
 
         val notificationManager = androidx.core.app.NotificationManagerCompat.from(this)
