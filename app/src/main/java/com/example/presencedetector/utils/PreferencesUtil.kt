@@ -17,6 +17,7 @@ class PreferencesUtil(context: Context) {
         private const val KEY_DETECTION_ENABLED = "detection_enabled"
         private const val KEY_FOREGROUND_SERVICE = "foreground_service"
         private const val KEY_NOTIFY_ON_PRESENCE = "notify_on_presence"
+        private const val KEY_NOTIFY_WIFI_ARRIVAL = "notify_wifi_arrival"
 
         // Telegram Settings
         private const val KEY_TELEGRAM_ENABLED = "telegram_enabled"
@@ -31,6 +32,8 @@ class PreferencesUtil(context: Context) {
         private const val KEY_ANTI_THEFT_ARMED = "anti_theft_armed"
         private const val KEY_ANTI_THEFT_SENSITIVITY = "anti_theft_sensitivity"
         private const val KEY_BIOMETRIC_ENABLED = "biometric_enabled"
+        private const val KEY_POCKET_MODE_ENABLED = "pocket_mode_enabled"
+        private const val KEY_CHARGER_MODE_ENABLED = "charger_mode_enabled"
 
         private const val PREFIX_HISTORY = "history_"
         private const val PREFIX_NICKNAME = "nickname_"
@@ -62,6 +65,14 @@ class PreferencesUtil(context: Context) {
 
     fun shouldNotifyOnPresence(): Boolean {
         return preferences.getBoolean(KEY_NOTIFY_ON_PRESENCE, true)
+    }
+
+    fun setNotifyWifiArrival(enabled: Boolean) {
+        preferences.edit().putBoolean(KEY_NOTIFY_WIFI_ARRIVAL, enabled).apply()
+    }
+
+    fun shouldNotifyWifiArrival(): Boolean {
+        return preferences.getBoolean(KEY_NOTIFY_WIFI_ARRIVAL, false)
     }
 
     fun setNotifyArrival(bssid: String, notify: Boolean) {
@@ -145,6 +156,22 @@ class PreferencesUtil(context: Context) {
 
     fun isBiometricEnabled(): Boolean {
         return preferences.getBoolean(KEY_BIOMETRIC_ENABLED, false)
+    }
+
+    fun setPocketModeEnabled(enabled: Boolean) {
+        preferences.edit().putBoolean(KEY_POCKET_MODE_ENABLED, enabled).apply()
+    }
+
+    fun isPocketModeEnabled(): Boolean {
+        return preferences.getBoolean(KEY_POCKET_MODE_ENABLED, false)
+    }
+
+    fun setChargerModeEnabled(enabled: Boolean) {
+        preferences.edit().putBoolean(KEY_CHARGER_MODE_ENABLED, enabled).apply()
+    }
+
+    fun isChargerModeEnabled(): Boolean {
+        return preferences.getBoolean(KEY_CHARGER_MODE_ENABLED, false)
     }
 
     fun saveNickname(bssid: String, nickname: String) {
