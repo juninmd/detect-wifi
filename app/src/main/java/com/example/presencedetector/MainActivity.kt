@@ -31,6 +31,8 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
     companion object {
         private const val PERMISSION_REQUEST_CODE = 100
+        const val EXTRA_DISARM_REQUEST = "EXTRA_DISARM_REQUEST"
+        const val EXTRA_NOTIFICATION_ID = "EXTRA_NOTIFICATION_ID"
     }
 
     private lateinit var startButton: Button
@@ -69,6 +71,22 @@ class MainActivity : AppCompatActivity() {
             requestPermissions()
         }
         setupDetectionManager()
+        handleIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_DISARM_REQUEST, false) == true) {
+            // Trigger biometric check via existing toggle logic
+            if (preferences.isAntiTheftArmed()) {
+                toggleAntiTheft()
+            }
+        }
     }
 
     override fun onResume() {

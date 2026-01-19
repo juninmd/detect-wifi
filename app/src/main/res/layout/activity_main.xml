@@ -18,7 +18,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="Security Dashboard"
+            app:title="Security Center"
             app:titleCentered="true"
             app:titleTextColor="@color/white" />
 
@@ -28,7 +28,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="80dp"
+        android:paddingBottom="100dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -37,197 +37,150 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- SYSTEM STATUS CARD -->
-            <com.google.android.material.card.MaterialCardView
+            <!-- MAIN STATUS SHIELD -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                app:cardBackgroundColor="@color/card_background_elevated"
-                app:cardCornerRadius="32dp"
-                app:cardElevation="8dp"
-                app:strokeWidth="0dp">
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_marginBottom="24dp">
 
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="24dp">
-
-                    <com.google.android.material.imageview.ShapeableImageView
-                        android:id="@+id/statusIndicator"
-                        android:layout_width="80dp"
-                        android:layout_height="80dp"
-                        android:padding="16dp"
-                        android:src="@drawable/ic_status_inactive"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:shapeAppearanceOverlay="@style/CircleShapeAppearance"
+                <FrameLayout
+                    android:layout_width="120dp"
+                    android:layout_height="120dp">
+                    <!-- Glow effect -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
                         android:background="@drawable/circle_background_soft"
-                        app:tint="@color/primary_color"
-                        android:scaleType="centerInside" />
+                        android:alpha="0.2"/>
 
-                    <TextView
-                        android:id="@+id/statusText"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="24dp"
-                        android:text="System Idle"
-                        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
-                        android:textColor="@color/dark_text"
-                        android:textStyle="bold"
-                        app:layout_constraintEnd_toStartOf="@+id/controlGroup"
-                        app:layout_constraintStart_toEndOf="@+id/statusIndicator"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toTopOf="@+id/statusDetails"/>
+                    <ImageView
+                        android:id="@+id/statusIndicator"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:padding="20dp"
+                        android:src="@drawable/ic_status_inactive"
+                        app:tint="@color/primary_color"/>
+                </FrameLayout>
 
-                    <TextView
-                        android:id="@+id/statusDetails"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="Tap play to start scanning"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                        android:textColor="@color/light_text"
-                        app:layout_constraintEnd_toStartOf="@+id/controlGroup"
-                        app:layout_constraintStart_toStartOf="@+id/statusText"
-                        app:layout_constraintTop_toBottomOf="@+id/statusText"
-                        app:layout_constraintBottom_toBottomOf="parent"/>
+                <TextView
+                    android:id="@+id/statusText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="System Idle"
+                    android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"/>
 
-                    <LinearLayout
-                        android:id="@+id/controlGroup"
+                <TextView
+                    android:id="@+id/statusDetails"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Tap to start monitoring"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                    android:textColor="@color/light_text"/>
+
+                <!-- Main Toggle Buttons -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/startButton"
+                        style="@style/Widget.Material3.Button"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="parent">
+                        android:text="ACTIVATE"
+                        android:backgroundTint="@color/primary_color"
+                        android:textColor="@color/white"/>
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/startButton"
-                            style="@style/Widget.Material3.Button.IconButton.Filled"
-                            android:layout_width="64dp"
-                            android:layout_height="64dp"
-                            app:icon="@android:drawable/ic_media_play"
-                            app:iconSize="32dp"
-                            app:backgroundTint="@color/primary_color"/>
+                    <Button
+                        android:id="@+id/stopButton"
+                        style="@style/Widget.Material3.Button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="DEACTIVATE"
+                        android:backgroundTint="@color/danger_color"
+                        android:textColor="@color/white"
+                        android:visibility="gone"/>
+                </LinearLayout>
+            </LinearLayout>
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/stopButton"
-                            style="@style/Widget.Material3.Button.IconButton.Filled"
-                            android:layout_width="64dp"
-                            android:layout_height="64dp"
-                            android:visibility="gone"
-                            app:icon="@android:drawable/ic_media_pause"
-                            app:iconSize="32dp"
-                            app:backgroundTint="@color/danger_color" />
-                    </LinearLayout>
-
-                </androidx.constraintlayout.widget.ConstraintLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- SECTION: DEVICE GUARD -->
+            <!-- SECTION: MY PHONE (Anti-Theft) -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
-                android:text="🛡️ Phone Security"
+                android:text="📱 My Phone"
                 android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                 android:textColor="@color/white"
                 android:textStyle="bold" />
 
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnAntiTheft"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:baselineAligned="false">
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="@color/card_background_elevated">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="20dp"
+                    android:gravity="center_vertical">
 
-                <!-- Anti-Theft Toggle -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/btnAntiTheft"
-                    android:layout_width="0dp"
-                    android:layout_height="160dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="4dp"
-                    app:cardBackgroundColor="@color/card_background_elevated">
+                    <ImageView
+                        android:id="@+id/ivAntiTheftIcon"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:src="@android:drawable/ic_lock_idle_lock"
+                        app:tint="@color/primary_color"/>
+
                     <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:padding="20dp"
-                        android:gravity="center_vertical">
-
-                        <ImageView
-                            android:id="@+id/ivAntiTheftIcon"
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:src="@android:drawable/ic_lock_idle_lock"
-                            app:tint="@color/primary_color"/>
-
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="20dp"
+                        android:orientation="vertical">
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:text="Anti-Theft"
+                            android:text="Anti-Theft Protection"
                             android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                             android:textColor="@color/dark_text"
                             android:textStyle="bold"/>
-
                         <TextView
                             android:id="@+id/tvAntiTheftStatus"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Disarmed"
+                            android:text="Tap to Arm"
                             android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                            android:textColor="@color/light_text"
-                            android:layout_marginTop="4dp"/>
+                            android:textColor="@color/light_text"/>
                     </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
 
-                <!-- SOS Panic Button -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/btnPanic"
-                    android:layout_width="0dp"
-                    android:layout_height="160dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="4dp"
-                    app:cardBackgroundColor="#D32F2F">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:padding="20dp"
-                        android:gravity="center">
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_media_play"
+                        android:rotation="0"
+                        app:tint="@color/light_text"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                        <ImageView
-                            android:layout_width="56dp"
-                            android:layout_height="56dp"
-                            android:src="@android:drawable/ic_lock_power_off"
-                            app:tint="@color/white"/>
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:text="SOS PANIC"
-                            android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
-                            android:textColor="@color/white"
-                            android:textStyle="bold"/>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-            </LinearLayout>
-
-            <!-- SECTION: HOME MONITOR -->
+            <!-- SECTION: MY HOME -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
                 android:layout_marginBottom="12dp"
-                android:text="🏠 Home Monitor"
+                android:text="🏠 My Home"
                 android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                 android:textColor="@color/white"
                 android:textStyle="bold" />
@@ -239,13 +192,14 @@
                 android:columnCount="2"
                 android:rowCount="2">
 
-                <!-- Card 1: WiFi/Radar -->
+                <!-- Devices / Radar -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/btnOpenRadarFromGrid"
                     android:layout_width="0dp"
                     android:layout_height="120dp"
                     android:layout_columnWeight="1"
-                    android:layout_margin="6dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_marginBottom="16dp"
                     app:cardCornerRadius="20dp"
                     app:cardElevation="2dp"
                     app:cardBackgroundColor="@color/primary_vibrant">
@@ -254,18 +208,19 @@
                         android:layout_height="match_parent"
                         android:orientation="vertical"
                         android:padding="16dp">
-                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_search" app:tint="@color/white"/>
-                        <TextView android:id="@+id/tvCountKnown" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="0" android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium" android:textColor="@color/white" android:textStyle="bold"/>
+                        <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@android:drawable/ic_menu_search" app:tint="@color/white"/>
+                        <TextView android:id="@+id/tvCountKnown" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="0" android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium" android:textColor="@color/white" android:textStyle="bold"/>
                         <TextView android:id="@+id/tvNamesKnown" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Active Devices" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="#E0E0FF" android:maxLines="1" android:ellipsize="end"/>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Card 2: Intruder/Unknown -->
+                <!-- Intruder / Unknown -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="120dp"
                     android:layout_columnWeight="1"
-                    android:layout_margin="6dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginBottom="16dp"
                     app:cardCornerRadius="20dp"
                     app:cardElevation="2dp"
                     app:cardBackgroundColor="@color/card_background_elevated"
@@ -276,103 +231,87 @@
                         android:layout_height="match_parent"
                         android:orientation="vertical"
                         android:padding="16dp">
-                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_dialog_alert" app:tint="@color/warning_color"/>
-                        <TextView android:id="@+id/tvCountUnknown" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="0" android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium" android:textColor="@color/warning_color" android:textStyle="bold"/>
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Unknown / New" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="@color/light_text"/>
+                        <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@android:drawable/ic_dialog_alert" app:tint="@color/warning_color"/>
+                        <TextView android:id="@+id/tvCountUnknown" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="0" android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium" android:textColor="@color/warning_color" android:textStyle="bold"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Unknown Devices" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="@color/light_text"/>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Card 3: Cameras -->
+                <!-- Cameras -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/btnSecuritySettings"
                     android:layout_width="0dp"
-                    android:layout_height="120dp"
+                    android:layout_height="100dp"
                     android:layout_columnWeight="1"
-                    android:layout_margin="6dp"
-                    app:cardCornerRadius="20dp"
-                    app:cardElevation="2dp"
-                    app:cardBackgroundColor="#424242">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_camera" app:tint="@color/white"/>
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Cameras" android:textAppearance="@style/TextAppearance.Material3.TitleMedium" android:textColor="@color/white" android:textStyle="bold"/>
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="View Streams" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="#BDBDBD"/>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Card 4: History -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/btnOpenHistory"
-                    android:layout_width="0dp"
-                    android:layout_height="120dp"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="6dp"
-                    app:cardCornerRadius="20dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_marginBottom="8dp"
+                    app:cardCornerRadius="16dp"
                     app:cardElevation="2dp"
                     app:cardBackgroundColor="@color/card_background_elevated">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:orientation="vertical"
-                        android:padding="16dp">
+                        android:padding="16dp"
+                        android:gravity="center_vertical">
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_camera" app:tint="@color/primary_color"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Cameras" android:textAppearance="@style/TextAppearance.Material3.TitleSmall" android:textColor="@color/dark_text" android:textStyle="bold"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- History -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnOpenHistory"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_columnWeight="1"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginBottom="8dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="@color/card_background_elevated">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:gravity="center_vertical">
                         <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_recent_history" app:tint="@color/primary_color"/>
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="History" android:textAppearance="@style/TextAppearance.Material3.TitleMedium" android:textColor="@color/dark_text" android:textStyle="bold"/>
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Event Log" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="@color/light_text"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="History Log" android:textAppearance="@style/TextAppearance.Material3.TitleSmall" android:textColor="@color/dark_text" android:textStyle="bold"/>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
             </GridLayout>
 
-            <!-- SETTINGS & LOGS -->
+            <!-- Global Settings -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnSettings"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:layout_marginHorizontal="6dp"
-                app:cardBackgroundColor="@color/card_background_elevated"
-                app:cardCornerRadius="16dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="@color/border_color"
+                android:layout_marginTop="8dp"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardElevation="0dp">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:padding="16dp"
+                    android:paddingVertical="12dp"
                     android:gravity="center_vertical">
                     <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_preferences" app:tint="@color/light_text"/>
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:text="Global Settings" android:textColor="@color/dark_text" android:textStyle="bold"/>
-                    <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_media_play" android:rotation="0" app:tint="@color/light_text"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:text="More Settings" android:textColor="@color/light_text" android:textStyle="normal"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-             <!-- Alert Checkbox Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/cbNotifyPresence"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:layout_marginHorizontal="6dp"
-                app:cardBackgroundColor="@android:color/transparent"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="0dp">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="8dp"
-                    android:gravity="center_vertical">
-                    <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cbNotifyPresence" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true"/>
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="Enable Presence Notifications" android:textColor="@color/white" android:textStyle="normal"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                android:checked="true"
+                android:text="Notifications"
+                android:textColor="@color/light_text"
+                android:visibility="gone"/>
 
-            <!-- Activity Log Section -->
+             <!-- Activity Log Section (Hidden by default or minimized) -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -380,7 +319,7 @@
                 android:layout_marginBottom="8dp"
                 android:text="Recent Activity"
                 android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
-                android:textColor="@color/white" />
+                android:textColor="@color/light_text" />
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
@@ -394,7 +333,7 @@
                 <ScrollView
                     android:id="@+id/logScrollView"
                     android:layout_width="match_parent"
-                    android:layout_height="180dp">
+                    android:layout_height="120dp">
                     <TextView
                         android:id="@+id/detectionLog"
                         android:layout_width="match_parent"
@@ -405,10 +344,44 @@
                         android:textColor="@color/light_text"
                         android:fontFamily="monospace" />
                 </ScrollView>
-
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- Bottom Spacer -->
+            <Space android:layout_width="match_parent" android:layout_height="80dp"/>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
+
+    <!-- SOS PANIC BUTTON (Floating Bottom) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/btnPanic"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_margin="16dp"
+        app:cardBackgroundColor="#D32F2F"
+        app:cardCornerRadius="32dp"
+        app:cardElevation="8dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@android:drawable/ic_lock_power_off"
+                app:tint="@color/white"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="SOS / EMERGENCY"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
