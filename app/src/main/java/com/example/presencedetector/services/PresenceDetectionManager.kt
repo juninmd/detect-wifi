@@ -332,7 +332,8 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     private fun sendArrivalNotification(device: WiFiDevice) {
         // Filter: Only notify for Bluetooth devices (or manual override)
         // User requested: "só notificar dispositivos bluetooth ou presença na camera"
-        if (device.source == com.example.presencedetector.model.DeviceSource.WIFI) {
+        // Update: Allow WiFi notification if preference enabled
+        if (device.source == com.example.presencedetector.model.DeviceSource.WIFI && !preferences.shouldNotifyWifiArrival()) {
             Log.d(TAG, "Skipping arrival notification for WiFi device: ${device.ssid}")
             return
         }

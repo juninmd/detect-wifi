@@ -17,6 +17,8 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var preferences: PreferencesUtil
     private lateinit var telegramService: TelegramService
 
+    private lateinit var switchNotifyWifiArrival: MaterialSwitch
+
     private lateinit var switchTelegram: MaterialSwitch
     private lateinit var etTelegramToken: TextInputEditText
     private lateinit var etTelegramChatId: TextInputEditText
@@ -28,6 +30,8 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var etSecurityEnd: TextInputEditText
 
     private lateinit var switchBiometric: MaterialSwitch
+    private lateinit var switchPocketMode: MaterialSwitch
+    private lateinit var switchChargerMode: MaterialSwitch
     private lateinit var sliderSensitivity: com.google.android.material.slider.Slider
     private lateinit var tvSensitivityValue: android.widget.TextView
 
@@ -54,6 +58,8 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun initializeViews() {
+        switchNotifyWifiArrival = findViewById(R.id.switchNotifyWifiArrival)
+
         switchTelegram = findViewById(R.id.switchTelegram)
         etTelegramToken = findViewById(R.id.etTelegramToken)
         etTelegramChatId = findViewById(R.id.etTelegramChatId)
@@ -65,11 +71,16 @@ class SettingsActivity : AppCompatActivity() {
         etSecurityEnd = findViewById(R.id.etSecurityEnd)
 
         switchBiometric = findViewById(R.id.switchBiometric)
+        switchPocketMode = findViewById(R.id.switchPocketMode)
+        switchChargerMode = findViewById(R.id.switchChargerMode)
         sliderSensitivity = findViewById(R.id.sliderSensitivity)
         tvSensitivityValue = findViewById(R.id.tvSensitivityValue)
     }
 
     private fun loadSettings() {
+        // General
+        switchNotifyWifiArrival.isChecked = preferences.shouldNotifyWifiArrival()
+
         // Telegram
         switchTelegram.isChecked = preferences.isTelegramEnabled()
         etTelegramToken.setText(preferences.getTelegramToken())
@@ -78,7 +89,10 @@ class SettingsActivity : AppCompatActivity() {
         // Security
         switchSecurityAlert.isChecked = preferences.isSecurityAlertEnabled()
         switchSecuritySound.isChecked = preferences.isSecuritySoundEnabled()
+
         switchBiometric.isChecked = preferences.isBiometricEnabled()
+        switchPocketMode.isChecked = preferences.isPocketModeEnabled()
+        switchChargerMode.isChecked = preferences.isChargerModeEnabled()
 
         val schedule = preferences.getSecuritySchedule()
         etSecurityStart.setText(schedule.first)
@@ -91,6 +105,10 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         // Auto-save on change for switches
+        switchNotifyWifiArrival.setOnCheckedChangeListener { _, isChecked ->
+            preferences.setNotifyWifiArrival(isChecked)
+        }
+
         switchTelegram.setOnCheckedChangeListener { _, isChecked ->
             preferences.setTelegramEnabled(isChecked)
         }
@@ -112,6 +130,14 @@ class SettingsActivity : AppCompatActivity() {
                 }
             }
             preferences.setBiometricEnabled(isChecked)
+        }
+
+        switchPocketMode.setOnCheckedChangeListener { _, isChecked ->
+            preferences.setPocketModeEnabled(isChecked)
+        }
+
+        switchChargerMode.setOnCheckedChangeListener { _, isChecked ->
+            preferences.setChargerModeEnabled(isChecked)
         }
 
         // Test Telegram Button

@@ -46,19 +46,41 @@ class AntiTheftService : Service(), SensorEventListener {
     private lateinit var telegramService: TelegramService
     private var motionDetector: MotionDetector? = null
     private var accelerometer: Sensor? = null
+    private var proximitySensor: Sensor? = null
+
     private var isArmed = false
     private var isAlarmPlaying = false
+
+    // Motion state
     private var lastX = 0f
     private var lastY = 0f
     private var lastZ = 0f
     private var firstReading = true
+
+    // Pocket Mode state
+    private var isPocketModeArmed = false
+    private var isDeviceInPocket = false
+
+    // Charger Mode state
+    private var isChargerModeArmed = false
+
     private var armingTime = 0L
 
     private var alarmRingtone: Ringtone? = null
+
     private val stopAlarmReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == NotificationActionReceiver.ACTION_STOP_ALARM) {
                 stopAlarm()
+            }
+        }
+    }
+
+    private val powerReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_POWER_DISCONNECTED && isChargerModeArmed) {
+                Log.w(TAG, "Charger disconnected! Triggering alarm.")
+                triggerAlarm("Charger Disconnected")
             }
         }
     }
@@ -69,13 +91,19 @@ class AntiTheftService : Service(), SensorEventListener {
         telegramService = TelegramService(this)
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
 
         // Register receiver for stop command
+        val stopFilter = IntentFilter(NotificationActionReceiver.ACTION_STOP_ALARM)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(stopAlarmReceiver, IntentFilter(NotificationActionReceiver.ACTION_STOP_ALARM), Context.RECEIVER_NOT_EXPORTED)
+            registerReceiver(stopAlarmReceiver, stopFilter, Context.RECEIVER_NOT_EXPORTED)
         } else {
-            registerReceiver(stopAlarmReceiver, IntentFilter(NotificationActionReceiver.ACTION_STOP_ALARM))
+            registerReceiver(stopAlarmReceiver, stopFilter)
         }
+
+        // Register power receiver
+        val powerFilter = IntentFilter(Intent.ACTION_POWER_DISCONNECTED)
+        registerReceiver(powerReceiver, powerFilter)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -91,24 +119,38 @@ class AntiTheftService : Service(), SensorEventListener {
 
         val sensitivity = preferences.getAntiTheftSensitivity()
         motionDetector = MotionDetector(sensitivity)
-        Log.d(TAG, "Anti-Theft Armed with sensitivity: $sensitivity")
+
+        isPocketModeArmed = preferences.isPocketModeEnabled()
+        isChargerModeArmed = preferences.isChargerModeEnabled()
+
+        Log.d(TAG, "Anti-Theft Armed. Motion: ON, Pocket: $isPocketModeArmed, Charger: $isChargerModeArmed")
 
         isArmed = true
         firstReading = true
+        isDeviceInPocket = false
         armingTime = System.currentTimeMillis()
 
         // Start Foreground
         startForeground(NOTIFICATION_ID, createForegroundNotification())
 
-        // Register Sensor
+        // Register Sensors
         accelerometer?.let {
             sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+
+        if (isPocketModeArmed) {
+            proximitySensor?.let {
+                sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+            }
         }
     }
 
     private fun stopMonitoring() {
         Log.d(TAG, "Anti-Theft Disarmed")
         isArmed = false
+        isPocketModeArmed = false
+        isChargerModeArmed = false
+
         stopAlarm()
         sensorManager.unregisterListener(this)
         stopForeground(true)
@@ -141,6 +183,14 @@ class AntiTheftService : Service(), SensorEventListener {
     override fun onSensorChanged(event: SensorEvent?) {
         if (!isArmed || event == null) return
 
+        if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+            handleMotion(event)
+        } else if (event.sensor.type == Sensor.TYPE_PROXIMITY && isPocketModeArmed) {
+            handlePocketMode(event)
+        }
+    }
+
+    private fun handleMotion(event: SensorEvent) {
         // Grace period to set the phone down
         if (System.currentTimeMillis() - armingTime < GRACE_PERIOD_MS) {
             lastX = event.values[0]
@@ -156,7 +206,7 @@ class AntiTheftService : Service(), SensorEventListener {
         if (!firstReading) {
             if (motionDetector?.isMotionDetected(x, y, z, lastX, lastY, lastZ) == true) {
                 Log.w(TAG, "Motion Detected!")
-                triggerAlarm()
+                triggerAlarm("Motion Detected")
             }
         } else {
             firstReading = false
@@ -167,19 +217,48 @@ class AntiTheftService : Service(), SensorEventListener {
         lastZ = z
     }
 
+    private fun handlePocketMode(event: SensorEvent) {
+        val distance = event.values[0]
+        val maxRange = event.sensor.maximumRange
+
+        // Check if object is close (in pocket)
+        // Usually < 5cm or < maxRange
+        val isClose = distance < maxRange && distance < 5.0f
+
+        if (isClose) {
+            isDeviceInPocket = true
+            Log.d(TAG, "Pocket Mode: Device covered (Safe)")
+        }
+
+        // Trigger if:
+        // 1. Grace period passed
+        // 2. Device WAS in pocket (or we assume it was if grace period passed? No, better to track state)
+        // 3. Now it is NOT close (removed)
+
+        if (System.currentTimeMillis() - armingTime > GRACE_PERIOD_MS) {
+            if (!isClose) {
+                 // If we require that it WAS in pocket first, check isDeviceInPocket.
+                 // Otherwise, if you arm it outside pocket, it triggers after 5s.
+                 // Let's assume standard behavior: Trigger if uncovered.
+                 Log.w(TAG, "Pocket Mode: Device uncovered! Triggering.")
+                 triggerAlarm("Pocket Mode Triggered")
+            }
+        }
+    }
+
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         // No-op
     }
 
-    private fun triggerAlarm() {
+    private fun triggerAlarm(reason: String) {
         if (isAlarmPlaying) return
         isAlarmPlaying = true
 
-        Log.w(TAG, "TRIGGERING ALARM")
+        Log.w(TAG, "TRIGGERING ALARM: $reason")
 
         // 1. Send Telegram Alert
         val time = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
-        telegramService.sendMessage("🚨 ANTI-THEFT ALARM: Motion detected on device at $time!")
+        telegramService.sendMessage("🚨 ANTI-THEFT ALARM: $reason at $time!")
 
         // 2. Play Sound
         try {
@@ -247,7 +326,12 @@ class AntiTheftService : Service(), SensorEventListener {
     }
 
     override fun onDestroy() {
-        unregisterReceiver(stopAlarmReceiver)
+        try {
+            unregisterReceiver(stopAlarmReceiver)
+            unregisterReceiver(powerReceiver)
+        } catch (e: Exception) {
+            // Ignore if not registered
+        }
         stopMonitoring()
         super.onDestroy()
     }
