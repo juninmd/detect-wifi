@@ -25,10 +25,10 @@ import java.util.concurrent.ConcurrentHashMap
 class BluetoothDetectionService(private val context: Context) {
     companion object {
         private const val TAG = "BluetoothDetector"
-        private const val SCAN_INTERVAL = 10000L // 10 seconds scan interval
+        private const val SCAN_INTERVAL = 30000L // Optimized to 30 seconds for battery
         private const val SCAN_DURATION = 5000L  // 5 seconds scan duration
         private const val SIGNAL_THRESHOLD = -85 // dBm (ignore very weak signals)
-        private const val DEVICE_TIMEOUT = 30000L // Remove device if not seen for 30 seconds
+        private const val DEVICE_TIMEOUT = 60000L // Remove device if not seen for 60 seconds
     }
 
     private val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
