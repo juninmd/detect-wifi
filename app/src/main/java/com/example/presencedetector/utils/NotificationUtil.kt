@@ -19,8 +19,8 @@ object NotificationUtil {
     private const val TAG = "NotificationUtil"
     const val CHANNEL_ID = "presence_detection_channel"
     private const val CHANNEL_NAME = "Presence Detection"
-    const val ALERT_CHANNEL_ID = "presence_alerts_channel"
-    private const val ALERT_CHANNEL_NAME = "Presence Alerts"
+    const val ALERT_CHANNEL_ID = "security_alerts_channel_v2"
+    private const val ALERT_CHANNEL_NAME = "Security Alerts"
 
     fun createNotificationChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -31,7 +31,7 @@ object NotificationUtil {
                 CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Detection status updates"
+                description = "Status of background monitoring services"
                 setShowBadge(false)
             }
 
@@ -41,9 +41,9 @@ object NotificationUtil {
                 ALERT_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Presence detection alerts - Critical"
+                description = "Critical security alerts (Intruder, Theft, Motion)"
                 enableVibration(true)
-                vibrationPattern = longArrayOf(0, 500, 250, 500, 250, 500)
+                vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500, 1000)
                 enableLights(true)
                 lightColor = android.graphics.Color.RED
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
@@ -130,8 +130,10 @@ object NotificationUtil {
             .setSmallIcon(icon)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setVibrate(longArrayOf(0, 500, 250, 500))
+            .setPriority(NotificationCompat.PRIORITY_MAX) // Max priority for immediate attention
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message)) // Expandable text
+            .setVibrate(longArrayOf(0, 1000, 500, 1000))
             .setDefaults(NotificationCompat.DEFAULT_ALL)
 
         if (actionTitle != null && actionIntent != null) {
