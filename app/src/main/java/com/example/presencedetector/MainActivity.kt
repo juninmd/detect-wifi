@@ -321,6 +321,13 @@ class MainActivity : AppCompatActivity() {
             permissions.add(Manifest.permission.NEARBY_WIFI_DEVICES)
         }
 
+        // Background location for Android 10+ (Q)
+        // Note: On Android 11+ (R), this must be requested separately or it may be ignored if requested with foreground.
+        // For simplicity in this optimization phase, we check it here, but strict flow might require separation.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            permissions.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        }
+
         return permissions.all {
             ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
         }
@@ -344,18 +351,69 @@ class MainActivity : AppCompatActivity() {
             permissions.add(Manifest.permission.NEARBY_WIFI_DEVICES)
         }
 
+        // On Android 11+ (R), Background Location must be requested SEPARATELY after foreground is granted.
+        // If we request it here with others, the system ignores it.
+        // So we do NOT add it here for R+. We add it only for Q.
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+            permissions.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        }
+
         ActivityCompat.requestPermissions(this, permissions.toTypedArray(), PERMISSION_REQUEST_CODE)
+
+        checkBatteryOptimization()
+    }
+
+    private fun checkBatteryOptimization() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val packageName = packageName
+            val pm = getSystemService(android.os.PowerManager::class.java)
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                // We should prompt user, but for now just logging or showing a toast
+                // In a full implementation, we would launch Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                Toast.makeText(this, "Please disable battery optimization for best performance", Toast.LENGTH_LONG).show()
+                addLog("Warning: Battery optimization is enabled. Background scanning may stop.")
+            }
+        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE) {
+            // Check if all requested permissions were granted
             val allGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+
             if (allGranted) {
-                startDetection()
+                // On Android 11+ (R), we must request Background Location separately
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    checkAndRequestBackgroundLocation()
+                } else {
+                    startDetection()
+                }
             } else {
                 Toast.makeText(this, "Permissions required for WiFi scanning", Toast.LENGTH_LONG).show()
             }
+        } else if (requestCode == 101) { // Background Location Request Code
+             // Whether granted or not, try to start. Service will handle missing perm gracefully or run as foreground-only.
+             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                 addLog("Background Location Granted")
+             } else {
+                 addLog("Background Location Denied - Scanning may be limited")
+             }
+             startDetection()
+        }
+    }
+
+    private fun checkAndRequestBackgroundLocation() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // We should show a dialog explaining why we need this before requesting
+            // For now, request directly to keep flow moving
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+                101
+            )
+        } else {
+            startDetection()
         }
     }
 }

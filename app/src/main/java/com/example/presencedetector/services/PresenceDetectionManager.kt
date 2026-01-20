@@ -25,7 +25,7 @@ import java.util.Locale
 class PresenceDetectionManager(private val context: Context, private val areNotificationsEnabled: Boolean = true) {
     companion object {
         private const val TAG = "PresenceDetection"
-        private const val DETECTION_TIMEOUT = 30000L // 30 seconds
+        private const val DETECTION_TIMEOUT = 60000L // Increased to 60s to match slower scanning
         private const val EXTERNAL_DETECTION_TIMEOUT = 30000L // 30 seconds for camera events
         private const val ABSENCE_THRESHOLD = 30 * 60 * 1000L // 30 minutes - for logging/tracking
         private const val LONG_ABSENCE_THRESHOLD = 30 * 60 * 1000L // 30 minutes - triggers immediate notification on return

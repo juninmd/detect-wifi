@@ -17,7 +17,7 @@ import com.example.presencedetector.model.WiFiDevice
 class WiFiDetectionService(private val context: Context) {
     companion object {
         private const val TAG = "WiFiDetector"
-        private const val SCAN_INTERVAL = 3000L // Updated to 3 seconds as requested
+        private const val SCAN_INTERVAL = 15000L // Optimized to 15 seconds for battery
         private const val SIGNAL_THRESHOLD = -85
     }
 

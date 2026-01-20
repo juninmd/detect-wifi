@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 15 (Vanilla Ice Cream) specific configurations -->
+    <!-- Edge-to-edge is enforced, this helps configure safe areas if needed -->
+    <bool name="config_edge_to_edge">true</bool>
+</resources>
