@@ -125,6 +125,7 @@ class AntiTheftService : Service(), SensorEventListener {
 
         Log.d(TAG, "Anti-Theft Armed. Motion: ON, Pocket: $isPocketModeArmed, Charger: $isChargerModeArmed")
 
+        preferences.setAntiTheftArmed(true) // Persist state
         isArmed = true
         firstReading = true
         isDeviceInPocket = false
@@ -150,6 +151,7 @@ class AntiTheftService : Service(), SensorEventListener {
         isArmed = false
         isPocketModeArmed = false
         isChargerModeArmed = false
+        preferences.setAntiTheftArmed(false) // Persist state
 
         stopAlarm()
         sensorManager.unregisterListener(this)

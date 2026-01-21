@@ -13,6 +13,7 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.presencedetector.security.service.CameraMonitoringService
 import com.example.presencedetector.utils.NotificationUtil
+import com.example.presencedetector.utils.PreferencesUtil
 
 /**
  * Background service for continuous presence detection.
@@ -29,6 +30,7 @@ class DetectionBackgroundService : Service() {
     private var detectionManager: PresenceDetectionManager? = null
     private var isRunning = false
     private var cameraPresenceReceiver: BroadcastReceiver? = null
+    private lateinit var preferences: PreferencesUtil
 
     inner class LocalBinder : Binder() {
         fun getService(): DetectionBackgroundService = this@DetectionBackgroundService
@@ -38,13 +40,53 @@ class DetectionBackgroundService : Service() {
         super.onCreate()
         Log.i(TAG, "🚀 Background service created")
 
+        preferences = PreferencesUtil(this)
         detectionManager = PresenceDetectionManager(this, true)
-        detectionManager?.setPresenceListener { peoplePresent, method, _, details ->
+        detectionManager?.setPresenceListener { peoplePresent, method, devices, details ->
             updateForegroundNotification(peoplePresent, method, details)
+            checkSafeZone(devices)
         }
 
         // Register receiver for camera presence events
         registerCameraReceiver()
+    }
+
+    private fun checkSafeZone(devices: List<com.example.presencedetector.model.WiFiDevice>) {
+        val trustedSsid = preferences.getTrustedWifiSsid()
+        if (!trustedSsid.isNullOrEmpty()) {
+             // Check if we are connected to trusted SSID.
+             // PresenceDetectionManager gives us list of *detected* devices around us.
+             // We need to check if we are *connected* to one.
+             // However, WiFiDevice list comes from WiFiDetectionService scan results.
+             // Scan results show SSIDs around. It doesn't mean we are connected.
+             // But if we are connected, it should be in the list with high signal.
+
+             // A better way is to check connectivity manager or WifiManager for connection info.
+             val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
+             val info = wifiManager?.connectionInfo
+             if (info != null && info.ssid != null) {
+                 // SSID usually comes with quotes, e.g. "MyWiFi"
+                 val currentSsid = info.ssid.replace("\"", "")
+                 if (currentSsid == trustedSsid) {
+                     // We are in safe zone. Disarm Anti-Theft if armed.
+                     if (preferences.isAntiTheftArmed()) {
+                         Log.i(TAG, "Safe Zone detected ($currentSsid). Disarming Anti-Theft.")
+                         val stopIntent = Intent(this, AntiTheftService::class.java).apply {
+                             action = AntiTheftService.ACTION_STOP
+                         }
+                         startService(stopIntent)
+
+                         // Optionally notify user
+                         NotificationUtil.sendPresenceNotification(
+                             this,
+                             "🛡️ Safe Zone",
+                             "Anti-Theft disarmed automatically: Connected to $currentSsid",
+                             false
+                         )
+                     }
+                 }
+             }
+        }
     }
 
     private fun registerCameraReceiver() {

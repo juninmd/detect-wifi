@@ -519,5 +519,7 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
         stopDetection()
         wifiService.destroy()
         bluetoothService.destroy()
+
+        mainHandler.removeCallbacksAndMessages(null)
     }
 }

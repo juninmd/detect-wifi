@@ -44,6 +44,7 @@ class PreferencesUtil(context: Context) {
         private const val PREFIX_TELEGRAM_ALERT = "telegram_alert_"
         private const val PREFIX_EVENT_LOGS = "event_logs_"
         private const val KEY_ALL_BSSIDS = "all_bssids"
+        private const val KEY_TRUSTED_WIFI_SSID = "trusted_wifi_ssid"
     }
 
     private val preferences: SharedPreferences = context.getSharedPreferences(
@@ -237,6 +238,14 @@ class PreferencesUtil(context: Context) {
 
     fun getAllTrackedBssids(): List<String> {
         return preferences.getStringSet(KEY_ALL_BSSIDS, emptySet())?.toList() ?: emptyList()
+    }
+
+    fun setTrustedWifiSsid(ssid: String) {
+        preferences.edit().putString(KEY_TRUSTED_WIFI_SSID, ssid).apply()
+    }
+
+    fun getTrustedWifiSsid(): String? {
+        return preferences.getString(KEY_TRUSTED_WIFI_SSID, null)
     }
 
     fun clear() {

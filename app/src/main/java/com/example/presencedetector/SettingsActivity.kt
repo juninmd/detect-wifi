@@ -18,6 +18,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var telegramService: TelegramService
 
     private lateinit var switchNotifyWifiArrival: MaterialSwitch
+    private lateinit var etTrustedWifi: TextInputEditText
 
     private lateinit var switchTelegram: MaterialSwitch
     private lateinit var etTelegramToken: TextInputEditText
@@ -59,6 +60,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun initializeViews() {
         switchNotifyWifiArrival = findViewById(R.id.switchNotifyWifiArrival)
+        etTrustedWifi = findViewById(R.id.etTrustedWifi)
 
         switchTelegram = findViewById(R.id.switchTelegram)
         etTelegramToken = findViewById(R.id.etTelegramToken)
@@ -80,6 +82,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun loadSettings() {
         // General
         switchNotifyWifiArrival.isChecked = preferences.shouldNotifyWifiArrival()
+        etTrustedWifi.setText(preferences.getTrustedWifiSsid())
 
         // Telegram
         switchTelegram.isChecked = preferences.isTelegramEnabled()
@@ -197,9 +200,19 @@ class SettingsActivity : AppCompatActivity() {
         )
     }
 
+    private fun saveGeneralSettings() {
+        val trustedWifi = etTrustedWifi.text.toString().trim()
+        if (trustedWifi.isNotEmpty()) {
+            preferences.setTrustedWifiSsid(trustedWifi)
+        } else {
+            preferences.setTrustedWifiSsid("")
+        }
+    }
+
     override fun onPause() {
         super.onPause()
         saveTelegramSettings()
         saveSecuritySchedule()
+        saveGeneralSettings()
     }
 }
