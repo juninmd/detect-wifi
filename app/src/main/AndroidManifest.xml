@@ -34,6 +34,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Declare that the camera feature is used, but not required -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
@@ -118,6 +119,13 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="com.example.presencedetector.ACTION_STOP_ALARM" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".receivers.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
 

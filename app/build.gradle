@@ -6,18 +6,16 @@ plugins {
 
 android {
     namespace 'com.example.presencedetector'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.example.presencedetector"
-        minSdk 33  // Increased to bypass desugaring issues in this environment
-        targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        minSdk 33
+        targetSdk 35
+        versionCode 2
+        versionName "1.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        // Optimize APK size by keeping only mobile architectures
-        // Added x86 back for emulator support during dev
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
         }
@@ -33,6 +31,7 @@ android {
     lint {
         checkReleaseBuilds false
         disable 'FullBackupContent', 'LongLogTag'
+        abortOnError false
     }
 
     compileOptions {
@@ -51,33 +50,22 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.13.0'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.0'
 
-    // Firebase (BOM keeps versions in sync)
-    implementation platform('com.google.firebase:firebase-bom:32.7.0')
+    // Firebase
+    implementation platform('com.google.firebase:firebase-bom:33.0.0')
     implementation 'com.google.firebase:firebase-messaging-ktx'
 
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
     implementation 'com.google.code.gson:gson:2.10.1'
 
-
-    // ============================================
-    // Security Monitoring - RTSP & Person Detection
-    // ============================================
-    
-    // LibVLC for RTSP streaming (adds ~15MB to APK)
-    // Provides stable RTSP connection with Intelbras DVRs
-    implementation 'org.videolan.android:libvlc-all:3.5.1'
-    
-    // ML Kit Object Detection for person detection
-    // Uses on-device models (no internet required)
-    implementation 'com.google.mlkit:object-detection:17.0.1'
-
-    // Biometric Authentication
+    // Security Monitoring
+    implementation 'org.videolan.android:libvlc-all:3.6.0-eap13' // Updated
+    implementation 'com.google.mlkit:object-detection:17.0.2'
     implementation 'androidx.biometric:biometric:1.1.0'
 
     testImplementation 'junit:junit:4.13.2'
