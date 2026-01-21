@@ -354,7 +354,8 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
         val title = "🔔 ${category.iconRes} Detected: $nickname"
         val message = "Just arrived at $time. Signal strength is ${device.level}dBm. Recognized as $categoryDisplay."
 
-        NotificationUtil.sendPresenceNotification(context, title, message, true)
+        // Use FALSE for isImportantEvent to route to the Info channel
+        NotificationUtil.sendPresenceNotification(context, title, message, false)
     }
 
     private fun sendDepartureNotification(bssid: String, device: WiFiDevice?) {
@@ -377,6 +378,7 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
         val title = "🚪 Device Left: $nickname"
         val message = "No longer detected as of $time. ${category.iconRes} signal has dropped."
 
+        // Use FALSE for isImportantEvent to route to the Info channel
         NotificationUtil.sendPresenceNotification(context, title, message, false)
     }
 
@@ -494,7 +496,8 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
         } else {
             "All tracked devices have left the area."
         }
-        NotificationUtil.sendPresenceNotification(context, title, message, peoplePresent)
+        // Use FALSE for isImportantEvent unless it's a specific security threat handled elsewhere
+        NotificationUtil.sendPresenceNotification(context, title, message, false)
     }
 
     fun setPresenceListener(listener: PresenceListener) {
