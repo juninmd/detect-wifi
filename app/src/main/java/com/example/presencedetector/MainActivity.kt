@@ -304,6 +304,7 @@ class MainActivity : AppCompatActivity() {
         // 3. Log event
         val timestamp = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
         detectionLog.append("\n[$timestamp] 🆘 PANIC BUTTON PRESSED")
+        preferences.logSystemEvent("🆘 PANIC BUTTON PRESSED")
         logScrollView.post { logScrollView.fullScroll(View.FOCUS_DOWN) }
     }
 
@@ -329,6 +330,7 @@ class MainActivity : AppCompatActivity() {
         startService(serviceIntent)
         preferences.setAntiTheftArmed(false)
         addLog("Mobile Security Disarmed")
+        preferences.logSystemEvent("Mobile Security Disarmed")
         updateAntiTheftUI()
     }
 
@@ -343,6 +345,7 @@ class MainActivity : AppCompatActivity() {
         }
         preferences.setAntiTheftArmed(true)
         addLog("Mobile Security Armed")
+        preferences.logSystemEvent("Mobile Security Armed")
         updateAntiTheftUI()
     }
 

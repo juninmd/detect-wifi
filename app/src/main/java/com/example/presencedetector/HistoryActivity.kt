@@ -72,6 +72,12 @@ class HistoryActivity : AppCompatActivity() {
             }
         }
 
+        // Add System Logs
+        val systemLogs = preferences.getSystemLogs()
+        systemLogs.forEach { logLine ->
+            allLogs.add(HistoryItem("SYSTEM", "Security System", logLine))
+        }
+
         val sortedLogs = allLogs.sortedByDescending { it.logDetail }
         adapter.setItems(sortedLogs)
         tvHistoryTitle.text = "Full History (${sortedLogs.size} events)"
@@ -128,7 +134,16 @@ class HistoryActivity : AppCompatActivity() {
             holder.tvBssid.text = item.bssid.takeLast(8)
 
             // Determine event type and set UI accordingly
-            if (item.isArrival) {
+            if (item.bssid == "SYSTEM") {
+                holder.tvEventIcon.text = "🛡️"
+                holder.chipEventType.text = "Security"
+                holder.tvBssid.text = "System Log"
+                // Parse message from logDetail "[timestamp] Message"
+                val parts = item.logDetail.split("] ")
+                if (parts.size > 1) {
+                    holder.tvNickname.text = parts[1] // Show the message as the main text
+                }
+            } else if (item.isArrival) {
                 holder.tvEventIcon.text = "🟢"
                 holder.chipEventType.text = "Arrived"
                 holder.chipEventType.setChipBackgroundColorResource(R.color.success_bright)
@@ -138,12 +153,16 @@ class HistoryActivity : AppCompatActivity() {
                 holder.chipEventType.setChipBackgroundColorResource(R.color.danger_color)
             }
 
-            holder.itemView.setOnClickListener {
-                // Open device detail to show full history for this specific device
-                val intent = Intent(holder.itemView.context, DeviceDetailActivity::class.java)
-                intent.putExtra("bssid", item.bssid)
-                intent.putExtra("from_history", true)
-                holder.itemView.context.startActivity(intent)
+            if (item.bssid == "SYSTEM") {
+                holder.itemView.setOnClickListener(null)
+            } else {
+                holder.itemView.setOnClickListener {
+                    // Open device detail to show full history for this specific device
+                    val intent = Intent(holder.itemView.context, DeviceDetailActivity::class.java)
+                    intent.putExtra("bssid", item.bssid)
+                    intent.putExtra("from_history", true)
+                    holder.itemView.context.startActivity(intent)
+                }
             }
         }
 
