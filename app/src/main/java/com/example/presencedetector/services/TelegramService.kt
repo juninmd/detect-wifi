@@ -6,12 +6,11 @@ import com.example.presencedetector.utils.PreferencesUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -23,14 +22,18 @@ class TelegramService(private val context: Context) {
     companion object {
         private const val TAG = "TelegramService"
         private const val TIMEOUT_SEC = 30L
+
+        // Singleton OkHttpClient to reuse connection pool and threads
+        private val client by lazy {
+            OkHttpClient.Builder()
+                .connectTimeout(TIMEOUT_SEC, TimeUnit.SECONDS)
+                .writeTimeout(TIMEOUT_SEC, TimeUnit.SECONDS)
+                .readTimeout(TIMEOUT_SEC, TimeUnit.SECONDS)
+                .build()
+        }
     }
 
     private val preferences = PreferencesUtil(context)
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(TIMEOUT_SEC, TimeUnit.SECONDS)
-        .writeTimeout(TIMEOUT_SEC, TimeUnit.SECONDS)
-        .readTimeout(TIMEOUT_SEC, TimeUnit.SECONDS)
-        .build()
 
     fun sendMessage(message: String) {
         if (!preferences.isTelegramEnabled()) return
@@ -92,12 +95,14 @@ class TelegramService(private val context: Context) {
             try {
                 val url = "https://api.telegram.org/bot$token/sendPhoto"
 
+                val mediaType = "image/jpeg".toMediaTypeOrNull()
+                val fileBody = photoFile.asRequestBody(mediaType)
+
                 val requestBody = MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
                     .addFormDataPart("chat_id", chatId)
                     .addFormDataPart("caption", caption)
-                    .addFormDataPart("photo", photoFile.name,
-                        photoFile.asRequestBody("image/jpeg".toMediaType()))
+                    .addFormDataPart("photo", photoFile.name, fileBody)
                     .build()
 
                 val request = Request.Builder()
