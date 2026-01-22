@@ -224,6 +224,11 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     addLog("📸 Intruder Photo Saved: $filename")
                 }
+
+                // Send to Telegram
+                val telegramService = com.example.presencedetector.services.TelegramService(this)
+                telegramService.sendPhoto(file, "🚨 INTRUDER DETECTED! Photo captured.")
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
