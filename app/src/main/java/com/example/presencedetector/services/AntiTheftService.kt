@@ -68,6 +68,17 @@ class AntiTheftService : Service(), SensorEventListener {
 
     private var alarmRingtone: Ringtone? = null
 
+    private val reportHandler = Handler(Looper.getMainLooper())
+    private val reportRunnable = object : Runnable {
+        override fun run() {
+            if (isAlarmPlaying) {
+                val battery = getBatteryLevel()
+                telegramService.sendMessage("🔋 TRACKING: Battery at $battery%. Alarm still active.")
+                reportHandler.postDelayed(this, 120000) // 2 minutes
+            }
+        }
+    }
+
     private val stopAlarmReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == NotificationActionReceiver.ACTION_STOP_ALARM) {
@@ -257,10 +268,14 @@ class AntiTheftService : Service(), SensorEventListener {
         isAlarmPlaying = true
 
         Log.w(TAG, "TRIGGERING ALARM: $reason")
+        preferences.logSystemEvent("🚨 Alarm Triggered: $reason")
 
         // 1. Send Telegram Alert
         val time = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
         telegramService.sendMessage("🚨 ANTI-THEFT ALARM: $reason at $time!")
+
+        // Start Reporting
+        reportHandler.post(reportRunnable)
 
         // 2. Play Sound
         try {
@@ -332,6 +347,7 @@ class AntiTheftService : Service(), SensorEventListener {
     private fun stopAlarm() {
         if (!isAlarmPlaying) return
         isAlarmPlaying = false
+        reportHandler.removeCallbacks(reportRunnable)
 
         try {
             alarmRingtone?.stop()
@@ -357,5 +373,10 @@ class AntiTheftService : Service(), SensorEventListener {
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
+    }
+
+    private fun getBatteryLevel(): Int {
+        val bm = getSystemService(Context.BATTERY_SERVICE) as android.os.BatteryManager
+        return bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
     }
 }

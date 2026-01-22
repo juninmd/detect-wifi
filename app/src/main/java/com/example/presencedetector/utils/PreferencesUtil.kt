@@ -45,6 +45,7 @@ class PreferencesUtil(context: Context) {
         private const val PREFIX_EVENT_LOGS = "event_logs_"
         private const val KEY_ALL_BSSIDS = "all_bssids"
         private const val KEY_TRUSTED_WIFI_SSID = "trusted_wifi_ssid"
+        private const val KEY_SYSTEM_LOGS = "system_logs"
     }
 
     private val preferences: SharedPreferences = context.getSharedPreferences(
@@ -196,7 +197,7 @@ class PreferencesUtil(context: Context) {
      * Log precise arrival/departure events with time.
      */
     fun logEvent(bssid: String, eventType: String) {
-        val timestamp = SimpleDateFormat("dd/MM HH:mm:ss", Locale.getDefault()).format(Date())
+        val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
         val logEntry = "[$timestamp] $eventType"
         
         val logs = preferences.getStringSet(PREFIX_EVENT_LOGS + bssid, mutableSetOf()) ?: mutableSetOf()
@@ -250,5 +251,23 @@ class PreferencesUtil(context: Context) {
 
     fun clear() {
         preferences.edit().clear().apply()
+    }
+
+    /**
+     * Log general system events (Security, Panic, Errors).
+     */
+    fun logSystemEvent(message: String) {
+        val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+        val logEntry = "[$timestamp] $message"
+
+        val logs = preferences.getStringSet(KEY_SYSTEM_LOGS, mutableSetOf()) ?: mutableSetOf()
+        val newLogs = logs.toMutableSet()
+        newLogs.add(logEntry)
+
+        preferences.edit().putStringSet(KEY_SYSTEM_LOGS, newLogs).apply()
+    }
+
+    fun getSystemLogs(): List<String> {
+        return preferences.getStringSet(KEY_SYSTEM_LOGS, emptySet())?.toList()?.sortedDescending() ?: emptyList()
     }
 }
