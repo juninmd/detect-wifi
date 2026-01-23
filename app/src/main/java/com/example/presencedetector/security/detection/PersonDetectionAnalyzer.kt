@@ -135,7 +135,9 @@ class PersonDetectionAnalyzer(
                 if (personDetected && currentState == DetectionState.DETECTING) {
                     // Cria cópia para não perder referência quando bitmap original for reciclado
                     lastDetectionBitmap?.recycle()
-                    lastDetectionBitmap = bitmap.copy(bitmap.config, false)
+                    // Use ARGB_8888 as fallback if config is null
+                    val config = bitmap.config ?: Bitmap.Config.ARGB_8888
+                    lastDetectionBitmap = bitmap.copy(config, false)
                 }
                 
                 updateState(personDetected, currentTime)

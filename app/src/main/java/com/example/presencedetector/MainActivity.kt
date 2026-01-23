@@ -67,6 +67,7 @@ class MainActivity : AppCompatActivity() {
         NotificationUtil.createNotificationChannels(this)
 
         initializeViews()
+        loadRecentLogs()
         if (!hasRequiredPermissions()) {
             requestPermissions()
         }
@@ -357,11 +358,24 @@ class MainActivity : AppCompatActivity() {
     private fun updateAntiTheftUI() {
         val armed = preferences.isAntiTheftArmed()
         if (armed) {
-            tvAntiTheftStatus.text = "Armed (Motion)"
+            val modes = mutableListOf("Motion")
+            if (preferences.isPocketModeEnabled()) modes.add("Pocket")
+            if (preferences.isChargerModeEnabled()) modes.add("Charger")
+
+            val modeString = modes.joinToString(", ")
+            tvAntiTheftStatus.text = "Armed ($modeString)"
             ivAntiTheftIcon.setImageResource(R.drawable.ic_status_active)
         } else {
             tvAntiTheftStatus.text = "Tap to Arm"
             ivAntiTheftIcon.setImageResource(android.R.drawable.ic_lock_idle_lock)
+        }
+    }
+
+    private fun loadRecentLogs() {
+        val logs = preferences.getSystemLogs()
+        if (logs.isNotEmpty()) {
+            val recent = logs.take(5).joinToString("\n")
+            detectionLog.text = "--- Recent Events ---\n$recent\n---------------------\n"
         }
     }
 
@@ -389,7 +403,11 @@ class MainActivity : AppCompatActivity() {
         
         tvCountUnknown.text = unknownDevices.size.toString()
 
-        statusDetails.text = "Monitoring via $method"
+        var status = "Monitoring via $method"
+        if (!preferences.getTrustedWifiSsid().isNullOrEmpty()) {
+            status += " | Trusted Zone Active"
+        }
+        statusDetails.text = status
         
         if (isDetecting) {
             statusIndicator.setImageResource(R.drawable.ic_status_active)
