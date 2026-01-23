@@ -122,7 +122,8 @@ object NotificationUtil {
         actionIntent: PendingIntent? = null,
         notificationId: Int? = null,
         secondActionTitle: String? = null,
-        secondActionIntent: PendingIntent? = null
+        secondActionIntent: PendingIntent? = null,
+        iconResId: Int? = null
     ) {
         // Determine channel based on importance
         val channelId = if (isImportantEvent) ALERT_CHANNEL_ID else INFO_CHANNEL_ID
@@ -142,8 +143,8 @@ object NotificationUtil {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Logic: Alert Icon for Security, Normal Icon for Info
-        val icon = if (isImportantEvent) R.drawable.ic_notification_alert else R.drawable.ic_notification
+        // Logic: Alert Icon for Security, Normal Icon for Info, or Custom
+        val icon = iconResId ?: if (isImportantEvent) R.drawable.ic_notification_alert else R.drawable.ic_notification
 
         val builder = NotificationCompat.Builder(context, channelId)
             .setContentTitle(title)

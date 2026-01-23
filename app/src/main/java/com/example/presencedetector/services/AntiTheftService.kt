@@ -296,10 +296,10 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         }
 
         // 3. Show Alert Notification with Action to Stop
-        showAlarmNotification()
+        showAlarmNotification(reason)
     }
 
-    private fun showAlarmNotification() {
+    private fun showAlarmNotification(reason: String) {
         // Action 1: Disarm (Secure - opens App)
         val disarmIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -324,10 +324,17 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
             PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Select icon based on reason
+        val icon = when {
+            reason.contains("Charger", true) -> android.R.drawable.ic_lock_power_off
+            reason.contains("Pocket", true) -> android.R.drawable.ic_menu_view
+            else -> R.drawable.ic_notification_alert
+        }
+
         val notification = NotificationCompat.Builder(this, NotificationUtil.ALERT_CHANNEL_ID)
             .setContentTitle("🚨 THEFT ALERT!")
-            .setContentText("Motion detected! Tap to Disarm.")
-            .setSmallIcon(R.drawable.ic_notification_alert)
+            .setContentText("$reason! Tap to Disarm.")
+            .setSmallIcon(icon)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
