@@ -29,8 +29,9 @@ import com.example.presencedetector.utils.PreferencesUtil
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.content.SharedPreferences
 
-class AntiTheftService : Service(), SensorEventListener {
+class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSharedPreferenceChangeListener {
 
     companion object {
         private const val TAG = "AntiTheftService"
@@ -115,6 +116,8 @@ class AntiTheftService : Service(), SensorEventListener {
         // Register power receiver
         val powerFilter = IntentFilter(Intent.ACTION_POWER_DISCONNECTED)
         registerReceiver(powerReceiver, powerFilter)
+
+        preferences.registerListener(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -368,6 +371,9 @@ class AntiTheftService : Service(), SensorEventListener {
     }
 
     override fun onDestroy() {
+        if (::preferences.isInitialized) {
+            preferences.unregisterListener(this)
+        }
         try {
             unregisterReceiver(stopAlarmReceiver)
             unregisterReceiver(powerReceiver)
@@ -376,6 +382,14 @@ class AntiTheftService : Service(), SensorEventListener {
         }
         stopMonitoring()
         super.onDestroy()
+    }
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        if (key == PreferencesUtil.KEY_ANTI_THEFT_SENSITIVITY) {
+            val sensitivity = preferences.getAntiTheftSensitivity()
+            Log.d(TAG, "Sensitivity updated to: $sensitivity")
+            motionDetector = MotionDetector(sensitivity)
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? {

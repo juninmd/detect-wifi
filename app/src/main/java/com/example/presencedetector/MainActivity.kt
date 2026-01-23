@@ -537,10 +537,21 @@ class MainActivity : AppCompatActivity() {
             val packageName = packageName
             val pm = getSystemService(android.os.PowerManager::class.java)
             if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-                // We should prompt user, but for now just logging or showing a toast
-                // In a full implementation, we would launch Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-                Toast.makeText(this, "Please disable battery optimization for best performance", Toast.LENGTH_LONG).show()
                 addLog("Warning: Battery optimization is enabled. Background scanning may stop.")
+
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setTitle("Background Performance")
+                    .setMessage("To ensure reliable security monitoring, please disable battery optimization for this app.")
+                    .setPositiveButton("Open Settings") { _, _ ->
+                        try {
+                            val intent = Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                            startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(this, "Could not open settings", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
             }
         }
     }

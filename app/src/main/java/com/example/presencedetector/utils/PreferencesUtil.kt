@@ -30,7 +30,7 @@ class PreferencesUtil(context: Context) {
         private const val KEY_SECURITY_START_TIME = "security_start_time"
         private const val KEY_SECURITY_END_TIME = "security_end_time"
         private const val KEY_ANTI_THEFT_ARMED = "anti_theft_armed"
-        private const val KEY_ANTI_THEFT_SENSITIVITY = "anti_theft_sensitivity"
+        const val KEY_ANTI_THEFT_SENSITIVITY = "anti_theft_sensitivity"
         private const val KEY_BIOMETRIC_ENABLED = "biometric_enabled"
         private const val KEY_POCKET_MODE_ENABLED = "pocket_mode_enabled"
         private const val KEY_CHARGER_MODE_ENABLED = "charger_mode_enabled"
@@ -251,6 +251,14 @@ class PreferencesUtil(context: Context) {
 
     fun clear() {
         preferences.edit().clear().apply()
+    }
+
+    fun registerListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        preferences.registerOnSharedPreferenceChangeListener(listener)
+    }
+
+    fun unregisterListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        preferences.unregisterOnSharedPreferenceChangeListener(listener)
     }
 
     /**
