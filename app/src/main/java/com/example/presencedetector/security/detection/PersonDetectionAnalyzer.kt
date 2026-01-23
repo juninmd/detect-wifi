@@ -135,7 +135,7 @@ class PersonDetectionAnalyzer(
                 if (personDetected && currentState == DetectionState.DETECTING) {
                     // Cria cópia para não perder referência quando bitmap original for reciclado
                     lastDetectionBitmap?.recycle()
-                    lastDetectionBitmap = bitmap.copy(bitmap.config, false)
+                    lastDetectionBitmap = bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, false)
                 }
                 
                 updateState(personDetected, currentTime)
