@@ -67,6 +67,9 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
 
     private var armingTime = 0L
 
+    // Battery Sentinel State
+    private var lowBatteryNotified = false
+
     private var alarmRingtone: Ringtone? = null
 
     private val reportHandler = Handler(Looper.getMainLooper())
@@ -84,6 +87,24 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == NotificationActionReceiver.ACTION_STOP_ALARM) {
                 stopAlarm()
+            }
+        }
+    }
+
+    private val batteryLevelReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val level = intent?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
+            val status = intent?.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1) ?: -1
+            val isCharging = status == android.os.BatteryManager.BATTERY_STATUS_CHARGING ||
+                    status == android.os.BatteryManager.BATTERY_STATUS_FULL
+
+            if (level != -1 && level <= 15 && !isCharging && isArmed && !lowBatteryNotified) {
+                Log.w(TAG, "Critical Battery: $level%")
+                context?.let { NotificationUtil.sendBatteryAlert(it, level) }
+                telegramService.sendMessage("⚠️ LOW BATTERY WARNING: Security Device at $level%! Connect charger immediately.")
+                lowBatteryNotified = true
+            } else if (isCharging || level > 15) {
+                lowBatteryNotified = false // Reset if charged
             }
         }
     }
@@ -154,6 +175,10 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
             return
         }
 
+        // Register Battery Sentinel
+        val batteryFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        registerReceiver(batteryLevelReceiver, batteryFilter)
+
         // Register Sensors
         accelerometer?.let {
             sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
@@ -172,6 +197,12 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         isPocketModeArmed = false
         isChargerModeArmed = false
         preferences.setAntiTheftArmed(false) // Persist state
+
+        try {
+            unregisterReceiver(batteryLevelReceiver)
+        } catch (e: Exception) {
+            // Ignore
+        }
 
         stopAlarm()
         sensorManager.unregisterListener(this)

@@ -29,6 +29,10 @@ object NotificationUtil {
     const val ALERT_CHANNEL_ID = "security_alerts_channel_v2"
     private const val ALERT_CHANNEL_NAME = "Security Alerts"
 
+    // Channel for Battery Alerts
+    const val BATTERY_CHANNEL_ID = "battery_alert_channel"
+    private const val BATTERY_CHANNEL_NAME = "Battery Alerts"
+
     private const val GROUP_KEY_PRESENCE = "com.example.presencedetector.PRESENCE_UPDATES"
 
     fun createNotificationChannels(context: Context) {
@@ -78,10 +82,48 @@ object NotificationUtil {
                 )
             }
 
+            // 4. Battery Channel
+            val batteryChannel = NotificationChannel(
+                BATTERY_CHANNEL_ID,
+                BATTERY_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Critical battery warnings"
+                enableVibration(true)
+                enableLights(true)
+                lightColor = android.graphics.Color.YELLOW
+            }
+
             notificationManager?.createNotificationChannels(
-                listOf(serviceChannel, infoChannel, alertChannel)
+                listOf(serviceChannel, infoChannel, alertChannel, batteryChannel)
             )
         }
+    }
+
+    fun sendBatteryAlert(context: Context, level: Int) {
+        createNotificationChannels(context)
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(context, BATTERY_CHANNEL_ID)
+            .setContentTitle("⚠️ Low Battery Warning")
+            .setContentText("Security device battery is at $level%. Connect charger immediately!")
+            .setSmallIcon(android.R.drawable.ic_lock_idle_low_battery)
+            .setContentIntent(pendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_SYSTEM)
+            .setAutoCancel(true)
+
+        val notificationManager = context.getSystemService(NotificationManager::class.java)
+        notificationManager?.notify(2001, builder.build())
     }
 
     fun createForegroundNotification(

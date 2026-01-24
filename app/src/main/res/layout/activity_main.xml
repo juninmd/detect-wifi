@@ -49,78 +49,124 @@
                     android:layout_height="match_parent"/>
             </FrameLayout>
 
-            <!-- MAIN DASHBOARD STATUS -->
-            <com.google.android.material.card.MaterialCardView
+            <!-- DUAL STATUS DASHBOARD -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp"
+                android:baselineAligned="false">
+
+                <!-- HOME SECURITY STATUS -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardHomeStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="140dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#1AFFFFFF"
+                    app:strokeColor="#33FFFFFF"
+                    app:strokeWidth="1dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="16dp">
+                        <ImageView
+                            android:id="@+id/ivHomeStatus"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_status_inactive"
+                            app:tint="@color/primary_color"/>
+                        <TextView
+                            android:id="@+id/tvHomeStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Home Idle"
+                            android:layout_marginTop="12dp"
+                            android:textColor="@color/white"
+                            android:textStyle="bold"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="WiFi Monitor"
+                            android:textSize="12sp"
+                            android:textColor="@color/light_text"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- MOBILE SECURITY STATUS -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardMobileStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="140dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#1AFFFFFF"
+                    app:strokeColor="#33FFFFFF"
+                    app:strokeWidth="1dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="16dp">
+                        <ImageView
+                            android:id="@+id/ivMobileStatus"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@android:drawable/ic_lock_idle_lock"
+                            app:tint="@color/primary_color"/>
+                        <TextView
+                            android:id="@+id/tvMobileStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Phone Idle"
+                            android:layout_marginTop="12dp"
+                            android:textColor="@color/white"
+                            android:textStyle="bold"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Anti-Theft"
+                            android:textSize="12sp"
+                            android:textColor="@color/light_text"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- MASTER CONTROL -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="0dp"
-                app:cardBackgroundColor="#1AFFFFFF"
-                app:strokeColor="#33FFFFFF"
-                app:strokeWidth="1dp">
+                android:gravity="center"
+                android:orientation="horizontal">
 
-                <LinearLayout
+                <Button
+                    android:id="@+id/startButton"
+                    style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:padding="24dp">
+                    android:layout_height="56dp"
+                    android:text="ACTIVATE HOME GUARD"
+                    android:backgroundTint="@color/primary_color"
+                    android:textColor="@color/white"/>
 
-                    <ImageView
-                        android:id="@+id/statusIndicator"
-                        android:layout_width="80dp"
-                        android:layout_height="80dp"
-                        android:src="@drawable/ic_status_inactive"
-                        app:tint="@color/primary_color"/>
-
-                    <TextView
-                        android:id="@+id/statusText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="System Idle"
-                        android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
-                        android:textColor="@color/white"
-                        android:textStyle="bold"/>
-
-                    <TextView
-                        android:id="@+id/statusDetails"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Tap Activate to start guarding"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                        android:textColor="@color/light_text"
-                        android:gravity="center"/>
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
-                        android:orientation="horizontal">
-
-                        <Button
-                            android:id="@+id/startButton"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="ACTIVATE"
-                            android:backgroundTint="@color/primary_color"
-                            android:textColor="@color/white"/>
-
-                        <Button
-                            android:id="@+id/stopButton"
-                            style="@style/Widget.Material3.Button"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="DEACTIVATE"
-                            android:backgroundTint="@color/danger_color"
-                            android:textColor="@color/white"
-                            android:visibility="gone"/>
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                <Button
+                    android:id="@+id/stopButton"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="DEACTIVATE MONITOR"
+                    android:backgroundTint="@color/danger_color"
+                    android:textColor="@color/white"
+                    android:visibility="gone"/>
+            </LinearLayout>
 
             <!-- BATTERY MONITOR -->
             <com.google.android.material.card.MaterialCardView
