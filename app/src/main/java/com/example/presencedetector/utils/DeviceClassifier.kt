@@ -11,8 +11,9 @@ object DeviceClassifier {
         val name = ssid.lowercase()
 
         return when {
-            // Mobile Hotspots (NEW)
-            isMobileHotspot(name) -> DeviceCategory.SMARTPHONE
+            // Explicit Smartphones (High Confidence)
+            name.contains("iphone") || name.contains("android") || name.contains("galaxy") ||
+            name.contains("note") || name.contains("pixel") -> DeviceCategory.SMARTPHONE
 
             // Kindle / E-Readers
             name.contains("kindle") || name.contains("ebook") -> DeviceCategory.KINDLE
@@ -30,14 +31,13 @@ object DeviceClassifier {
             name.contains("sony") || name.contains("bravia") || name.contains("firestick") ||
             name.contains("chromecast") || name.contains("roku") -> DeviceCategory.SMART_TV
 
+            // Mobile Hotspots (NEW) - Checked after specific devices to avoid false positives (e.g. Samsung TV)
+            isMobileHotspot(name) -> DeviceCategory.SMARTPHONE
+
             // Routers (Frequências comuns em nomes de rede)
             name.contains("2.4g") || name.contains("5g") || name.contains("router") ||
             name.contains("gateway") || name.contains("tp-link") || name.contains("d-link") ||
             name.contains("familia") || name.contains("adriana") -> DeviceCategory.ROUTER
-
-            // Smartphones
-            name.contains("iphone") || name.contains("android") || name.contains("galaxy") ||
-            name.contains("note") || name.contains("pixel") -> DeviceCategory.SMARTPHONE
 
             // Default
             else -> DeviceCategory.UNKNOWN
