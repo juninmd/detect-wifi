@@ -1,12 +1,17 @@
 package com.example.presencedetector
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.ScrollView
 import android.widget.TextView
@@ -55,9 +60,24 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvAntiTheftStatus: TextView
     private lateinit var ivAntiTheftIcon: ImageView
 
+    // Battery Monitor
+    private lateinit var tvBatteryLevel: TextView
+    private lateinit var tvBatteryTemp: TextView
+    private lateinit var tvBatteryVoltage: TextView
+
+    // App Lock
+    private lateinit var lockOverlay: FrameLayout
+    private lateinit var btnUnlockApp: Button
+
     private var detectionManager: PresenceDetectionManager? = null
     private var isDetecting = false
     private lateinit var preferences: PreferencesUtil
+
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            intent?.let { updateBatteryInfo(it) }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,12 +87,32 @@ class MainActivity : AppCompatActivity() {
         NotificationUtil.createNotificationChannels(this)
 
         initializeViews()
+        checkAppLock()
+
         loadRecentLogs()
         if (!hasRequiredPermissions()) {
             requestPermissions()
         }
         setupDetectionManager()
         handleIntent(intent)
+    }
+
+    private fun checkAppLock() {
+        if (preferences.isAppLockEnabled()) {
+            lockOverlay.visibility = View.VISIBLE
+            // Trigger auth
+            BiometricAuthenticator(this).authenticate(
+                onSuccess = {
+                    lockOverlay.visibility = View.GONE
+                    Toast.makeText(this, "Unlocked", Toast.LENGTH_SHORT).show()
+                },
+                onFail = {
+                    Toast.makeText(this, "Authentication Failed", Toast.LENGTH_SHORT).show()
+                }
+            )
+        } else {
+            lockOverlay.visibility = View.GONE
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -239,6 +279,26 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateAntiTheftUI()
+        val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        registerReceiver(batteryReceiver, filter)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unregisterReceiver(batteryReceiver)
+    }
+
+    private fun updateBatteryInfo(intent: Intent) {
+        val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+        val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+        val batteryPct = level * 100 / scale.toFloat()
+
+        val voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0)
+        val temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0)
+
+        tvBatteryLevel.text = "${batteryPct.toInt()}%"
+        tvBatteryVoltage.text = "${String.format("%.1f", voltage / 1000f)}V"
+        tvBatteryTemp.text = "${String.format("%.1f", temp / 10f)}°C"
     }
 
     private fun initializeViews() {
@@ -257,6 +317,16 @@ class MainActivity : AppCompatActivity() {
         tvCountKnown = findViewById(R.id.tvCountKnown)
         tvNamesKnown = findViewById(R.id.tvNamesKnown)
         tvCountUnknown = findViewById(R.id.tvCountUnknown)
+
+        // Battery
+        tvBatteryLevel = findViewById(R.id.tvBatteryLevel)
+        tvBatteryTemp = findViewById(R.id.tvBatteryTemp)
+        tvBatteryVoltage = findViewById(R.id.tvBatteryVoltage)
+
+        // App Lock
+        lockOverlay = findViewById(R.id.lockOverlay)
+        btnUnlockApp = findViewById(R.id.btnUnlockApp)
+        btnUnlockApp.setOnClickListener { checkAppLock() }
 
         // Anti-Theft
         btnAntiTheft = findViewById(R.id.btnAntiTheft)

@@ -32,6 +32,7 @@ class PreferencesUtil(context: Context) {
         private const val KEY_ANTI_THEFT_ARMED = "anti_theft_armed"
         const val KEY_ANTI_THEFT_SENSITIVITY = "anti_theft_sensitivity"
         private const val KEY_BIOMETRIC_ENABLED = "biometric_enabled"
+        private const val KEY_APP_LOCK_ENABLED = "app_lock_enabled"
         private const val KEY_POCKET_MODE_ENABLED = "pocket_mode_enabled"
         private const val KEY_CHARGER_MODE_ENABLED = "charger_mode_enabled"
 
@@ -158,6 +159,14 @@ class PreferencesUtil(context: Context) {
 
     fun isBiometricEnabled(): Boolean {
         return preferences.getBoolean(KEY_BIOMETRIC_ENABLED, false)
+    }
+
+    fun setAppLockEnabled(enabled: Boolean) {
+        preferences.edit().putBoolean(KEY_APP_LOCK_ENABLED, enabled).apply()
+    }
+
+    fun isAppLockEnabled(): Boolean {
+        return preferences.getBoolean(KEY_APP_LOCK_ENABLED, false)
     }
 
     fun setPocketModeEnabled(enabled: Boolean) {
