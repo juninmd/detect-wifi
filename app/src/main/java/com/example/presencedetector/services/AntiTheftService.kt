@@ -146,7 +146,13 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         armingTime = System.currentTimeMillis()
 
         // Start Foreground
-        startForeground(NOTIFICATION_ID, createForegroundNotification())
+        try {
+            startForeground(NOTIFICATION_ID, createForegroundNotification())
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start foreground service", e)
+            stopSelf()
+            return
+        }
 
         // Register Sensors
         accelerometer?.let {
@@ -382,6 +388,25 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         }
         stopMonitoring()
         super.onDestroy()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        if (isArmed) {
+            Log.d(TAG, "Task removed, restarting service to maintain protection")
+            val restartServiceIntent = Intent(applicationContext, AntiTheftService::class.java).apply {
+                action = ACTION_START
+            }
+            val restartServicePendingIntent = PendingIntent.getService(
+                applicationContext, 1, restartServiceIntent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val alarmService = applicationContext.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+            alarmService.set(
+                android.app.AlarmManager.ELAPSED_REALTIME,
+                android.os.SystemClock.elapsedRealtime() + 1000,
+                restartServicePendingIntent
+            )
+        }
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {

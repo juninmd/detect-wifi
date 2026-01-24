@@ -25,6 +25,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var etTelegramChatId: TextInputEditText
     private lateinit var btnTestTelegram: com.google.android.material.button.MaterialButton
 
+    private lateinit var switchAppLock: MaterialSwitch
     private lateinit var switchSecurityAlert: MaterialSwitch
     private lateinit var switchSecuritySound: MaterialSwitch
     private lateinit var etSecurityStart: TextInputEditText
@@ -67,6 +68,7 @@ class SettingsActivity : AppCompatActivity() {
         etTelegramChatId = findViewById(R.id.etTelegramChatId)
         btnTestTelegram = findViewById(R.id.btnTestTelegram)
 
+        switchAppLock = findViewById(R.id.switchAppLock)
         switchSecurityAlert = findViewById(R.id.switchSecurityAlert)
         switchSecuritySound = findViewById(R.id.switchSecuritySound)
         etSecurityStart = findViewById(R.id.etSecurityStart)
@@ -90,6 +92,7 @@ class SettingsActivity : AppCompatActivity() {
         etTelegramChatId.setText(preferences.getTelegramChatId())
 
         // Security
+        switchAppLock.isChecked = preferences.isAppLockEnabled()
         switchSecurityAlert.isChecked = preferences.isSecurityAlertEnabled()
         switchSecuritySound.isChecked = preferences.isSecuritySoundEnabled()
 
@@ -114,6 +117,17 @@ class SettingsActivity : AppCompatActivity() {
 
         switchTelegram.setOnCheckedChangeListener { _, isChecked ->
             preferences.setTelegramEnabled(isChecked)
+        }
+
+        switchAppLock.setOnCheckedChangeListener { view, isChecked ->
+            if (isChecked) {
+                if (!BiometricAuthenticator.isAvailable(this)) {
+                    view.isChecked = false
+                    Toast.makeText(this, "Biometric authentication not available", Toast.LENGTH_SHORT).show()
+                    return@setOnCheckedChangeListener
+                }
+            }
+            preferences.setAppLockEnabled(isChecked)
         }
 
         switchSecurityAlert.setOnCheckedChangeListener { _, isChecked ->
