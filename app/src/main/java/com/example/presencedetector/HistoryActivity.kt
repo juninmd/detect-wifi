@@ -10,10 +10,15 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.presencedetector.utils.PreferencesUtil
 import com.google.android.material.appbar.MaterialToolbar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class HistoryActivity : AppCompatActivity() {
 
@@ -22,6 +27,7 @@ class HistoryActivity : AppCompatActivity() {
     private lateinit var tvHistoryTitle: TextView
     private lateinit var preferences: PreferencesUtil
     private val adapter = HistoryAdapter()
+    private var loadJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,50 +64,70 @@ class HistoryActivity : AppCompatActivity() {
     }
 
     private fun loadAllHistory() {
-        val bssids = preferences.getAllTrackedBssids()
-        val allLogs = mutableListOf<HistoryItem>()
+        loadJob?.cancel()
+        loadJob = lifecycleScope.launch(Dispatchers.IO) {
+            val bssids = preferences.getAllTrackedBssids()
+            val allLogs = mutableListOf<HistoryItem>()
 
-        bssids.forEach { bssid ->
-            val nickname = preferences.getNickname(bssid) ?: "Unknown"
-            val eventLogs = preferences.getEventLogs(bssid)
-            eventLogs.forEach { logLine ->
-                // Parse log line to extract event type and timestamp
-                val isArrival = logLine.contains("Arrived")
-                val isDeparture = logLine.contains("Left")
-                allLogs.add(HistoryItem(bssid, nickname, logLine, isArrival, isDeparture))
+            bssids.forEach { bssid ->
+                val nickname = preferences.getNickname(bssid) ?: "Unknown"
+                val eventLogs = preferences.getEventLogs(bssid)
+                eventLogs.forEach { logLine ->
+                    // Parse log line to extract event type and timestamp
+                    val isArrival = logLine.contains("Arrived")
+                    val isDeparture = logLine.contains("Left")
+                    allLogs.add(HistoryItem(bssid, nickname, logLine, isArrival, isDeparture))
+                }
+            }
+
+            // Add System Logs
+            val systemLogs = preferences.getSystemLogs()
+            systemLogs.forEach { logLine ->
+                allLogs.add(HistoryItem("SYSTEM", "Security System", logLine))
+            }
+
+            val sortedLogs = allLogs.sortedByDescending { it.logDetail }
+
+            withContext(Dispatchers.Main) {
+                adapter.setItems(sortedLogs)
+                tvHistoryTitle.text = "Full History (${sortedLogs.size} events)"
             }
         }
-
-        // Add System Logs
-        val systemLogs = preferences.getSystemLogs()
-        systemLogs.forEach { logLine ->
-            allLogs.add(HistoryItem("SYSTEM", "Security System", logLine))
-        }
-
-        val sortedLogs = allLogs.sortedByDescending { it.logDetail }
-        adapter.setItems(sortedLogs)
-        tvHistoryTitle.text = "Full History (${sortedLogs.size} events)"
     }
 
     private fun filterHistory(query: String) {
-        val bssids = preferences.getAllTrackedBssids()
-        val filteredLogs = mutableListOf<HistoryItem>()
+        loadJob?.cancel()
+        loadJob = lifecycleScope.launch(Dispatchers.IO) {
+            val bssids = preferences.getAllTrackedBssids()
+            val filteredLogs = mutableListOf<HistoryItem>()
 
-        bssids.forEach { bssid ->
-            val nickname = preferences.getNickname(bssid) ?: ""
-            if (bssid.lowercase().contains(query) || nickname.lowercase().contains(query)) {
-                val eventLogs = preferences.getEventLogs(bssid)
-                eventLogs.forEach { logLine ->
-                    val isArrival = logLine.contains("Arrived")
-                    val isDeparture = logLine.contains("Left")
-                    filteredLogs.add(HistoryItem(bssid, nickname.ifEmpty { "Unknown" }, logLine, isArrival, isDeparture))
+            bssids.forEach { bssid ->
+                val nickname = preferences.getNickname(bssid) ?: ""
+                if (bssid.lowercase().contains(query) || nickname.lowercase().contains(query)) {
+                    val eventLogs = preferences.getEventLogs(bssid)
+                    eventLogs.forEach { logLine ->
+                        val isArrival = logLine.contains("Arrived")
+                        val isDeparture = logLine.contains("Left")
+                        filteredLogs.add(
+                            HistoryItem(
+                                bssid,
+                                nickname.ifEmpty { "Unknown" },
+                                logLine,
+                                isArrival,
+                                isDeparture
+                            )
+                        )
+                    }
                 }
             }
-        }
 
-        val sortedLogs = filteredLogs.sortedByDescending { it.logDetail }
-        adapter.setItems(sortedLogs)
-        tvHistoryTitle.text = "Filtered Results (${sortedLogs.size})"
+            val sortedLogs = filteredLogs.sortedByDescending { it.logDetail }
+
+            withContext(Dispatchers.Main) {
+                adapter.setItems(sortedLogs)
+                tvHistoryTitle.text = "Filtered Results (${sortedLogs.size})"
+            }
+        }
     }
 
     data class HistoryItem(val bssid: String, val nickname: String, val logDetail: String, val isArrival: Boolean = false, val isDeparture: Boolean = false)
