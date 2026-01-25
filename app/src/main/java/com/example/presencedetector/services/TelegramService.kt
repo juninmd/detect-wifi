@@ -3,6 +3,7 @@ package com.example.presencedetector.services
 import android.content.Context
 import android.util.Log
 import com.example.presencedetector.utils.PreferencesUtil
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,35 +21,37 @@ import java.util.concurrent.TimeUnit
 /**
  * Service to handle Telegram notifications using OkHttp.
  */
-class TelegramService(private val context: Context) {
+class TelegramService(
+    private val context: Context,
+    var preferences: PreferencesUtil? = null,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
     companion object {
         private const val TAG = "TelegramService"
         private const val TIMEOUT_SEC = 30L
 
         // Singleton OkHttpClient to reuse connection pool and threads
-        private val client by lazy {
-            OkHttpClient.Builder()
+        var client: OkHttpClient = OkHttpClient.Builder()
                 .connectTimeout(TIMEOUT_SEC, TimeUnit.SECONDS)
                 .writeTimeout(TIMEOUT_SEC, TimeUnit.SECONDS)
                 .readTimeout(TIMEOUT_SEC, TimeUnit.SECONDS)
                 .build()
-        }
     }
 
-    private val preferences = PreferencesUtil(context)
+    private val prefs: PreferencesUtil by lazy { preferences ?: PreferencesUtil(context) }
 
     fun sendMessage(message: String) {
-        if (!preferences.isTelegramEnabled()) return
+        if (!prefs.isTelegramEnabled()) return
 
-        val token = preferences.getTelegramToken()
-        val chatId = preferences.getTelegramChatId()
+        val token = prefs.getTelegramToken()
+        val chatId = prefs.getTelegramChatId()
 
         if (token.isNullOrEmpty() || chatId.isNullOrEmpty()) {
             Log.w(TAG, "Telegram credentials missing")
             return
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(ioDispatcher).launch {
             try {
                 val url = "https://api.telegram.org/bot$token/sendMessage"
 
@@ -78,10 +81,10 @@ class TelegramService(private val context: Context) {
     }
 
     fun sendPhoto(photoFile: File, caption: String = "") {
-        if (!preferences.isTelegramEnabled()) return
+        if (!prefs.isTelegramEnabled()) return
 
-        val token = preferences.getTelegramToken()
-        val chatId = preferences.getTelegramChatId()
+        val token = prefs.getTelegramToken()
+        val chatId = prefs.getTelegramChatId()
 
         if (token.isNullOrEmpty() || chatId.isNullOrEmpty()) {
             Log.w(TAG, "Telegram credentials missing")
@@ -93,7 +96,7 @@ class TelegramService(private val context: Context) {
             return
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(ioDispatcher).launch {
             try {
                 val url = "https://api.telegram.org/bot$token/sendPhoto"
 
