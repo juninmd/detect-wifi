@@ -19,19 +19,15 @@ object NotificationUtil {
 
     // Channel for Foreground Service (Scanning status)
     const val CHANNEL_ID = "presence_detection_channel"
-    private const val CHANNEL_NAME = "Presence Detection Service"
 
     // Channel for Standard Events (Arrivals/Departures) - Medium Priority
     const val INFO_CHANNEL_ID = "presence_info_channel"
-    private const val INFO_CHANNEL_NAME = "Presence Events"
 
     // Channel for Critical Alerts (Intruders, Anti-Theft) - Max Priority
     const val ALERT_CHANNEL_ID = "security_alerts_channel_v2"
-    private const val ALERT_CHANNEL_NAME = "Security Alerts"
 
     // Channel for Battery Alerts
     const val BATTERY_CHANNEL_ID = "battery_alert_channel"
-    private const val BATTERY_CHANNEL_NAME = "Battery Alerts"
 
     private const val GROUP_KEY_PRESENCE = "com.example.presencedetector.PRESENCE_UPDATES"
 
@@ -42,20 +38,20 @@ object NotificationUtil {
             // 1. Service Channel (Low noise)
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
-                CHANNEL_NAME,
+                context.getString(R.string.channel_service_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Status of background monitoring services"
+                description = context.getString(R.string.channel_service_desc)
                 setShowBadge(false)
             }
 
             // 2. Info Channel (Standard beeps)
             val infoChannel = NotificationChannel(
                 INFO_CHANNEL_ID,
-                INFO_CHANNEL_NAME,
+                context.getString(R.string.channel_info_name),
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Arrivals, departures, and routine updates"
+                description = context.getString(R.string.channel_info_desc)
                 enableLights(true)
                 lightColor = android.graphics.Color.BLUE
             }
@@ -63,10 +59,10 @@ object NotificationUtil {
             // 3. Critical Alert Channel - Bypass DND
             val alertChannel = NotificationChannel(
                 ALERT_CHANNEL_ID,
-                ALERT_CHANNEL_NAME,
+                context.getString(R.string.channel_alert_name),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Critical security alerts (Intruder, Theft, Motion)"
+                description = context.getString(R.string.channel_alert_desc)
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500, 1000)
                 enableLights(true)
@@ -85,10 +81,10 @@ object NotificationUtil {
             // 4. Battery Channel
             val batteryChannel = NotificationChannel(
                 BATTERY_CHANNEL_ID,
-                BATTERY_CHANNEL_NAME,
+                context.getString(R.string.channel_battery_name),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Critical battery warnings"
+                description = context.getString(R.string.channel_battery_desc)
                 enableVibration(true)
                 enableLights(true)
                 lightColor = android.graphics.Color.YELLOW
@@ -114,8 +110,8 @@ object NotificationUtil {
         )
 
         val builder = NotificationCompat.Builder(context, BATTERY_CHANNEL_ID)
-            .setContentTitle("⚠️ Low Battery Warning")
-            .setContentText("Security device battery is at $level%. Connect charger immediately!")
+            .setContentTitle(context.getString(R.string.notif_battery_warning))
+            .setContentText(context.getString(R.string.notif_battery_desc, level))
             .setSmallIcon(android.R.drawable.ic_lock_idle_low_battery)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

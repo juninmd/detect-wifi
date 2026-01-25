@@ -108,10 +108,10 @@ class MainActivity : AppCompatActivity() {
             BiometricAuthenticator(this).authenticate(
                 onSuccess = {
                     lockOverlay.visibility = View.GONE
-                    Toast.makeText(this, "Unlocked", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, R.string.msg_unlocked, Toast.LENGTH_SHORT).show()
                 },
                 onFail = {
-                    Toast.makeText(this, "Authentication Failed", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, R.string.msg_auth_failed, Toast.LENGTH_SHORT).show()
                 }
             )
         } else {
@@ -267,7 +267,7 @@ class MainActivity : AppCompatActivity() {
                 val file = java.io.File(getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES), filename)
                 java.io.FileOutputStream(file).use { it.write(bytes) }
                 runOnUiThread {
-                    addLog("📸 Intruder Photo Saved: $filename")
+                    addLog(getString(R.string.log_intruder_photo, filename))
                 }
 
                 // Send to Telegram
@@ -376,7 +376,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun triggerPanicMode() {
-        Toast.makeText(this, "🆘 PANIC MODE ACTIVATED!", Toast.LENGTH_LONG).show()
+        Toast.makeText(this, R.string.msg_panic_activated, Toast.LENGTH_LONG).show()
 
         // 1. Send Telegram Alert
         val telegramService = com.example.presencedetector.services.TelegramService(this)
@@ -386,9 +386,8 @@ class MainActivity : AppCompatActivity() {
         // For now, we just alert externally to avoid accidental deafening, or we could trigger the AntiTheft alarm.
 
         // 3. Log event
-        val timestamp = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
-        detectionLog.append("\n[$timestamp] 🆘 PANIC BUTTON PRESSED")
-        preferences.logSystemEvent("🆘 PANIC BUTTON PRESSED")
+        addLog(getString(R.string.log_panic_pressed))
+        preferences.logSystemEvent(getString(R.string.log_panic_pressed))
         logScrollView.post { logScrollView.fullScroll(View.FOCUS_DOWN) }
     }
 
@@ -413,8 +412,8 @@ class MainActivity : AppCompatActivity() {
         }
         startService(serviceIntent)
         preferences.setAntiTheftArmed(false)
-        addLog("Mobile Security Disarmed")
-        preferences.logSystemEvent("Mobile Security Disarmed")
+        addLog(getString(R.string.log_mobile_disarmed))
+        preferences.logSystemEvent("Mobile Security Disarmed") // Keep system log consistent or localized? Let's localize for now
         updateAntiTheftUI()
     }
 
@@ -428,7 +427,7 @@ class MainActivity : AppCompatActivity() {
             startService(serviceIntent)
         }
         preferences.setAntiTheftArmed(true)
-        addLog("Mobile Security Armed")
+        addLog(getString(R.string.log_mobile_armed))
         preferences.logSystemEvent("Mobile Security Armed")
         updateAntiTheftUI()
     }
@@ -441,22 +440,22 @@ class MainActivity : AppCompatActivity() {
             if (preferences.isChargerModeEnabled()) modes.add("Charger")
 
             val modeString = modes.joinToString(", ")
-            tvAntiTheftStatus.text = "Armed ($modeString)"
+            tvAntiTheftStatus.text = getString(R.string.text_armed_modes, modeString)
             ivAntiTheftIcon.setImageResource(R.drawable.ic_status_active)
 
             // Dashboard Card Update
             ivMobileStatus.setImageResource(R.drawable.ic_status_active)
             ivMobileStatus.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
-            tvMobileStatus.text = "Secure"
+            tvMobileStatus.text = getString(R.string.status_secure)
             tvMobileStatus.setTextColor(ContextCompat.getColor(this, R.color.success_color))
         } else {
-            tvAntiTheftStatus.text = "Tap to Arm"
+            tvAntiTheftStatus.text = getString(R.string.text_tap_to_arm)
             ivAntiTheftIcon.setImageResource(android.R.drawable.ic_lock_idle_lock)
 
             // Dashboard Card Update
             ivMobileStatus.setImageResource(android.R.drawable.ic_lock_idle_lock)
             ivMobileStatus.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
-            tvMobileStatus.text = "Phone Idle"
+            tvMobileStatus.text = getString(R.string.status_phone_idle)
             tvMobileStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
         }
     }
@@ -497,12 +496,12 @@ class MainActivity : AppCompatActivity() {
         if (isDetecting) {
             ivHomeStatus.setImageResource(R.drawable.ic_status_active)
             ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
-            tvHomeStatus.text = "Scanning"
+            tvHomeStatus.text = getString(R.string.status_scanning)
             tvHomeStatus.setTextColor(ContextCompat.getColor(this, R.color.success_color))
         } else {
             ivHomeStatus.setImageResource(R.drawable.ic_status_inactive)
             ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
-            tvHomeStatus.text = "Home Idle"
+            tvHomeStatus.text = getString(R.string.status_home_idle)
             tvHomeStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
         }
 
@@ -514,7 +513,7 @@ class MainActivity : AppCompatActivity() {
                 val name = preferences.getNickname(it.bssid) ?: it.ssid.take(8)
                 "${it.category.iconRes} $name (${it.level}dBm)" 
             }
-            addLog("Scan: ${devices.size} found. Top: $summary")
+            addLog(getString(R.string.log_scan_summary, devices.size, summary))
         }
     }
 
@@ -530,7 +529,7 @@ class MainActivity : AppCompatActivity() {
 
         // UI Update
         ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
-        tvHomeStatus.text = "Scanning"
+        tvHomeStatus.text = getString(R.string.status_scanning)
         tvHomeStatus.setTextColor(ContextCompat.getColor(this, R.color.success_color))
 
         val serviceIntent = Intent(this, DetectionBackgroundService::class.java)
@@ -551,7 +550,7 @@ class MainActivity : AppCompatActivity() {
         // UI Update
         ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
         ivHomeStatus.setImageResource(R.drawable.ic_status_inactive)
-        tvHomeStatus.text = "Home Idle"
+        tvHomeStatus.text = getString(R.string.status_home_idle)
         tvHomeStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
 
         val serviceIntent = Intent(this, DetectionBackgroundService::class.java)
@@ -633,12 +632,12 @@ class MainActivity : AppCompatActivity() {
             val packageName = packageName
             val pm = getSystemService(android.os.PowerManager::class.java)
             if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-                addLog("Warning: Battery optimization is enabled. Background scanning may stop.")
+                addLog(getString(R.string.log_battery_opt_warning))
 
                 com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                    .setTitle("Background Performance")
-                    .setMessage("To ensure reliable security monitoring, please disable battery optimization for this app.")
-                    .setPositiveButton("Open Settings") { _, _ ->
+                    .setTitle(R.string.msg_battery_dialog_title)
+                    .setMessage(R.string.msg_battery_dialog_text)
+                    .setPositiveButton(R.string.btn_open_settings) { _, _ ->
                         try {
                             val intent = Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
                             startActivity(intent)
@@ -646,7 +645,7 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this, "Could not open settings", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    .setNegativeButton("Cancel", null)
+                    .setNegativeButton(R.string.btn_cancel, null)
                     .show()
             }
         }
@@ -666,14 +665,14 @@ class MainActivity : AppCompatActivity() {
                     startDetection()
                 }
             } else {
-                Toast.makeText(this, "Permissions required for WiFi scanning", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, R.string.msg_permissions_required, Toast.LENGTH_LONG).show()
             }
         } else if (requestCode == 101) { // Background Location Request Code
              // Whether granted or not, try to start. Service will handle missing perm gracefully or run as foreground-only.
              if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                 addLog("Background Location Granted")
+                 addLog(getString(R.string.msg_bg_location_granted))
              } else {
-                 addLog("Background Location Denied - Scanning may be limited")
+                 addLog(getString(R.string.msg_bg_location_denied))
              }
              startDetection()
         }

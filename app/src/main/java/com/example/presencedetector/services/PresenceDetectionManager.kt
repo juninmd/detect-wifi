@@ -11,6 +11,7 @@ import android.media.RingtoneManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.example.presencedetector.R
 import com.example.presencedetector.model.WiFiDevice
 import com.example.presencedetector.receivers.NotificationActionReceiver
 import com.example.presencedetector.utils.NotificationUtil
@@ -265,7 +266,7 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
     private fun handleSecurityThreat(device: WiFiDevice) {
         if (device.level < -80) return
         val time = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
-        val msg = "⚠️ SECURITY ALERT: New Unknown Network detected! SSID: ${device.ssid} (${device.level}dBm) at $time"
+        val msg = context.getString(R.string.notif_unknown_device, device.ssid, device.level)
 
         // Action to Stop Alarm
         val notificationId = 1001
@@ -288,13 +289,13 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
 
         NotificationUtil.sendPresenceNotification(
             context,
-            "⚠️ SECURITY THREAT",
+            context.getString(R.string.notif_security_threat),
             msg,
             true,
-            "STOP ALARM",
+            context.getString(R.string.action_stop_alarm),
             pendingStopIntent,
             notificationId,
-            "MARK SAFE",
+            context.getString(R.string.action_mark_safe),
             pendingMarkSafeIntent
         )
         telegramService.sendMessage(msg)
@@ -351,8 +352,8 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
              playSecurityAlarm()
         }
 
-        val title = "🔔 ${category.iconRes} Detected: $nickname"
-        val message = "Just arrived at $time. Signal strength is ${device.level}dBm. Recognized as $categoryDisplay."
+        val title = context.getString(R.string.notif_device_arrived, category.iconRes, nickname)
+        val message = context.getString(R.string.notif_device_arrived_desc, time, device.level)
 
         // Use FALSE for isImportantEvent to route to the Info channel
         NotificationUtil.sendPresenceNotification(context, title, message, false)
@@ -375,8 +376,8 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
              playSecurityAlarm()
         }
 
-        val title = "🚪 Device Left: $nickname"
-        val message = "No longer detected as of $time. ${category.iconRes} signal has dropped."
+        val title = context.getString(R.string.notif_device_left, nickname)
+        val message = context.getString(R.string.notif_device_left_desc, time)
 
         // Use FALSE for isImportantEvent to route to the Info channel
         NotificationUtil.sendPresenceNotification(context, title, message, false)

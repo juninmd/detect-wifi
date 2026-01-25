@@ -19,7 +19,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="Presence Security"
+            app:title="@string/app_title"
             app:titleCentered="true"
             app:titleTextColor="@color/white" />
 
@@ -49,19 +49,19 @@
                     android:layout_height="match_parent"/>
             </FrameLayout>
 
-            <!-- DUAL STATUS DASHBOARD -->
+            <!-- DUAL STATUS DASHBOARD (Quick View) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="24dp"
                 android:baselineAligned="false">
 
                 <!-- HOME SECURITY STATUS -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardHomeStatus"
                     android:layout_width="0dp"
-                    android:layout_height="140dp"
+                    android:layout_height="120dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
                     app:cardCornerRadius="24dp"
@@ -74,25 +74,25 @@
                         android:layout_height="match_parent"
                         android:orientation="vertical"
                         android:gravity="center"
-                        android:padding="16dp">
+                        android:padding="12dp">
                         <ImageView
                             android:id="@+id/ivHomeStatus"
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
                             android:src="@drawable/ic_status_inactive"
                             app:tint="@color/primary_color"/>
                         <TextView
                             android:id="@+id/tvHomeStatus"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Home Idle"
-                            android:layout_marginTop="12dp"
+                            android:text="@string/status_home_idle"
+                            android:layout_marginTop="8dp"
                             android:textColor="@color/white"
                             android:textStyle="bold"/>
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="WiFi Monitor"
+                            android:text="@string/status_wifi_monitor"
                             android:textSize="12sp"
                             android:textColor="@color/light_text"/>
                     </LinearLayout>
@@ -102,7 +102,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardMobileStatus"
                     android:layout_width="0dp"
-                    android:layout_height="140dp"
+                    android:layout_height="120dp"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
                     app:cardCornerRadius="24dp"
@@ -115,61 +115,98 @@
                         android:layout_height="match_parent"
                         android:orientation="vertical"
                         android:gravity="center"
-                        android:padding="16dp">
+                        android:padding="12dp">
                         <ImageView
                             android:id="@+id/ivMobileStatus"
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
                             android:src="@android:drawable/ic_lock_idle_lock"
                             app:tint="@color/primary_color"/>
                         <TextView
                             android:id="@+id/tvMobileStatus"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Phone Idle"
-                            android:layout_marginTop="12dp"
+                            android:text="@string/status_phone_idle"
+                            android:layout_marginTop="8dp"
                             android:textColor="@color/white"
                             android:textStyle="bold"/>
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Anti-Theft"
+                            android:text="@string/status_anti_theft"
                             android:textSize="12sp"
                             android:textColor="@color/light_text"/>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
-            <!-- MASTER CONTROL -->
-            <LinearLayout
+
+            <!-- SECTION: MOBILE SECURITY (Phone) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="@string/section_mobile_security"
+                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                android:textColor="@color/white"
+                android:textStyle="bold" />
+
+            <!-- Anti-Theft Main Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnAntiTheft"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                android:gravity="center"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/startButton"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="@color/card_background_elevated"
+                app:rippleColor="@color/primary_color">
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:text="ACTIVATE HOME GUARD"
-                    android:backgroundTint="@color/primary_color"
-                    android:textColor="@color/white"/>
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="20dp"
+                    android:gravity="center_vertical">
 
-                <Button
-                    android:id="@+id/stopButton"
-                    style="@style/Widget.Material3.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:text="DEACTIVATE MONITOR"
-                    android:backgroundTint="@color/danger_color"
-                    android:textColor="@color/white"
-                    android:visibility="gone"/>
-            </LinearLayout>
+                    <FrameLayout
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:background="@drawable/circle_background_soft">
+                        <ImageView
+                            android:id="@+id/ivAntiTheftIcon"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_gravity="center"
+                            android:src="@android:drawable/ic_lock_idle_lock"
+                            app:tint="@color/primary_color"/>
+                    </FrameLayout>
 
-            <!-- BATTERY MONITOR -->
-            <com.google.android.material.card.MaterialCardView
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/title_anti_theft_guard"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                            android:textColor="@color/dark_text"
+                            android:textStyle="bold"/>
+                        <TextView
+                            android:id="@+id/tvAntiTheftStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/text_tap_to_arm"
+                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                            android:textColor="@color/light_text"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- BATTERY INFO (Grouped with Mobile Security now) -->
+             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardBattery"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -215,79 +252,44 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- SECTION: MOBILE SECURITY (Phone) -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:text="📱 Mobile Security"
-                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                android:textColor="@color/white"
-                android:textStyle="bold" />
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/btnAntiTheft"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="4dp"
-                app:cardBackgroundColor="@color/card_background_elevated"
-                app:rippleColor="@color/primary_color">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="20dp"
-                    android:gravity="center_vertical">
-
-                    <FrameLayout
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/circle_background_soft">
-                        <ImageView
-                            android:id="@+id/ivAntiTheftIcon"
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
-                            android:layout_gravity="center"
-                            android:src="@android:drawable/ic_lock_idle_lock"
-                            app:tint="@color/primary_color"/>
-                    </FrameLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:orientation="vertical">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Anti-Theft Guard"
-                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                            android:textColor="@color/dark_text"
-                            android:textStyle="bold"/>
-                        <TextView
-                            android:id="@+id/tvAntiTheftStatus"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Tap to Arm (Motion, Pocket)"
-                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                            android:textColor="@color/light_text"/>
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
             <!-- SECTION: HOME SECURITY (WiFi/Radar) -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
                 android:layout_marginTop="8dp"
-                android:text="🏠 Home Monitor"
+                android:text="@string/section_home_security"
                 android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                 android:textColor="@color/white"
                 android:textStyle="bold" />
+
+             <!-- MASTER CONTROL (Home Monitor) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/startButton"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="@string/btn_start_monitor"
+                    android:backgroundTint="@color/primary_color"
+                    android:textColor="@color/white"/>
+
+                <Button
+                    android:id="@+id/stopButton"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="@string/btn_stop_monitor"
+                    android:backgroundTint="@color/danger_color"
+                    android:textColor="@color/white"
+                    android:visibility="gone"/>
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -318,7 +320,7 @@
                             android:gravity="center_vertical">
                             <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_menu_search" app:tint="@color/white"/>
                             <TextView android:id="@+id/tvCountKnown" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="0" android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium" android:textColor="@color/white" android:textStyle="bold"/>
-                            <TextView android:id="@+id/tvNamesKnown" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Safe Devices" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="#E0E0FF" android:maxLines="1" android:ellipsize="end"/>
+                            <TextView android:id="@+id/tvNamesKnown" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/text_safe_devices" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="#E0E0FF" android:maxLines="1" android:ellipsize="end"/>
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
@@ -347,7 +349,7 @@
                             android:gravity="center_vertical">
                             <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_dialog_alert" app:tint="@color/warning_color"/>
                             <TextView android:id="@+id/tvCountUnknown" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="0" android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium" android:textColor="@color/warning_color" android:textStyle="bold"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Threats" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="@color/light_text"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/text_threats" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="@color/light_text"/>
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
@@ -375,7 +377,7 @@
                         android:gravity="center"
                         android:orientation="vertical">
                         <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_camera" app:tint="@color/primary_color"/>
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Cameras" android:textColor="@color/dark_text" android:textStyle="bold"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/btn_cameras" android:textColor="@color/dark_text" android:textStyle="bold"/>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -394,18 +396,26 @@
                         android:gravity="center"
                         android:orientation="vertical">
                         <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_recent_history" app:tint="@color/primary_color"/>
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="History" android:textColor="@color/dark_text" android:textStyle="bold"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/btn_history" android:textColor="@color/dark_text" android:textStyle="bold"/>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
 
             <!-- Quick Settings -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="8dp"
+                android:text="@string/section_quick_settings"
+                android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                android:textColor="@color/light_text" />
+
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnSettings"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
                 app:cardCornerRadius="12dp"
                 app:cardBackgroundColor="@color/card_background_elevated">
                 <LinearLayout
@@ -415,7 +425,7 @@
                     android:padding="16dp"
                     android:gravity="center_vertical">
                     <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_preferences" app:tint="@color/light_text"/>
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:text="Advanced Settings" android:textColor="@color/light_text"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:text="@string/btn_settings" android:textColor="@color/light_text"/>
                     <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
                     <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_media_play" android:rotation="0" app:tint="@color/light_text"/>
                 </LinearLayout>
@@ -436,7 +446,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="8dp"
-                android:text="Activity Log"
+                android:text="@string/section_activity_log"
                 android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                 android:textColor="@color/light_text" />
 
@@ -458,7 +468,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="16dp"
-                        android:text="Waiting for events..."
+                        android:text="@string/log_waiting"
                         android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                         android:textColor="@color/light_text"
                         android:fontFamily="monospace" />
@@ -497,7 +507,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
-                android:text="SOS / PANIC BUTTON"
+                android:text="@string/btn_panic"
                 android:textColor="@color/white"
                 android:textStyle="bold"
                 android:letterSpacing="0.05"
@@ -531,7 +541,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:text="App Locked"
+                android:text="@string/title_app_locked"
                 android:textColor="@color/white"
                 android:textSize="24sp"
                 android:textStyle="bold"/>
@@ -539,7 +549,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Authentication Required"
+                android:text="@string/msg_auth_required"
                 android:textColor="@color/light_text"/>
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnUnlockApp"
@@ -547,7 +557,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
-                android:text="UNLOCK"
+                android:text="@string/btn_unlock_app"
                 app:cornerRadius="16dp"/>
         </LinearLayout>
     </FrameLayout>

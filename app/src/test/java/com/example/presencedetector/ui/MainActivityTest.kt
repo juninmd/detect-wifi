@@ -57,7 +57,8 @@ class MainActivityTest {
         val activity = controller.create().start().resume().get()
 
         val statusText = activity.findViewById<TextView>(R.id.tvAntiTheftStatus)
-        assert(statusText.text.toString().contains("Armed"))
+        // Check for Portuguese "Armado"
+        assert(statusText.text.toString().contains("Armado"))
     }
 
     @Test
