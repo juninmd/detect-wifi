@@ -18,6 +18,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.presencedetector.MainActivity
@@ -43,8 +44,8 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
     }
 
     private lateinit var sensorManager: SensorManager
-    private lateinit var preferences: PreferencesUtil
-    private lateinit var telegramService: TelegramService
+    internal lateinit var preferences: PreferencesUtil
+    internal lateinit var telegramService: TelegramService
     private var motionDetector: MotionDetector? = null
     private var accelerometer: Sensor? = null
     private var proximitySensor: Sensor? = null
@@ -120,8 +121,8 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
 
     override fun onCreate() {
         super.onCreate()
-        preferences = PreferencesUtil(this)
-        telegramService = TelegramService(this)
+        if (!::preferences.isInitialized) preferences = PreferencesUtil(this)
+        if (!::telegramService.isInitialized) telegramService = TelegramService(this)
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
@@ -164,7 +165,7 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         isArmed = true
         firstReading = true
         isDeviceInPocket = false
-        armingTime = System.currentTimeMillis()
+        armingTime = SystemClock.elapsedRealtime()
 
         // Start Foreground
         try {
@@ -245,7 +246,7 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
 
     private fun handleMotion(event: SensorEvent) {
         // Grace period to set the phone down
-        if (System.currentTimeMillis() - armingTime < GRACE_PERIOD_MS) {
+        if (SystemClock.elapsedRealtime() - armingTime < GRACE_PERIOD_MS) {
             lastX = event.values[0]
             lastY = event.values[1]
             lastZ = event.values[2]
@@ -288,7 +289,7 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         // 2. Device WAS in pocket (or we assume it was if grace period passed? No, better to track state)
         // 3. Now it is NOT close (removed)
 
-        if (System.currentTimeMillis() - armingTime > GRACE_PERIOD_MS) {
+        if (SystemClock.elapsedRealtime() - armingTime > GRACE_PERIOD_MS) {
             if (!isClose) {
                  // If we require that it WAS in pocket first, check isDeviceInPocket.
                  // Otherwise, if you arm it outside pocket, it triggers after 5s.

@@ -85,6 +85,7 @@ dependencies {
     testImplementation 'org.mockito.kotlin:mockito-kotlin:5.2.1'
     testImplementation 'org.robolectric:robolectric:4.11.1'
     testImplementation 'androidx.test:core:1.5.0'
+    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
@@ -96,12 +97,13 @@ task jacocoTestReport(type: JacocoReport, dependsOn: 'testDebugUnitTest') {
         html.required = true
     }
 
-    def fileFilter = ['**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*']
+    def fileFilter = ['**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*', '**/Lambda$*.class', '**/Lambda.class', '**/*Lambda.class', '**/*$Lambda$*']
     def debugTree = fileTree(dir: "${project.buildDir}/tmp/kotlin-classes/debug", excludes: fileFilter)
+    def javaTree = fileTree(dir: "${project.buildDir}/intermediates/javac/debug/classes", excludes: fileFilter)
     def mainSrc = "${project.projectDir}/src/main/java"
 
     sourceDirectories.setFrom(files([mainSrc]))
-    classDirectories.setFrom(files([debugTree]))
+    classDirectories.setFrom(files([debugTree, javaTree]))
     executionData.setFrom(fileTree(dir: "$project.buildDir", includes: [
             "outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec",
             "jacoco/testDebugUnitTest.exec"
