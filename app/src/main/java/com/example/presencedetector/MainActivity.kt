@@ -47,9 +47,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnOpenHistory: MaterialCardView
     private lateinit var btnSecuritySettings: MaterialCardView
     private lateinit var btnAntiTheft: MaterialCardView
-    private lateinit var statusIndicator: ImageView
-    private lateinit var statusText: TextView
-    private lateinit var statusDetails: TextView
+
+    // New Dashboard Views
+    private lateinit var ivHomeStatus: ImageView
+    private lateinit var tvHomeStatus: TextView
+    private lateinit var ivMobileStatus: ImageView
+    private lateinit var tvMobileStatus: TextView
+
     private lateinit var detectionLog: TextView
     private lateinit var logScrollView: ScrollView
     private lateinit var cbNotifyPresence: MaterialCheckBox
@@ -307,9 +311,13 @@ class MainActivity : AppCompatActivity() {
         btnOpenRadarFromGrid = findViewById(R.id.btnOpenRadarFromGrid)
         btnSettings = findViewById(R.id.btnSettings)
         btnOpenHistory = findViewById(R.id.btnOpenHistory)
-        statusIndicator = findViewById(R.id.statusIndicator)
-        statusText = findViewById(R.id.statusText)
-        statusDetails = findViewById(R.id.statusDetails)
+
+        // New Dashboard
+        ivHomeStatus = findViewById(R.id.ivHomeStatus)
+        tvHomeStatus = findViewById(R.id.tvHomeStatus)
+        ivMobileStatus = findViewById(R.id.ivMobileStatus)
+        tvMobileStatus = findViewById(R.id.tvMobileStatus)
+
         detectionLog = findViewById(R.id.detectionLog)
         logScrollView = findViewById(R.id.logScrollView)
         cbNotifyPresence = findViewById(R.id.cbNotifyPresence)
@@ -435,9 +443,21 @@ class MainActivity : AppCompatActivity() {
             val modeString = modes.joinToString(", ")
             tvAntiTheftStatus.text = "Armed ($modeString)"
             ivAntiTheftIcon.setImageResource(R.drawable.ic_status_active)
+
+            // Dashboard Card Update
+            ivMobileStatus.setImageResource(R.drawable.ic_status_active)
+            ivMobileStatus.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
+            tvMobileStatus.text = "Secure"
+            tvMobileStatus.setTextColor(ContextCompat.getColor(this, R.color.success_color))
         } else {
             tvAntiTheftStatus.text = "Tap to Arm"
             ivAntiTheftIcon.setImageResource(android.R.drawable.ic_lock_idle_lock)
+
+            // Dashboard Card Update
+            ivMobileStatus.setImageResource(android.R.drawable.ic_lock_idle_lock)
+            ivMobileStatus.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
+            tvMobileStatus.text = "Phone Idle"
+            tvMobileStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
         }
     }
 
@@ -473,21 +493,21 @@ class MainActivity : AppCompatActivity() {
         
         tvCountUnknown.text = unknownDevices.size.toString()
 
-        var status = "Monitoring via $method"
-        if (!preferences.getTrustedWifiSsid().isNullOrEmpty()) {
-            status += " | Trusted Zone Active"
-        }
-        statusDetails.text = status
-        
+        // Update Home Status (WiFi)
         if (isDetecting) {
-            statusIndicator.setImageResource(R.drawable.ic_status_active)
-            statusIndicator.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
-            statusText.text = "System Active"
+            ivHomeStatus.setImageResource(R.drawable.ic_status_active)
+            ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
+            tvHomeStatus.text = "Scanning"
+            tvHomeStatus.setTextColor(ContextCompat.getColor(this, R.color.success_color))
         } else {
-            statusIndicator.setImageResource(R.drawable.ic_status_inactive)
-            statusIndicator.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
-            statusText.text = "System Idle"
+            ivHomeStatus.setImageResource(R.drawable.ic_status_inactive)
+            ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
+            tvHomeStatus.text = "Home Idle"
+            tvHomeStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
         }
+
+        // Update Mobile Status (Anti-Theft) - Also called in updateAntiTheftUI, but good to refresh here
+        updateAntiTheftUI()
 
         if (devices.isNotEmpty()) {
             val summary = devices.sortedByDescending { it.level }.take(5).joinToString(", ") { 
@@ -507,7 +527,11 @@ class MainActivity : AppCompatActivity() {
         isDetecting = true
         startButton.visibility = View.GONE
         stopButton.visibility = View.VISIBLE
-        statusIndicator.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
+
+        // UI Update
+        ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
+        tvHomeStatus.text = "Scanning"
+        tvHomeStatus.setTextColor(ContextCompat.getColor(this, R.color.success_color))
 
         val serviceIntent = Intent(this, DetectionBackgroundService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -517,21 +541,23 @@ class MainActivity : AppCompatActivity() {
         }
 
         detectionManager?.startDetection()
-        statusText.text = "Active"
     }
 
     private fun stopDetection() {
         isDetecting = false
         startButton.visibility = View.VISIBLE
         stopButton.visibility = View.GONE
-        statusIndicator.setColorFilter(null)
+
+        // UI Update
+        ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
+        ivHomeStatus.setImageResource(R.drawable.ic_status_inactive)
+        tvHomeStatus.text = "Home Idle"
+        tvHomeStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
 
         val serviceIntent = Intent(this, DetectionBackgroundService::class.java)
         stopService(serviceIntent)
 
         detectionManager?.stopDetection()
-        statusText.text = "Idle"
-        statusIndicator.setImageResource(R.drawable.ic_status_inactive)
     }
 
     private fun addLog(message: String) {
