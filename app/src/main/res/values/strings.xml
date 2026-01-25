@@ -1,25 +1,104 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Presence Detector</string>
-    <string name="app_title">WiFi Presence Detector</string>
+    <string name="app_name">Detector de Presença</string>
+    <string name="app_title">Monitoramento de Segurança</string>
+
+    <!-- Dashboard Sections -->
+    <string name="section_home_security">🏠 Segurança Residencial</string>
+    <string name="section_mobile_security">📱 Segurança do Celular</string>
+    <string name="section_activity_log">Registro de Atividades</string>
+    <string name="section_quick_settings">Configurações Rápidas</string>
 
     <!-- Buttons -->
-    <string name="btn_start">Start Detection</string>
-    <string name="btn_stop">Stop Detection</string>
+    <string name="btn_start_monitor">ATIVAR GUARDA RESIDENCIAL</string>
+    <string name="btn_stop_monitor">DESATIVAR MONITORAMENTO</string>
+    <string name="btn_panic">SOS / PÂNICO</string>
+    <string name="btn_unlock_app">DESBLOQUEAR</string>
+    <string name="btn_cameras">Câmeras</string>
+    <string name="btn_history">Histórico</string>
+    <string name="btn_settings">Configurações Avançadas</string>
 
-    <!-- Status -->
-    <string name="status_stopped">Status: Stopped</string>
-    <string name="status_detecting">Status: Detecting...</string>
-    <string name="status_indicator">Presence Status</string>
+    <!-- Home Status -->
+    <string name="status_home_idle">Casa Ociosa</string>
+    <string name="status_scanning">Escaneando</string>
+    <string name="status_wifi_monitor">Monitor WiFi</string>
+    <string name="text_safe_devices">Dispositivos Seguros</string>
+    <string name="text_threats">Ameaças</string>
+    <string name="text_nobody_home">Ninguém em casa</string>
 
-    <!-- Log -->
-    <string name="log_title">Detection Log</string>
-    <string name="log_initial">Waiting to start detection...</string>
+    <!-- Mobile Status -->
+    <string name="status_phone_idle">Celular Ocioso</string>
+    <string name="status_secure">Seguro</string>
+    <string name="status_anti_theft">Anti-Furto</string>
+    <string name="text_tap_to_arm">Toque para Armar</string>
+    <string name="text_armed_modes">Armado (%1$s)</string>
+    <string name="title_anti_theft_guard">Guarda Anti-Furto</string>
 
-    <!-- Messages -->
-    <string name="presence_detected">People Detected!</string>
-    <string name="no_presence">No one home</string>
+    <!-- Logs & Events -->
+    <string name="log_waiting">Aguardando eventos...</string>
+    <string name="log_panic_pressed">🆘 BOTÃO DE PÂNICO PRESSIONADO</string>
+    <string name="log_mobile_armed">Segurança Móvel Armada</string>
+    <string name="log_mobile_disarmed">Segurança Móvel Desarmada</string>
+    <string name="log_intruder_photo">📸 Foto do Intruso Salva: %1$s</string>
+    <string name="log_scan_summary">Scan: %1$d encontrados. Top: %2$s</string>
+    <string name="log_battery_opt_warning">Aviso: Otimização de bateria ativada. O escaneamento em segundo plano pode parar.</string>
 
-    <!-- Menu -->
-    <string name="refresh">Refresh</string>
+    <!-- Notifications & Channels -->
+    <string name="channel_service_name">Serviço de Detecção</string>
+    <string name="channel_service_desc">Status dos serviços de monitoramento</string>
+    <string name="channel_info_name">Eventos de Presença</string>
+    <string name="channel_info_desc">Chegadas, partidas e atualizações de rotina</string>
+    <string name="channel_alert_name">Alertas de Segurança</string>
+    <string name="channel_alert_desc">Alertas críticos (Intruso, Roubo, Movimento)</string>
+    <string name="channel_battery_name">Alertas de Bateria</string>
+    <string name="channel_battery_desc">Avisos críticos de bateria</string>
+
+    <string name="notif_monitoring_active">Monitoramento Ativo</string>
+    <string name="notif_scanning_desc">Escaneando dispositivos e movimento...</string>
+    <string name="notif_battery_warning">⚠️ Bateria Fraca</string>
+    <string name="notif_battery_desc">Bateria do dispositivo de segurança em %1$d%%. Conecte o carregador imediatamente!</string>
+
+    <string name="notif_security_threat">⚠️ AMEAÇA DE SEGURANÇA</string>
+    <string name="notif_unknown_device">Novo Dispositivo Desconhecido! SSID: %1$s (%2$dBm)</string>
+    <string name="notif_device_arrived">🔔 %1$s Detectado: %2$s</string>
+    <string name="notif_device_arrived_desc">Chegou às %1$s. Sinal %2$dBm.</string>
+    <string name="notif_device_left">🚪 Dispositivo Saiu: %1$s</string>
+    <string name="notif_device_left_desc">Não detectado desde %1$s.</string>
+    <string name="notif_mobile_security_active">🛡️ Segurança Móvel Ativa</string>
+    <string name="notif_motion_armed">Detector de movimento armado.</string>
+
+    <string name="notif_theft_alert_title">🚨 ALERTA DE ROUBO!</string>
+    <string name="notif_theft_alert_text">%1$s! Toque para Desarmar.</string>
+
+    <!-- Actions -->
+    <string name="action_disarm">Desarmar</string>
+    <string name="action_stop_alarm">PARAR ALARME</string>
+    <string name="action_mark_safe">MARCAR SEGURO</string>
+    <string name="action_unlock_disarm">DESBLOQUEAR &amp; DESARMAR</string>
+    <string name="action_emergency_call">LIGAR EMERGÊNCIA</string>
+
+    <!-- Dialogs & Toasts -->
+    <string name="msg_unlocked">Desbloqueado</string>
+    <string name="msg_auth_failed">Falha na Autenticação</string>
+    <string name="msg_panic_activated">🆘 MODO PÂNICO ATIVADO!</string>
+    <string name="msg_battery_dialog_title">Performance em Segundo Plano</string>
+    <string name="msg_battery_dialog_text">Para garantir monitoramento confiável, por favor desative a otimização de bateria para este app.</string>
+    <string name="btn_open_settings">Abrir Configurações</string>
+    <string name="btn_cancel">Cancelar</string>
+    <string name="msg_permissions_required">Permissões necessárias para escaneamento WiFi</string>
+    <string name="msg_bg_location_granted">Localização em Segundo Plano Permitida</string>
+    <string name="msg_bg_location_denied">Localização em Segundo Plano Negada - Escaneamento pode ser limitado</string>
+    <string name="msg_alarm_silenced">Alarme Silenciado</string>
+    <string name="msg_device_marked_safe">Dispositivo marcado como Seguro</string>
+
+    <!-- Alarm Reasons -->
+    <string name="reason_motion">Movimento Detectado</string>
+    <string name="reason_pocket">Modo Bolso Acionado</string>
+    <string name="reason_charger">Carregador Desconectado</string>
+    <string name="reason_charger_disconnect">Carregador Desconectado</string> <!-- Duplicate for specific usage -->
+
+    <!-- App Lock -->
+    <string name="title_app_locked">App Bloqueado</string>
+    <string name="msg_auth_required">Autenticação Necessária</string>
+
 </resources>

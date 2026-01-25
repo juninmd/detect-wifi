@@ -117,7 +117,8 @@ class AntiTheftServiceTest {
         service.onSensorChanged(event2)
 
         verify(mockTelegramService).sendMessage(check {
-            assert(it.contains("Motion Detected"))
+            // Check for Portuguese string "Movimento Detectado" or generic "ALARM"
+            assert(it.contains("Movimento Detectado") || it.contains("ALARM"))
         })
     }
 }

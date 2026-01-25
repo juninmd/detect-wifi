@@ -114,7 +114,7 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == Intent.ACTION_POWER_DISCONNECTED && isChargerModeArmed) {
                 Log.w(TAG, "Charger disconnected! Triggering alarm.")
-                triggerAlarm("Charger Disconnected")
+                triggerAlarm(getString(R.string.reason_charger))
             }
         }
     }
@@ -220,11 +220,11 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         val pendingStopIntent = PendingIntent.getService(this, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE)
 
         val builder = NotificationCompat.Builder(this, NotificationUtil.CHANNEL_ID)
-            .setContentTitle("🛡️ Mobile Security Active")
-            .setContentText("Motion detector is armed.")
+            .setContentTitle(getString(R.string.notif_mobile_security_active))
+            .setContentText(getString(R.string.notif_motion_armed))
             .setSmallIcon(R.drawable.ic_status_active)
             .setOngoing(true)
-            .addAction(R.drawable.ic_status_inactive, "Disarm", pendingStopIntent)
+            .addAction(R.drawable.ic_status_inactive, getString(R.string.action_disarm), pendingStopIntent)
 
         // Add intent to open app
         val appIntent = Intent(this, MainActivity::class.java)
@@ -260,7 +260,7 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         if (!firstReading) {
             if (motionDetector?.isMotionDetected(x, y, z, lastX, lastY, lastZ) == true) {
                 Log.w(TAG, "Motion Detected!")
-                triggerAlarm("Motion Detected")
+                triggerAlarm(getString(R.string.reason_motion))
             }
         } else {
             firstReading = false
@@ -295,7 +295,7 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
                  // Otherwise, if you arm it outside pocket, it triggers after 5s.
                  // Let's assume standard behavior: Trigger if uncovered.
                  Log.w(TAG, "Pocket Mode: Device uncovered! Triggering.")
-                 triggerAlarm("Pocket Mode Triggered")
+                 triggerAlarm(getString(R.string.reason_pocket))
             }
         }
     }
@@ -370,15 +370,15 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         }
 
         val notification = NotificationCompat.Builder(this, NotificationUtil.ALERT_CHANNEL_ID)
-            .setContentTitle("🚨 THEFT ALERT!")
-            .setContentText("$reason! Tap to Disarm.")
+            .setContentTitle(getString(R.string.notif_theft_alert_title))
+            .setContentText(getString(R.string.notif_theft_alert_text, reason))
             .setSmallIcon(icon)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setFullScreenIntent(pendingDisarmIntent, true) // Try to wake screen and show
-            .addAction(R.drawable.ic_status_inactive, "UNLOCK & DISARM", pendingDisarmIntent)
-            .addAction(android.R.drawable.ic_menu_call, "EMERGENCY CALL", pendingEmergencyIntent)
+            .addAction(R.drawable.ic_status_inactive, getString(R.string.action_unlock_disarm), pendingDisarmIntent)
+            .addAction(android.R.drawable.ic_menu_call, getString(R.string.action_emergency_call), pendingEmergencyIntent)
             .setDeleteIntent(pendingDisarmIntent) // If dismissed, try to open app to ensure user sees it? Or just let it be.
             .setAutoCancel(false)
             .setOngoing(true) // Cannot be swiped away easily while alarming
