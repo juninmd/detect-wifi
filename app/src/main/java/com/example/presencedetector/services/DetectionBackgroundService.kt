@@ -44,28 +44,21 @@ class DetectionBackgroundService : Service() {
         detectionManager = PresenceDetectionManager(this, true)
         detectionManager?.setPresenceListener { peoplePresent, method, devices, details ->
             updateForegroundNotification(peoplePresent, method, details)
-            checkSafeZone(devices)
+            checkSafeZone()
         }
 
         // Register receiver for camera presence events
         registerCameraReceiver()
     }
 
-    private fun checkSafeZone(devices: List<com.example.presencedetector.model.WiFiDevice>) {
+    private var lastAutoArmSuggestionTime = 0L
+
+    private fun checkSafeZone() {
         val trustedSsid = preferences.getTrustedWifiSsid()
         if (!trustedSsid.isNullOrEmpty()) {
-             // Check if we are connected to trusted SSID.
-             // PresenceDetectionManager gives us list of *detected* devices around us.
-             // We need to check if we are *connected* to one.
-             // However, WiFiDevice list comes from WiFiDetectionService scan results.
-             // Scan results show SSIDs around. It doesn't mean we are connected.
-             // But if we are connected, it should be in the list with high signal.
-
-             // A better way is to check connectivity manager or WifiManager for connection info.
              val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
              val info = wifiManager?.connectionInfo
              if (info != null && info.ssid != null) {
-                 // SSID usually comes with quotes, e.g. "MyWiFi"
                  val currentSsid = info.ssid.replace("\"", "")
                  if (currentSsid == trustedSsid) {
                      // We are in safe zone. Disarm Anti-Theft if armed.
@@ -76,16 +69,50 @@ class DetectionBackgroundService : Service() {
                          }
                          startService(stopIntent)
 
-                         // Optionally notify user
                          NotificationUtil.sendPresenceNotification(
                              this,
-                             "🛡️ Safe Zone",
-                             "Anti-Theft disarmed automatically: Connected to $currentSsid",
+                             "🛡️ Zona Segura",
+                             "Anti-Furto desativado: Conectado a $currentSsid",
                              false
                          )
                      }
+                 } else {
+                     // Not connected to trusted SSID
+                     checkForAutoArmSuggestion()
                  }
+             } else {
+                 // No WiFi connection
+                 checkForAutoArmSuggestion()
              }
+        }
+    }
+
+    private fun checkForAutoArmSuggestion() {
+        if (!preferences.isAntiTheftArmed() &&
+            System.currentTimeMillis() - lastAutoArmSuggestionTime > 30 * 60 * 1000L) { // Suggest every 30m if still unarmed
+
+            Log.i(TAG, "Outside Safe Zone and unarmed. Suggesting Anti-Theft.")
+
+            val enableIntent = Intent(this, com.example.presencedetector.receivers.NotificationActionReceiver::class.java).apply {
+                action = "com.example.presencedetector.ACTION_ENABLE_ANTITHEFT"
+            }
+            val pendingEnableIntent = android.app.PendingIntent.getBroadcast(
+                this,
+                2002,
+                enableIntent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+
+            NotificationUtil.sendPresenceNotification(
+                this,
+                "⚠️ Fora da Zona Segura",
+                "Você saiu de casa. Deseja ativar o Anti-Furto?",
+                false, // Info priority (user can ignore)
+                "Ativar Agora",
+                pendingEnableIntent
+            )
+
+            lastAutoArmSuggestionTime = System.currentTimeMillis()
         }
     }
 

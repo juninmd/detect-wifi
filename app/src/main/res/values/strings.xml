@@ -16,6 +16,7 @@
     <string name="btn_unlock_app">DESBLOQUEAR</string>
     <string name="btn_cameras">Câmeras</string>
     <string name="btn_history">Histórico</string>
+    <string name="btn_scan">Escanear</string>
     <string name="btn_settings">Configurações Avançadas</string>
 
     <!-- Home Status -->
