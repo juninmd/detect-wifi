@@ -2,18 +2,15 @@ package com.example.presencedetector.utils
 
 import android.app.NotificationManager
 import android.content.Context
-import android.os.Build
 import androidx.test.core.app.ApplicationProvider
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
+import org.robolectric.Shadows
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
 class NotificationUtilTest {
 
     private lateinit var context: Context
@@ -26,7 +23,7 @@ class NotificationUtilTest {
     }
 
     @Test
-    fun testChannelCreation() {
+    fun `createNotificationChannels should create all channels`() {
         NotificationUtil.createNotificationChannels(context)
 
         val serviceChannel = notificationManager.getNotificationChannel(NotificationUtil.CHANNEL_ID)
@@ -40,24 +37,27 @@ class NotificationUtilTest {
         val alertChannel = notificationManager.getNotificationChannel(NotificationUtil.ALERT_CHANNEL_ID)
         assertNotNull(alertChannel)
         assertEquals(NotificationManager.IMPORTANCE_HIGH, alertChannel.importance)
+        assertTrue(alertChannel.canBypassDnd())
     }
 
     @Test
-    fun testCreateForegroundNotification() {
-        val notification = NotificationUtil.createForegroundNotification(context, "Title", "Subtitle")
-        assertNotNull(notification)
+    fun `sendPresenceNotification should post notification`() {
+        NotificationUtil.sendPresenceNotification(context, "Title", "Message", false)
+
+        val shadowNotificationManager = Shadows.shadowOf(notificationManager)
+        assertEquals(1, shadowNotificationManager.size())
+
+        val notification = shadowNotificationManager.allNotifications[0]
+        assertEquals("Title", Shadows.shadowOf(notification).contentTitle)
+        assertEquals("Message", Shadows.shadowOf(notification).contentText)
     }
 
     @Test
-    fun testSendPresenceNotification() {
-        // Just verify it doesn't crash and potentially check if a notification was posted via Shadows in a fuller test suite
-        NotificationUtil.sendPresenceNotification(
-            context,
-            "Title",
-            "Message",
-            isImportantEvent = false
-        )
-        // With Robolectric, we can inspect ShadowNotificationManager to see if notify was called,
-        // but for now we assume no exception means code paths were executed.
+    fun `sendBatteryAlert should post high priority notification`() {
+        NotificationUtil.sendBatteryAlert(context, 10)
+
+        val shadowNotificationManager = Shadows.shadowOf(notificationManager)
+        assertTrue(shadowNotificationManager.allNotifications.isNotEmpty())
+        assertNotNull(shadowNotificationManager.getNotification(2001))
     }
 }

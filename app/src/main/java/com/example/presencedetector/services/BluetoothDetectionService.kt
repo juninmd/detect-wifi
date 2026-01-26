@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
  * Bluetooth-based presence detection service.
  * Scans for Bluetooth LE devices.
  */
-class BluetoothDetectionService(private val context: Context) {
+open class BluetoothDetectionService(private val context: Context) {
     companion object {
         private const val TAG = "BluetoothDetector"
         private const val SCAN_INTERVAL = 30000L // Optimized to 30 seconds for battery
@@ -47,11 +47,11 @@ class BluetoothDetectionService(private val context: Context) {
         fun onPresenceDetected(peopleDetected: Boolean, devices: List<WiFiDevice>, details: String)
     }
 
-    fun setPresenceListener(listener: PresenceListener) {
+    open fun setPresenceListener(listener: PresenceListener) {
         this.presenceListener = listener
     }
 
-    fun startScanning() {
+    open fun startScanning() {
         if (isScanning) {
             Log.w(TAG, "Bluetooth scanning already started")
             return
@@ -101,7 +101,7 @@ class BluetoothDetectionService(private val context: Context) {
         }
     }
 
-    fun stopScanning() {
+    open fun stopScanning() {
         if (isScanning && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             try {
                 if (hasBluetoothPermissions()) {

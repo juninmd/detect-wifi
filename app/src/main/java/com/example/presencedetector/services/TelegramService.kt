@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Service to handle Telegram notifications using OkHttp.
  */
-class TelegramService(
+open class TelegramService(
     private val context: Context,
     var preferences: PreferencesUtil? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -40,7 +40,7 @@ class TelegramService(
 
     private val prefs: PreferencesUtil by lazy { preferences ?: PreferencesUtil(context) }
 
-    fun sendMessage(message: String) {
+    open fun sendMessage(message: String) {
         if (!prefs.isTelegramEnabled()) return
 
         val token = prefs.getTelegramToken()
@@ -80,7 +80,7 @@ class TelegramService(
         }
     }
 
-    fun sendPhoto(photoFile: File, caption: String = "") {
+    open fun sendPhoto(photoFile: File, caption: String = "") {
         if (!prefs.isTelegramEnabled()) return
 
         val token = prefs.getTelegramToken()
