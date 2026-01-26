@@ -14,7 +14,7 @@ import com.example.presencedetector.model.WiFiDevice
 /**
  * WiFi-based presence detection service.
  */
-class WiFiDetectionService(private val context: Context) {
+open class WiFiDetectionService(private val context: Context) {
     companion object {
         private const val TAG = "WiFiDetector"
         private const val SCAN_INTERVAL = 15000L // Optimized to 15 seconds for battery
@@ -33,11 +33,11 @@ class WiFiDetectionService(private val context: Context) {
         fun onPresenceDetected(peopleDetected: Boolean, devices: List<WiFiDevice>, details: String)
     }
 
-    fun setPresenceListener(listener: PresenceListener) {
+    open fun setPresenceListener(listener: PresenceListener) {
         this.presenceListener = listener
     }
 
-    fun startScanning() {
+    open fun startScanning() {
         if (isScanning) return
         isScanning = true
         scanJob = scope.launch {
@@ -48,7 +48,7 @@ class WiFiDetectionService(private val context: Context) {
         }
     }
 
-    fun stopScanning() {
+    open fun stopScanning() {
         scanJob?.cancel()
         scanJob = null
         isScanning = false

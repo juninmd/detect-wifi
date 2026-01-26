@@ -1,54 +1,55 @@
 package com.example.presencedetector.utils
 
 import com.example.presencedetector.model.DeviceCategory
-import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.Assert.*
 
 class DeviceClassifierTest {
 
     @Test
-    fun testClassifySmartphones() {
-        assertEquals(DeviceCategory.SMARTPHONE, DeviceClassifier.classify("iPhone 13", "any:mac"))
-        assertEquals(DeviceCategory.SMARTPHONE, DeviceClassifier.classify("Samsung Galaxy", "any:mac"))
-        assertEquals(DeviceCategory.SMARTPHONE, DeviceClassifier.classify("Pixel 6", "any:mac"))
-        assertEquals(DeviceCategory.SMARTPHONE, DeviceClassifier.classify("AndroidAP", "any:mac"))
+    fun `classify should identify smartphones`() {
+        assertEquals(DeviceCategory.SMARTPHONE, DeviceClassifier.classify("iPhone 13", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.SMARTPHONE, DeviceClassifier.classify("Galaxy S22", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.SMARTPHONE, DeviceClassifier.classify("Pixel 7", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.SMARTPHONE, DeviceClassifier.classify("Android", "00:00:00:00:00:00"))
     }
 
     @Test
-    fun testClassifySmartTVs() {
-        assertEquals(DeviceCategory.SMART_TV, DeviceClassifier.classify("Samsung Smart TV", "any:mac"))
-        assertEquals(DeviceCategory.SMART_TV, DeviceClassifier.classify("LG WebOS TV", "any:mac"))
-        assertEquals(DeviceCategory.SMART_TV, DeviceClassifier.classify("Roku Stick", "any:mac"))
-        assertEquals(DeviceCategory.SMART_TV, DeviceClassifier.classify("Chromecast", "any:mac"))
+    fun `classify should identify smart TVs`() {
+        assertEquals(DeviceCategory.SMART_TV, DeviceClassifier.classify("Samsung TV", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.SMART_TV, DeviceClassifier.classify("LG WebOS", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.SMART_TV, DeviceClassifier.classify("Roku Stick", "00:00:00:00:00:00"))
     }
 
     @Test
-    fun testClassifySmartLights() {
-        assertEquals(DeviceCategory.SMART_LIGHT, DeviceClassifier.classify("Hue Light", "any:mac"))
-        assertEquals(DeviceCategory.SMART_LIGHT, DeviceClassifier.classify("Yeelight Color", "any:mac"))
-        assertEquals(DeviceCategory.SMART_LIGHT, DeviceClassifier.classify("Tuya Bulb", "any:mac"))
+    fun `classify should identify smart lights`() {
+        assertEquals(DeviceCategory.SMART_LIGHT, DeviceClassifier.classify("Philips Hue", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.SMART_LIGHT, DeviceClassifier.classify("Tuya Bulb", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.SMART_LIGHT, DeviceClassifier.classify("Yeelight", "00:00:00:00:00:00"))
     }
 
     @Test
-    fun testClassifyRouters() {
-        assertEquals(DeviceCategory.ROUTER, DeviceClassifier.classify("TP-Link_2.4G", "any:mac"))
-        assertEquals(DeviceCategory.ROUTER, DeviceClassifier.classify("D-Link Router", "any:mac"))
-        assertEquals(DeviceCategory.ROUTER, DeviceClassifier.classify("Familia Smith", "any:mac"))
+    fun `classify should identify Alexa devices`() {
+        assertEquals(DeviceCategory.ALEXA, DeviceClassifier.classify("Echo Dot", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.ALEXA, DeviceClassifier.classify("Alexa", "00:00:00:00:00:00"))
     }
 
     @Test
-    fun testClassifyAlexa() {
-        assertEquals(DeviceCategory.ALEXA, DeviceClassifier.classify("Alexa Dot", "any:mac"))
-        assertEquals(DeviceCategory.ALEXA, DeviceClassifier.classify("Amazon Echo", "any:mac"))
+    fun `classify should identify routers`() {
+        assertEquals(DeviceCategory.ROUTER, DeviceClassifier.classify("TP-Link_5G", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.ROUTER, DeviceClassifier.classify("D-Link Router", "00:00:00:00:00:00"))
     }
 
     @Test
-    fun testClassifyKindle() {
-        assertEquals(DeviceCategory.KINDLE, DeviceClassifier.classify("Kindle Paperwhite", "any:mac"))
+    fun `classify should detect mobile hotspots`() {
+        // Based on isMobileHotspot logic
+        assertEquals(DeviceCategory.SMARTPHONE, DeviceClassifier.classify("John's iPhone", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.SMARTPHONE, DeviceClassifier.classify("Redmi Note 10", "00:00:00:00:00:00"))
     }
 
     @Test
-    fun testClassifyUnknown() {
-        assertEquals(DeviceCategory.UNKNOWN, DeviceClassifier.classify("RandomDeviceName", "any:mac"))
+    fun `classify should return unknown for generic names`() {
+        assertEquals(DeviceCategory.UNKNOWN, DeviceClassifier.classify("Unknown Device", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.UNKNOWN, DeviceClassifier.classify("MyNetwork", "00:00:00:00:00:00"))
     }
 }

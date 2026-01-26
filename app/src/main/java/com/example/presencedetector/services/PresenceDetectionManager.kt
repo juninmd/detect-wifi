@@ -23,7 +23,13 @@ import java.util.Locale
 /**
  * Enhanced presence detection service with smart debouncing.
  */
-class PresenceDetectionManager(private val context: Context, private val areNotificationsEnabled: Boolean = true) {
+class PresenceDetectionManager(
+    private val context: Context,
+    private val areNotificationsEnabled: Boolean = true,
+    wifiServiceParam: WiFiDetectionService? = null,
+    bluetoothServiceParam: BluetoothDetectionService? = null,
+    telegramServiceParam: TelegramService? = null
+) {
     companion object {
         private const val TAG = "PresenceDetection"
         private const val DETECTION_TIMEOUT = 60000L // Increased to 60s to match slower scanning
@@ -35,11 +41,11 @@ class PresenceDetectionManager(private val context: Context, private val areNoti
         private const val MIN_SIGNAL_THRESHOLD = -90 // dBm - ignore weak signals
     }
 
-    private val wifiService = WiFiDetectionService(context)
-    private val bluetoothService = BluetoothDetectionService(context)
+    internal var wifiService = wifiServiceParam ?: WiFiDetectionService(context)
+    internal var bluetoothService = bluetoothServiceParam ?: BluetoothDetectionService(context)
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val preferences = PreferencesUtil(context)
-    private val telegramService = TelegramService(context)
+    internal var preferences = PreferencesUtil(context)
+    internal var telegramService = telegramServiceParam ?: TelegramService(context)
 
     private var currentRingtone: Ringtone? = null
     private val stopAlarmReceiver = object : BroadcastReceiver() {
