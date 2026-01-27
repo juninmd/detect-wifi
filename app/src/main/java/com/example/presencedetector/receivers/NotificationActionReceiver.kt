@@ -13,6 +13,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION_STOP_ALARM = "com.example.presencedetector.ACTION_STOP_ALARM"
         const val ACTION_MARK_SAFE = "com.example.presencedetector.ACTION_MARK_SAFE"
+        const val ACTION_ENABLE_ANTITHEFT = "com.example.presencedetector.ACTION_ENABLE_ANTITHEFT"
         const val EXTRA_NOTIFICATION_ID = "com.example.presencedetector.EXTRA_NOTIFICATION_ID"
         const val EXTRA_BSSID = "com.example.presencedetector.EXTRA_BSSID"
         private const val TAG = "NotificationAction"
@@ -55,6 +56,26 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 // Stop alarm just in case it's ringing
                 val stopIntent = Intent(ACTION_STOP_ALARM)
                 context.sendBroadcast(stopIntent)
+
+                if (notificationId != -1) {
+                    notificationManager.cancel(notificationId)
+                }
+            }
+
+            ACTION_ENABLE_ANTITHEFT -> {
+                Log.d(TAG, "Received Enable Anti-Theft request")
+
+                val serviceIntent = Intent(context, com.example.presencedetector.services.AntiTheftService::class.java).apply {
+                    action = com.example.presencedetector.services.AntiTheftService.ACTION_START
+                }
+
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    context.startForegroundService(serviceIntent)
+                } else {
+                    context.startService(serviceIntent)
+                }
+
+                Toast.makeText(context, "Anti-Theft Armed", Toast.LENGTH_SHORT).show()
 
                 if (notificationId != -1) {
                     notificationManager.cancel(notificationId)

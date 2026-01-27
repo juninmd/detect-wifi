@@ -95,6 +95,25 @@
                             android:text="@string/status_wifi_monitor"
                             android:textSize="12sp"
                             android:textColor="@color/light_text"/>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/ivSafeZoneBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            app:cardCornerRadius="8dp"
+                            app:cardBackgroundColor="@color/success_color"
+                            android:visibility="gone">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Zona Segura"
+                                android:textSize="10sp"
+                                android:textColor="@color/white"
+                                android:paddingHorizontal="8dp"
+                                android:paddingVertical="2dp"
+                                android:textStyle="bold"/>
+                        </com.google.android.material.card.MaterialCardView>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -271,24 +290,45 @@
                 android:gravity="center"
                 android:orientation="horizontal">
 
-                <Button
-                    android:id="@+id/startButton"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:text="@string/btn_start_monitor"
-                    android:backgroundTint="@color/primary_color"
-                    android:textColor="@color/white"/>
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
 
-                <Button
-                    android:id="@+id/stopButton"
-                    style="@style/Widget.Material3.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:text="@string/btn_stop_monitor"
-                    android:backgroundTint="@color/danger_color"
-                    android:textColor="@color/white"
-                    android:visibility="gone"/>
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1">
+                        <Button
+                            android:id="@+id/startButton"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:text="@string/btn_start_monitor"
+                            android:backgroundTint="@color/primary_color"
+                            android:textColor="@color/white"/>
+
+                        <Button
+                            android:id="@+id/stopButton"
+                            style="@style/Widget.Material3.Button"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:text="@string/btn_stop_monitor"
+                            android:backgroundTint="@color/danger_color"
+                            android:textColor="@color/white"
+                            android:visibility="gone"/>
+                    </FrameLayout>
+
+                    <Button
+                        android:id="@+id/btnQuickScan"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="56dp"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/btn_scan"
+                        android:textColor="@color/primary_color"
+                        app:strokeColor="@color/primary_color"/>
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout

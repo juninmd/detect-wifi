@@ -51,8 +51,10 @@ class MainActivity : AppCompatActivity() {
     // New Dashboard Views
     private lateinit var ivHomeStatus: ImageView
     private lateinit var tvHomeStatus: TextView
+    private lateinit var ivSafeZoneBadge: com.google.android.material.card.MaterialCardView
     private lateinit var ivMobileStatus: ImageView
     private lateinit var tvMobileStatus: TextView
+    private lateinit var btnQuickScan: Button
 
     private lateinit var detectionLog: TextView
     private lateinit var logScrollView: ScrollView
@@ -315,6 +317,7 @@ class MainActivity : AppCompatActivity() {
         // New Dashboard
         ivHomeStatus = findViewById(R.id.ivHomeStatus)
         tvHomeStatus = findViewById(R.id.tvHomeStatus)
+        ivSafeZoneBadge = findViewById(R.id.ivSafeZoneBadge)
         ivMobileStatus = findViewById(R.id.ivMobileStatus)
         tvMobileStatus = findViewById(R.id.tvMobileStatus)
 
@@ -350,6 +353,12 @@ class MainActivity : AppCompatActivity() {
 
         startButton.setOnClickListener { startDetection() }
         stopButton.setOnClickListener { stopDetection() }
+
+        btnQuickScan = findViewById(R.id.btnQuickScan)
+        btnQuickScan.setOnClickListener {
+            Toast.makeText(this, "Scanning...", Toast.LENGTH_SHORT).show()
+            startDetection()
+        }
 
         btnOpenRadarFromGrid.setOnClickListener {
             startActivity(Intent(this, WifiRadarActivity::class.java))
@@ -503,6 +512,18 @@ class MainActivity : AppCompatActivity() {
             ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
             tvHomeStatus.text = getString(R.string.status_home_idle)
             tvHomeStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
+        }
+
+        // Safe Zone Check
+        val trustedSsid = preferences.getTrustedWifiSsid()
+        val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
+        val info = wifiManager?.connectionInfo
+        val currentSsid = info?.ssid?.replace("\"", "")
+
+        if (!trustedSsid.isNullOrEmpty() && currentSsid == trustedSsid) {
+            ivSafeZoneBadge.visibility = View.VISIBLE
+        } else {
+            ivSafeZoneBadge.visibility = View.GONE
         }
 
         // Update Mobile Status (Anti-Theft) - Also called in updateAntiTheftUI, but good to refresh here
