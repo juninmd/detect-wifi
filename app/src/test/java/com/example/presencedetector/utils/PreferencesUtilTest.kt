@@ -1,6 +1,7 @@
 package com.example.presencedetector.utils
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
 import com.example.presencedetector.model.DeviceCategory
 import org.junit.Assert.*
@@ -8,6 +9,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.any
 
 @RunWith(RobolectricTestRunner::class)
 class PreferencesUtilTest {
@@ -30,6 +34,44 @@ class PreferencesUtilTest {
     }
 
     @Test
+    fun `test notification settings`() {
+        // notifyOnPresence
+        assertTrue(preferencesUtil.shouldNotifyOnPresence()) // Default true
+        preferencesUtil.setNotifyOnPresence(false)
+        assertFalse(preferencesUtil.shouldNotifyOnPresence())
+
+        // notifyWifiArrival
+        assertFalse(preferencesUtil.shouldNotifyWifiArrival()) // Default false
+        preferencesUtil.setNotifyWifiArrival(true)
+        assertTrue(preferencesUtil.shouldNotifyWifiArrival())
+    }
+
+    @Test
+    fun `test per bssid notification settings`() {
+        val bssid = "00:11:22:33:44:55"
+
+        // Notify Arrival
+        assertFalse(preferencesUtil.shouldNotifyArrival(bssid))
+        preferencesUtil.setNotifyArrival(bssid, true)
+        assertTrue(preferencesUtil.shouldNotifyArrival(bssid))
+
+        // Notify Departure
+        assertFalse(preferencesUtil.shouldNotifyDeparture(bssid))
+        preferencesUtil.setNotifyDeparture(bssid, true)
+        assertTrue(preferencesUtil.shouldNotifyDeparture(bssid))
+
+        // Critical Alert
+        assertFalse(preferencesUtil.isCriticalAlertEnabled(bssid))
+        preferencesUtil.setCriticalAlertEnabled(bssid, true)
+        assertTrue(preferencesUtil.isCriticalAlertEnabled(bssid))
+
+        // Telegram Alert
+        assertFalse(preferencesUtil.isTelegramAlertEnabled(bssid))
+        preferencesUtil.setTelegramAlertEnabled(bssid, true)
+        assertTrue(preferencesUtil.isTelegramAlertEnabled(bssid))
+    }
+
+    @Test
     fun `test telegram settings`() {
         assertFalse(preferencesUtil.isTelegramEnabled())
         preferencesUtil.setTelegramEnabled(true)
@@ -43,13 +85,59 @@ class PreferencesUtilTest {
     }
 
     @Test
+    fun `test security settings`() {
+        // Security Alert
+        assertFalse(preferencesUtil.isSecurityAlertEnabled())
+        preferencesUtil.setSecurityAlertEnabled(true)
+        assertTrue(preferencesUtil.isSecurityAlertEnabled())
+
+        // Security Sound
+        assertFalse(preferencesUtil.isSecuritySoundEnabled())
+        preferencesUtil.setSecuritySoundEnabled(true)
+        assertTrue(preferencesUtil.isSecuritySoundEnabled())
+
+        // Schedule
+        val (defaultStart, defaultEnd) = preferencesUtil.getSecuritySchedule()
+        assertEquals("22:00", defaultStart)
+        assertEquals("06:00", defaultEnd)
+
+        preferencesUtil.setSecuritySchedule("23:00", "07:00")
+        val (start, end) = preferencesUtil.getSecuritySchedule()
+        assertEquals("23:00", start)
+        assertEquals("07:00", end)
+    }
+
+    @Test
     fun `test anti theft settings`() {
         assertFalse(preferencesUtil.isAntiTheftArmed())
         preferencesUtil.setAntiTheftArmed(true)
         assertTrue(preferencesUtil.isAntiTheftArmed())
 
+        assertEquals(1.5f, preferencesUtil.getAntiTheftSensitivity(), 0.0f)
         preferencesUtil.setAntiTheftSensitivity(2.5f)
         assertEquals(2.5f, preferencesUtil.getAntiTheftSensitivity(), 0.01f)
+    }
+
+    @Test
+    fun `test biometric and lock settings`() {
+        assertFalse(preferencesUtil.isBiometricEnabled())
+        preferencesUtil.setBiometricEnabled(true)
+        assertTrue(preferencesUtil.isBiometricEnabled())
+
+        assertFalse(preferencesUtil.isAppLockEnabled())
+        preferencesUtil.setAppLockEnabled(true)
+        assertTrue(preferencesUtil.isAppLockEnabled())
+    }
+
+    @Test
+    fun `test mode settings`() {
+        assertFalse(preferencesUtil.isPocketModeEnabled())
+        preferencesUtil.setPocketModeEnabled(true)
+        assertTrue(preferencesUtil.isPocketModeEnabled())
+
+        assertFalse(preferencesUtil.isChargerModeEnabled())
+        preferencesUtil.setChargerModeEnabled(true)
+        assertTrue(preferencesUtil.isChargerModeEnabled())
     }
 
     @Test
@@ -68,6 +156,11 @@ class PreferencesUtilTest {
 
         preferencesUtil.saveManualCategory(bssid, DeviceCategory.SMART_TV)
         assertEquals(DeviceCategory.SMART_TV, preferencesUtil.getManualCategory(bssid))
+
+        // Test invalid
+        val prefs = context.getSharedPreferences("presence_detector_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("category_" + bssid, "INVALID_CATEGORY").commit()
+        assertNull(preferencesUtil.getManualCategory(bssid))
     }
 
     @Test
@@ -79,6 +172,10 @@ class PreferencesUtilTest {
         assertEquals(1, logs.size)
         assertTrue(logs[0].contains("Arrived"))
 
+        // Verify BSSID is tracked
+        val allBssids = preferencesUtil.getAllTrackedBssids()
+        assertTrue(allBssids.contains(bssid))
+
         // Test system logs
         preferencesUtil.logSystemEvent("System Start")
         val sysLogs = preferencesUtil.getSystemLogs()
@@ -87,10 +184,39 @@ class PreferencesUtilTest {
     }
 
     @Test
-    fun `test security schedule`() {
-        preferencesUtil.setSecuritySchedule("23:00", "07:00")
-        val (start, end) = preferencesUtil.getSecuritySchedule()
-        assertEquals("23:00", start)
-        assertEquals("07:00", end)
+    fun `test detection history count`() {
+        val bssid = "HISTORY:BSSID"
+        assertEquals(0, preferencesUtil.getDetectionHistoryCount(bssid))
+
+        preferencesUtil.trackDetection(bssid)
+        assertEquals(1, preferencesUtil.getDetectionHistoryCount(bssid))
+
+        // Same day shouldn't increase count
+        preferencesUtil.trackDetection(bssid)
+        assertEquals(1, preferencesUtil.getDetectionHistoryCount(bssid))
+    }
+
+    @Test
+    fun `test trusted wifi`() {
+        assertNull(preferencesUtil.getTrustedWifiSsid())
+        preferencesUtil.setTrustedWifiSsid("MyHomeWifi")
+        assertEquals("MyHomeWifi", preferencesUtil.getTrustedWifiSsid())
+    }
+
+    @Test
+    fun `test listener registration`() {
+        // This is tricky to test with real listeners as they are weak references or platform implementations
+        // But we can verify no crash
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> }
+        preferencesUtil.registerListener(listener)
+        preferencesUtil.unregisterListener(listener)
+    }
+
+    @Test
+    fun `test security schedule logic`() {
+        // Mocking time is hard inside the class without dependency injection of a Clock.
+        // But we can test the range logic if we assume the test runs at a certain time, which we can't.
+        // However, we can test that the method runs without error.
+        preferencesUtil.isCurrentTimeInSecuritySchedule()
     }
 }
