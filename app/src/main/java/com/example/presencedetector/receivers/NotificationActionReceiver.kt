@@ -12,6 +12,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION_STOP_ALARM = "com.example.presencedetector.ACTION_STOP_ALARM"
+        const val ACTION_SNOOZE = "com.example.presencedetector.ACTION_SNOOZE"
+        const val ACTION_PANIC = "com.example.presencedetector.ACTION_PANIC"
         const val ACTION_MARK_SAFE = "com.example.presencedetector.ACTION_MARK_SAFE"
         const val ACTION_ENABLE_ANTITHEFT = "com.example.presencedetector.ACTION_ENABLE_ANTITHEFT"
         const val EXTRA_NOTIFICATION_ID = "com.example.presencedetector.EXTRA_NOTIFICATION_ID"
@@ -36,7 +38,32 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     notificationManager.cancel(notificationId)
                 }
 
-                Toast.makeText(context, "Alarm Silenced", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Alarme Parado", Toast.LENGTH_SHORT).show()
+            }
+
+            ACTION_SNOOZE -> {
+                Log.d(TAG, "Received Snooze request")
+
+                // Send command to Service to snooze
+                val serviceIntent = Intent(context, com.example.presencedetector.services.AntiTheftService::class.java).apply {
+                    action = com.example.presencedetector.services.AntiTheftService.ACTION_SNOOZE
+                }
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    context.startForegroundService(serviceIntent)
+                } else {
+                    context.startService(serviceIntent)
+                }
+
+                Toast.makeText(context, "Soneca (30s)...", Toast.LENGTH_SHORT).show()
+            }
+
+            ACTION_PANIC -> {
+                Log.d(TAG, "Received PANIC request")
+                Toast.makeText(context, "🚨 ALERTA DE PÂNICO ENVIADO! 🚨", Toast.LENGTH_LONG).show()
+
+                // Send Telegram
+                val telegramService = com.example.presencedetector.services.TelegramService(context)
+                telegramService.sendMessage("🆘 SOS: Botão de PÂNICO pressionado via Notificação!")
             }
 
             ACTION_MARK_SAFE -> {
