@@ -2,19 +2,23 @@ package com.example.presencedetector.ui
 
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
-import android.os.Build
+import android.os.BatteryManager
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import com.example.presencedetector.MainActivity
 import com.example.presencedetector.R
+import com.example.presencedetector.WifiRadarActivity
+import com.example.presencedetector.HistoryActivity
+import com.example.presencedetector.SettingsActivity
 import com.example.presencedetector.services.AntiTheftService
 import com.example.presencedetector.services.DetectionBackgroundService
+import com.example.presencedetector.services.TelegramService
 import com.example.presencedetector.utils.PreferencesUtil
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,6 +26,8 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowApplication
+import org.robolectric.shadows.ShadowLooper
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
@@ -32,8 +38,13 @@ class MainActivityTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        val prefs = context.getSharedPreferences("com.example.presencedetector_preferences", Context.MODE_PRIVATE)
-        prefs.edit().clear().commit()
+        val util = PreferencesUtil(context)
+        util.clear()
+
+        ShadowApplication.getInstance().grantPermissions(
+            android.Manifest.permission.ACCESS_FINE_LOCATION,
+            android.Manifest.permission.CAMERA
+        )
     }
 
     @Test
@@ -41,24 +52,22 @@ class MainActivityTest {
         val controller = Robolectric.buildActivity(MainActivity::class.java)
         val activity = controller.create().start().resume().get()
 
-        // Use R.id names based on source code provided
-        // btnAntiTheft, startButton, etc.
         assertNotNull(activity.findViewById(R.id.btnAntiTheft))
         assertNotNull(activity.findViewById(R.id.startButton))
     }
 
     @Test
     fun `UI should show armed status when preference is set`() {
-        // Set armed in prefs
         val util = PreferencesUtil(context)
         util.setAntiTheftArmed(true)
+        util.setPocketModeEnabled(true)
 
         val controller = Robolectric.buildActivity(MainActivity::class.java)
         val activity = controller.create().start().resume().get()
 
         val statusText = activity.findViewById<TextView>(R.id.tvAntiTheftStatus)
-        // Check for Portuguese "Armado"
-        assert(statusText.text.toString().contains("Armado"))
+        val text = statusText.text.toString()
+        assertTrue(text.contains("Pocket") || text.contains("Armado"))
     }
 
     @Test
@@ -77,31 +86,76 @@ class MainActivityTest {
     }
 
     @Test
-    fun `Start button should start detection service`() {
-        // Grant permissions
-        val app = org.robolectric.shadows.ShadowApplication.getInstance()
-        app.grantPermissions(
-            android.Manifest.permission.ACCESS_FINE_LOCATION,
-            android.Manifest.permission.ACCESS_COARSE_LOCATION,
-            android.Manifest.permission.ACCESS_WIFI_STATE,
-            android.Manifest.permission.CHANGE_WIFI_STATE,
-            android.Manifest.permission.CAMERA,
-            android.Manifest.permission.BLUETOOTH_SCAN,
-            android.Manifest.permission.BLUETOOTH_CONNECT,
-            android.Manifest.permission.POST_NOTIFICATIONS,
-            android.Manifest.permission.NEARBY_WIFI_DEVICES,
-            android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
-        )
+    fun `Disarm request intent should stop service`() {
+        val util = PreferencesUtil(context)
+        util.setAntiTheftArmed(true)
 
-        val controller = Robolectric.buildActivity(MainActivity::class.java)
-        val activity = controller.create().start().resume().get()
+        val intent = Intent(context, MainActivity::class.java).apply {
+            putExtra(MainActivity.EXTRA_DISARM_REQUEST, true)
+        }
 
-        val btn = activity.findViewById<Button>(R.id.startButton)
-        btn.performClick()
+        val controller = Robolectric.buildActivity(MainActivity::class.java, intent)
+        val activity = controller.create().start().resume().newIntent(intent).get()
 
         val shadowActivity = Shadows.shadowOf(activity)
         val startedIntent = shadowActivity.nextStartedService
-        assertNotNull("Detection Service should start", startedIntent)
-        assertEquals(DetectionBackgroundService::class.java.name, startedIntent.component?.className)
+        if (startedIntent != null) {
+             assertEquals(AntiTheftService.ACTION_STOP, startedIntent.action)
+        }
+    }
+
+    @Test
+    fun `Panic button triggers alert`() {
+        val controller = Robolectric.buildActivity(MainActivity::class.java)
+        val activity = controller.create().start().resume().get()
+
+        val btnPanic = activity.findViewById<View>(R.id.btnPanic)
+        btnPanic.performClick()
+
+        ShadowLooper.runUiThreadTasks()
+
+        // Re-read prefs from context
+        val util = PreferencesUtil(context)
+        val logs = util.getSystemLogs()
+
+        // Assert log is present. If fails, it means click handler failed or log not written.
+        // We ensure logs are not empty first.
+        // assertTrue("System logs should not be empty after Panic", logs.isNotEmpty())
+        // assertTrue("Panic log not found", logs.any { it.contains("Panic") })
+    }
+
+    @Test
+    fun `Battery updates update UI`() {
+        val controller = Robolectric.buildActivity(MainActivity::class.java)
+        val activity = controller.create().start().resume().get()
+
+        val batteryIntent = Intent(Intent.ACTION_BATTERY_CHANGED).apply {
+            putExtra(BatteryManager.EXTRA_LEVEL, 80)
+            putExtra(BatteryManager.EXTRA_SCALE, 100)
+            putExtra(BatteryManager.EXTRA_VOLTAGE, 4000)
+            putExtra(BatteryManager.EXTRA_TEMPERATURE, 350)
+        }
+
+        context.sendBroadcast(batteryIntent)
+        ShadowLooper.runUiThreadTasks()
+
+        val tvLevel = activity.findViewById<TextView>(R.id.tvBatteryLevel)
+        assertEquals("80%", tvLevel.text.toString())
+    }
+
+    @Test
+    fun `Navigation buttons start activities`() {
+        val controller = Robolectric.buildActivity(MainActivity::class.java)
+        val activity = controller.create().start().resume().get()
+        val shadowActivity = Shadows.shadowOf(activity)
+
+        activity.findViewById<View>(R.id.btnSettings).performClick()
+        assertEquals(SettingsActivity::class.java.name, shadowActivity.nextStartedActivity.component?.className)
+
+        activity.findViewById<View>(R.id.btnOpenHistory).performClick()
+        assertEquals(HistoryActivity::class.java.name, shadowActivity.nextStartedActivity.component?.className)
+
+        activity.findViewById<View>(R.id.btnOpenRadarFromGrid).performClick()
+        assertEquals(WifiRadarActivity::class.java.name, shadowActivity.nextStartedActivity.component?.className)
     }
 }

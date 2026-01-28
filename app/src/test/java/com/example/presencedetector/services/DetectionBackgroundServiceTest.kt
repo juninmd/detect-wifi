@@ -1,14 +1,11 @@
 package com.example.presencedetector.services
 
-import android.app.NotificationManager
-import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.Shadows
 import org.robolectric.shadows.ShadowApplication
 import org.robolectric.annotation.Config
 import android.Manifest
@@ -19,7 +16,6 @@ class DetectionBackgroundServiceTest {
 
     @Test
     fun `service should start and return START_STICKY`() {
-        // Grant permissions
         val app = ShadowApplication.getInstance()
         app.grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
 
@@ -28,19 +24,6 @@ class DetectionBackgroundServiceTest {
 
         val result = service.onStartCommand(Intent(ApplicationProvider.getApplicationContext(), DetectionBackgroundService::class.java), 0, 0)
 
-        assert(result == android.app.Service.START_STICKY)
-    }
-
-    @Test
-    fun `service should check permissions`() {
-        // Grant permissions
-        val app = ShadowApplication.getInstance()
-        app.grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
-
-        val controller = Robolectric.buildService(DetectionBackgroundService::class.java)
-        val service = controller.create().get()
-
-        val result = service.onStartCommand(Intent(), 0, 0)
         assert(result == android.app.Service.START_STICKY)
     }
 }

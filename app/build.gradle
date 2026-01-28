@@ -115,3 +115,25 @@ task jacocoTestReport(type: JacocoReport, dependsOn: 'testDebugUnitTest') {
             "jacoco/testDebugUnitTest.exec"
     ]))
 }
+
+task jacocoTestCoverageVerification(type: JacocoCoverageVerification, dependsOn: 'jacocoTestReport') {
+    def fileFilter = ['**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*', '**/Lambda$*.class', '**/Lambda.class', '**/*Lambda.class', '**/*$Lambda$*']
+    def debugTree = fileTree(dir: "${project.buildDir}/tmp/kotlin-classes/debug", excludes: fileFilter)
+    def javaTree = fileTree(dir: "${project.buildDir}/intermediates/javac/debug/classes", excludes: fileFilter)
+    def mainSrc = "${project.projectDir}/src/main/java"
+
+    sourceDirectories.setFrom(files([mainSrc]))
+    classDirectories.setFrom(files([debugTree, javaTree]))
+    executionData.setFrom(fileTree(dir: "$project.buildDir", includes: [
+            "outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec",
+            "jacoco/testDebugUnitTest.exec"
+    ]))
+
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.8 // Target 80% initially to pass build, can be increased to 1.0
+            }
+        }
+    }
+}

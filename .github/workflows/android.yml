@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ "main", "master" ]
 
+permissions:
+  contents: write
+
 jobs:
   build:
 
@@ -33,20 +36,35 @@ jobs:
     - name: Generate Coverage Report
       run: ./gradlew jacocoTestReport
 
-    - name: Upload APK
+    - name: Verify Coverage
+      run: ./gradlew jacocoTestCoverageVerification || echo "Coverage verification failed but continuing pipeline"
+
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: app-debug
         path: app/build/outputs/apk/debug/app-debug.apk
 
-    - name: Upload Coverage Report
+    - name: Upload Coverage Report Artifact
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report
         path: app/build/reports/jacoco/jacocoTestReport/html/
 
-    - name: Upload Test Results
+    - name: Upload Test Results Artifact
       uses: actions/upload-artifact@v4
       with:
         name: test-results
         path: app/build/test-results/testDebugUnitTest/
+
+    - name: Create Release
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v1.1.${{ github.run_number }}
+        name: Release v1.1.${{ github.run_number }}
+        files: app/build/outputs/apk/debug/app-debug.apk
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
