@@ -52,8 +52,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var ivHomeStatus: ImageView
     private lateinit var tvHomeStatus: TextView
     private lateinit var ivSafeZoneBadge: com.google.android.material.card.MaterialCardView
-    private lateinit var ivMobileStatus: ImageView
-    private lateinit var tvMobileStatus: TextView
+    private lateinit var ivGlobalStatus: ImageView
+    private lateinit var tvGlobalStatus: TextView
+    private lateinit var tvGlobalDesc: TextView
     private lateinit var btnQuickScan: android.view.View // Changed to View (LinearLayout in XML)
 
     private lateinit var detectionLog: TextView
@@ -284,6 +285,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateAntiTheftUI()
+        updateGlobalStatus()
         val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
         registerReceiver(batteryReceiver, filter)
     }
@@ -317,8 +319,21 @@ class MainActivity : AppCompatActivity() {
         ivHomeStatus = findViewById(R.id.ivHomeStatus)
         tvHomeStatus = findViewById(R.id.tvHomeStatus)
         ivSafeZoneBadge = findViewById(R.id.ivSafeZoneBadge)
-        // ivMobileStatus = findViewById(R.id.ivMobileStatus) // Removed from XML
-        // tvMobileStatus = findViewById(R.id.tvMobileStatus) // Removed from XML
+
+        ivGlobalStatus = findViewById(R.id.ivGlobalStatus)
+        tvGlobalStatus = findViewById(R.id.tvGlobalStatus)
+        tvGlobalDesc = findViewById(R.id.tvGlobalDesc)
+
+        // Make Status Card clickable to arm/disarm
+        findViewById<View>(R.id.statusCard).setOnClickListener {
+            if (preferences.isAntiTheftArmed()) {
+                toggleAntiTheft()
+            } else {
+                // If not armed, check what to do.
+                // Prioritize Anti-Theft arming as it's the main "Lock" action.
+                toggleAntiTheft()
+            }
+        }
 
         detectionLog = findViewById(R.id.detectionLog)
         cbNotifyPresence = findViewById(R.id.cbNotifyPresence)
@@ -386,16 +401,17 @@ class MainActivity : AppCompatActivity() {
     private fun triggerPanicMode() {
         Toast.makeText(this, R.string.msg_panic_activated, Toast.LENGTH_LONG).show()
 
-        // 1. Send Telegram Alert
-        val telegramService = com.example.presencedetector.services.TelegramService(this)
-        telegramService.sendMessage("🆘 SOS ALERT! Panic button pressed on main dashboard!")
+        val serviceIntent = Intent(this, AntiTheftService::class.java).apply {
+            action = AntiTheftService.ACTION_PANIC
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
 
-        // 2. Play Alarm Sound (Optional - strictly for panic)
-        // For now, we just alert externally to avoid accidental deafening, or we could trigger the AntiTheft alarm.
-
-        // 3. Log event
         addLog(getString(R.string.log_panic_pressed))
-        preferences.logSystemEvent(getString(R.string.log_panic_pressed))
+        updateGlobalStatus()
     }
 
     private fun toggleAntiTheft() {
@@ -442,9 +458,9 @@ class MainActivity : AppCompatActivity() {
     private fun updateAntiTheftUI() {
         val armed = preferences.isAntiTheftArmed()
         if (armed) {
-            val modes = mutableListOf("Motion")
-            if (preferences.isPocketModeEnabled()) modes.add("Pocket")
-            if (preferences.isChargerModeEnabled()) modes.add("Charger")
+            val modes = mutableListOf("Movimento")
+            if (preferences.isPocketModeEnabled()) modes.add("Bolso")
+            if (preferences.isChargerModeEnabled()) modes.add("Carregador")
 
             val modeString = modes.joinToString(", ")
             tvAntiTheftStatus.text = "Ativo: $modeString"
@@ -454,6 +470,36 @@ class MainActivity : AppCompatActivity() {
             tvAntiTheftStatus.text = getString(R.string.text_tap_to_arm)
             ivAntiTheftIcon.setImageResource(android.R.drawable.ic_lock_idle_lock)
             ivAntiTheftIcon.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
+        }
+        updateGlobalStatus()
+    }
+
+    private fun updateGlobalStatus() {
+        val isArmed = preferences.isAntiTheftArmed()
+
+        // Determine Global State
+        // Priority 1: Armed (Secure)
+        // Priority 2: Scanning (Monitoring)
+        // Default: Idle
+
+        if (isArmed) {
+            ivGlobalStatus.setImageResource(R.drawable.ic_status_active)
+            ivGlobalStatus.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
+            tvGlobalStatus.text = getString(R.string.status_system_secure)
+            tvGlobalStatus.setTextColor(ContextCompat.getColor(this, R.color.success_color))
+            tvGlobalDesc.text = getString(R.string.desc_system_secure)
+        } else if (isDetecting) {
+            ivGlobalStatus.setImageResource(android.R.drawable.ic_menu_rotate) // or radar icon
+            ivGlobalStatus.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
+            tvGlobalStatus.text = getString(R.string.status_system_monitoring)
+            tvGlobalStatus.setTextColor(ContextCompat.getColor(this, R.color.primary_color))
+            tvGlobalDesc.text = getString(R.string.desc_system_monitoring)
+        } else {
+            ivGlobalStatus.setImageResource(android.R.drawable.ic_lock_idle_lock)
+            ivGlobalStatus.setColorFilter(ContextCompat.getColor(this, R.color.light_text))
+            tvGlobalStatus.text = getString(R.string.status_system_idle)
+            tvGlobalStatus.setTextColor(ContextCompat.getColor(this, R.color.light_text))
+            tvGlobalDesc.text = getString(R.string.desc_system_idle)
         }
     }
 
@@ -514,6 +560,7 @@ class MainActivity : AppCompatActivity() {
 
         // Update Mobile Status (Anti-Theft) - Also called in updateAntiTheftUI, but good to refresh here
         updateAntiTheftUI()
+        updateGlobalStatus()
 
         if (devices.isNotEmpty()) {
             val summary = devices.sortedByDescending { it.level }.take(5).joinToString(", ") { 

@@ -49,6 +49,50 @@
                     android:layout_height="match_parent"/>
             </FrameLayout>
 
+            <!-- GLOBAL STATUS DASHBOARD -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/statusCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="8dp"
+                app:cardBackgroundColor="@color/card_background_elevated">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="24dp"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:id="@+id/ivGlobalStatus"
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:src="@android:drawable/ic_lock_idle_lock"
+                        app:tint="@color/light_text"/>
+
+                    <TextView
+                        android:id="@+id/tvGlobalStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Sistema Ocioso"
+                        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                        android:textStyle="bold"
+                        android:textColor="@color/light_text"/>
+
+                    <TextView
+                        android:id="@+id/tvGlobalDesc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Toque abaixo para ativar"
+                        android:textColor="@color/light_text"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- SECTION: HOME SECURITY (Unified) -->
             <TextView
                 android:layout_width="wrap_content"
@@ -102,7 +146,7 @@
                                 android:id="@+id/tvHomeStatusTitle"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Monitoramento"
+                                android:text="Monitoramento WiFi"
                                 android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                                 android:textColor="@color/dark_text"
                                 android:textStyle="bold"/>
