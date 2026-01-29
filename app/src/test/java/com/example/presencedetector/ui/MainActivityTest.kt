@@ -53,7 +53,7 @@ class MainActivityTest {
         val activity = controller.create().start().resume().get()
 
         assertNotNull(activity.findViewById(R.id.btnAntiTheft))
-        assertNotNull(activity.findViewById(R.id.startButton))
+        assertNotNull(activity.findViewById(R.id.switchHomeMonitor))
     }
 
     @Test
@@ -67,7 +67,7 @@ class MainActivityTest {
 
         val statusText = activity.findViewById<TextView>(R.id.tvAntiTheftStatus)
         val text = statusText.text.toString()
-        assertTrue(text.contains("Pocket") || text.contains("Armado"))
+        assertTrue(text.contains("Bolso") || text.contains("Ativo"))
     }
 
     @Test

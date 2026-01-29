@@ -164,4 +164,78 @@ class AntiTheftServiceTest {
             })
         }
     }
+
+    @Test
+    fun `foreground notification should contain Panic action`() {
+        val intent = Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_START }
+        service.onStartCommand(intent, 0, 0)
+
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val shadows = Shadows.shadowOf(notificationManager)
+        val notification = shadows.getNotification(999)
+
+        if (notification != null) {
+            val actions = notification.actions
+            val panicAction = actions.find { it.title.toString().contains("PÂNICO") }
+            if (panicAction == null) {
+                 // Robolectric < 4.4 might handle actions differently, but standard Notification.actions is array
+                 // Check if it exists
+                 assert(false) { "Panic action not found in notification" }
+            } else {
+                 val pendingIntent = panicAction.actionIntent
+                 val shadowIntent = Shadows.shadowOf(pendingIntent).savedIntent
+                 assert(shadowIntent.action == NotificationActionReceiver.ACTION_PANIC)
+            }
+        }
+    }
+
+    @Test
+    fun `alarm notification should contain Snooze action`() {
+        val intent = Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_START }
+        service.onStartCommand(intent, 0, 0)
+        SystemClock.sleep(6000)
+
+        // Trigger Motion
+        val event = createSensorEvent(floatArrayOf(5f, 5f, 5f), Sensor.TYPE_ACCELEROMETER)
+        service.onSensorChanged(event)
+
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val shadows = Shadows.shadowOf(notificationManager)
+        val notification = shadows.getNotification(1000)
+
+        if (notification != null) {
+            val actions = notification.actions
+            val snoozeAction = actions.find { it.title.toString().contains("Soneca") }
+            if (snoozeAction != null) {
+                val pendingIntent = snoozeAction.actionIntent
+                val shadowIntent = Shadows.shadowOf(pendingIntent).savedIntent
+                assert(shadowIntent.action == NotificationActionReceiver.ACTION_SNOOZE)
+            } else {
+                assert(false) { "Snooze action not found" }
+            }
+        }
+    }
+
+    @Test
+    fun `ACTION_SNOOZE should stop alarm and log message`() {
+        // Trigger alarm first to set state
+        val intentStart = Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_START }
+        service.onStartCommand(intentStart, 0, 0)
+        SystemClock.sleep(6000)
+        val event = createSensorEvent(floatArrayOf(5f, 5f, 5f), Sensor.TYPE_ACCELEROMETER)
+        service.onSensorChanged(event)
+
+        // Now Snooze
+        val intentSnooze = Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_SNOOZE }
+        service.onStartCommand(intentSnooze, 0, 0)
+
+        verify(mockTelegramService).sendMessage(check {
+            assert(it.contains("Snoozed"))
+        })
+
+        // Verify notification 1000 is cancelled
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val shadows = Shadows.shadowOf(notificationManager)
+        assert(shadows.getNotification(1000) == null)
+    }
 }

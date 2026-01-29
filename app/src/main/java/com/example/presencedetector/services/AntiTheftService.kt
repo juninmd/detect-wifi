@@ -38,6 +38,7 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         private const val TAG = "AntiTheftService"
         const val ACTION_START = "com.example.presencedetector.action.START_ANTITHEFT"
         const val ACTION_STOP = "com.example.presencedetector.action.STOP_ANTITHEFT"
+        const val ACTION_SNOOZE = "com.example.presencedetector.ACTION_SNOOZE"
         private const val NOTIFICATION_ID = 999
         private const val ALARM_NOTIFICATION_ID = 1000
         private const val GRACE_PERIOD_MS = 5000L // Time to put phone down after arming
@@ -146,6 +147,7 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         when (intent?.action) {
             ACTION_START -> startMonitoring()
             ACTION_STOP -> stopMonitoring()
+            ACTION_SNOOZE -> snoozeAlarm()
         }
         return START_STICKY
     }
@@ -219,12 +221,27 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         }
         val pendingStopIntent = PendingIntent.getService(this, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE)
 
+        // Panic Action
+        val panicIntent = Intent(this, NotificationActionReceiver::class.java).apply {
+            action = NotificationActionReceiver.ACTION_PANIC
+        }
+        val pendingPanicIntent = PendingIntent.getBroadcast(this, 1, panicIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+
+        // Dynamic Text
+        val modes = mutableListOf<String>()
+        modes.add("Movimento")
+        if (isPocketModeArmed) modes.add("Bolso")
+        if (isChargerModeArmed) modes.add("Carregador")
+        val modeText = "Ativo: " + modes.joinToString(", ")
+
         val builder = NotificationCompat.Builder(this, NotificationUtil.CHANNEL_ID)
-            .setContentTitle(getString(R.string.notif_mobile_security_active))
-            .setContentText(getString(R.string.notif_motion_armed))
+            .setContentTitle("Segurança do Dispositivo")
+            .setContentText(modeText)
             .setSmallIcon(R.drawable.ic_status_active)
             .setOngoing(true)
             .addAction(R.drawable.ic_status_inactive, getString(R.string.action_disarm), pendingStopIntent)
+            .addAction(android.R.drawable.ic_lock_power_off, "PÂNICO", pendingPanicIntent)
 
         // Add intent to open app
         val appIntent = Intent(this, MainActivity::class.java)
@@ -351,7 +368,18 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Action 2: Call Emergency (Dialer)
+        // Action 2: Snooze
+        val snoozeIntent = Intent(this, NotificationActionReceiver::class.java).apply {
+            action = NotificationActionReceiver.ACTION_SNOOZE
+        }
+        val pendingSnoozeIntent = PendingIntent.getBroadcast(
+            this,
+            ALARM_NOTIFICATION_ID + 2,
+            snoozeIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Action 3: Call Emergency (Dialer)
         val emergencyIntent = Intent(Intent.ACTION_DIAL).apply {
             data = android.net.Uri.parse("tel:190") // 190 (Brazil) / 112 (EU) - Standard Emergency
         }
@@ -378,6 +406,7 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setFullScreenIntent(pendingDisarmIntent, true) // Try to wake screen and show
             .addAction(R.drawable.ic_status_inactive, getString(R.string.action_unlock_disarm), pendingDisarmIntent)
+            .addAction(android.R.drawable.ic_media_pause, "Soneca (30s)", pendingSnoozeIntent)
             .addAction(android.R.drawable.ic_menu_call, getString(R.string.action_emergency_call), pendingEmergencyIntent)
             .setDeleteIntent(pendingDisarmIntent) // If dismissed, try to open app to ensure user sees it? Or just let it be.
             .setAutoCancel(false)
@@ -406,6 +435,24 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         // Cancel the alert notification
         val notificationManager = androidx.core.app.NotificationManagerCompat.from(this)
         notificationManager.cancel(ALARM_NOTIFICATION_ID)
+    }
+
+    private fun snoozeAlarm() {
+        Log.d(TAG, "Snoozing alarm for 30 seconds")
+        stopAlarm() // Stop sound/vibration
+
+        // Reset grace period to allow 30s of movement
+        // armingTime is used for grace period check: (Now - armingTime < GRACE_PERIOD)
+        // We want (Now - armingTime < 30000) roughly.
+        // So we fake armingTime to be Now - GRACE + 30s? No.
+        // Simplified: armingTime = SystemClock.elapsedRealtime() + 25000L
+        // Because GRACE is 5000.
+        // Check: Now - (Now + 25000) = -25000 < 5000 (True).
+        // Check 29s later: (Now+29000) - (Now+25000) = 4000 < 5000 (True).
+        // Check 31s later: (Now+31000) - (Now+25000) = 6000 > 5000 (False -> Trigger).
+        armingTime = SystemClock.elapsedRealtime() + 25000L
+
+        telegramService.sendMessage("💤 Alarm Snoozed for 30s.")
     }
 
     override fun onDestroy() {
