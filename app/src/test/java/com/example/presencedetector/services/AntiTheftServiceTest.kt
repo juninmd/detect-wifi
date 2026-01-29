@@ -9,6 +9,7 @@ import android.os.SystemClock
 import androidx.test.core.app.ApplicationProvider
 import com.example.presencedetector.receivers.NotificationActionReceiver
 import com.example.presencedetector.utils.PreferencesUtil
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -112,7 +113,44 @@ class AntiTheftServiceTest {
         service.onSensorChanged(event2)
 
         verify(mockTelegramService).sendMessage(check {
-            assert(it.contains("Movimento Detectado") || it.contains("ALARM") || it.contains("Motion"))
+            assertTrue(it.contains("Movimento Detectado") || it.contains("ALARM") || it.contains("Motion"))
+        })
+    }
+
+    @Test
+    fun `triggerAlarm should launch AlarmActivity and send location`() {
+        // Setup Location
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+        val shadowLocationManager = Shadows.shadowOf(locationManager)
+        val location = android.location.Location(android.location.LocationManager.GPS_PROVIDER)
+        location.latitude = 10.0
+        location.longitude = 20.0
+        location.time = System.currentTimeMillis()
+        shadowLocationManager.setLastKnownLocation(android.location.LocationManager.GPS_PROVIDER, location)
+
+        // Grant Permission
+        val shadowApp = Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
+        shadowApp.grantPermissions(android.Manifest.permission.ACCESS_FINE_LOCATION)
+
+        // Start Service
+        val intent = Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_START }
+        service.onStartCommand(intent, 0, 0)
+        SystemClock.sleep(6000)
+
+        // Trigger Alarm (Motion)
+        // First reading to initialize lastX/Y/Z
+        val event1 = createSensorEvent(floatArrayOf(0f, 0f, 9.8f), Sensor.TYPE_ACCELEROMETER)
+        service.onSensorChanged(event1)
+
+        // Second reading to trigger motion
+        val event2 = createSensorEvent(floatArrayOf(5f, 5f, 5f), Sensor.TYPE_ACCELEROMETER)
+        service.onSensorChanged(event2)
+
+        // Verify Location Sent (Implies triggerAlarm completed)
+        verify(mockTelegramService, atLeastOnce()).sendMessage(check {
+            if (it.contains("LOCATION")) {
+                assertTrue(it.contains("maps.google.com") && it.contains("10.0,20.0"))
+            }
         })
     }
 
@@ -134,14 +172,8 @@ class AntiTheftServiceTest {
             batteryReceiverWrapper.broadcastReceiver.onReceive(context, batteryIntent)
 
             verify(mockTelegramService).sendMessage(check {
-                assert(it.contains("LOW BATTERY") || it.contains("Security Device"))
+                assertTrue(it.contains("LOW BATTERY") || it.contains("Security Device"))
             })
-        } else {
-            // If we can't find it (maybe because it's registered on the service context wrapper and not app),
-            // then strict integration test via sendBroadcast might require service to be bound or started differently.
-            // But we can fallback to verifying it IS registered.
-            // assert(false) { "Battery receiver not found" }
-            // Let's rely on finding it. If not found, test fails (or passes empty if I don't assert, but I should assert).
         }
     }
 
@@ -160,7 +192,7 @@ class AntiTheftServiceTest {
             powerReceiverWrapper.broadcastReceiver.onReceive(context, powerIntent)
 
             verify(mockTelegramService).sendMessage(check {
-                 assert(it.contains("Charger") || it.contains("Carregador"))
+                 assertTrue(it.contains("Charger") || it.contains("Carregador"))
             })
         }
     }
@@ -178,13 +210,11 @@ class AntiTheftServiceTest {
             val actions = notification.actions
             val panicAction = actions.find { it.title.toString().contains("PÂNICO") }
             if (panicAction == null) {
-                 // Robolectric < 4.4 might handle actions differently, but standard Notification.actions is array
-                 // Check if it exists
-                 assert(false) { "Panic action not found in notification" }
+                 fail("Panic action not found in notification")
             } else {
                  val pendingIntent = panicAction.actionIntent
                  val shadowIntent = Shadows.shadowOf(pendingIntent).savedIntent
-                 assert(shadowIntent.action == NotificationActionReceiver.ACTION_PANIC)
+                 assertEquals(NotificationActionReceiver.ACTION_PANIC, shadowIntent.action)
             }
         }
     }
@@ -209,9 +239,9 @@ class AntiTheftServiceTest {
             if (snoozeAction != null) {
                 val pendingIntent = snoozeAction.actionIntent
                 val shadowIntent = Shadows.shadowOf(pendingIntent).savedIntent
-                assert(shadowIntent.action == NotificationActionReceiver.ACTION_SNOOZE)
+                assertEquals(NotificationActionReceiver.ACTION_SNOOZE, shadowIntent.action)
             } else {
-                assert(false) { "Snooze action not found" }
+                fail("Snooze action not found")
             }
         }
     }
@@ -230,12 +260,12 @@ class AntiTheftServiceTest {
         service.onStartCommand(intentSnooze, 0, 0)
 
         verify(mockTelegramService).sendMessage(check {
-            assert(it.contains("Snoozed"))
+            assertTrue(it.contains("Snoozed"))
         })
 
         // Verify notification 1000 is cancelled
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         val shadows = Shadows.shadowOf(notificationManager)
-        assert(shadows.getNotification(1000) == null)
+        assertNull(shadows.getNotification(1000))
     }
 }

@@ -97,7 +97,14 @@
             android:label="Security Dashboard"
             android:parentActivityName=".MainActivity" />
 
-
+        <activity
+            android:name=".security.ui.AlarmActivity"
+            android:label="ALARM"
+            android:theme="@style/AppTheme"
+            android:launchMode="singleTop"
+            android:showOnLockScreen="true"
+            android:excludeFromRecents="true"
+            android:exported="false" />
 
         <!-- Camera Monitoring Foreground Service -->
         <service

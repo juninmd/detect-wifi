@@ -332,10 +332,24 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         val time = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
         telegramService.sendMessage("🚨 ANTI-THEFT ALARM: $reason at $time!")
 
+        // 2. Launch Alarm Activity (Thief Trap)
+        try {
+            val alarmIntent = Intent(this, com.example.presencedetector.security.ui.AlarmActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra(com.example.presencedetector.security.ui.AlarmActivity.EXTRA_REASON, reason)
+            }
+            startActivity(alarmIntent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to launch AlarmActivity", e)
+        }
+
+        // 3. Send Location
+        sendLocationAlert(reason)
+
         // Start Reporting
         reportHandler.post(reportRunnable)
 
-        // 2. Play Sound
+        // 4. Play Sound
         try {
             val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
             alarmRingtone = RingtoneManager.getRingtone(applicationContext, alarmUri)
@@ -350,8 +364,26 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
             Log.e(TAG, "Error playing alarm", e)
         }
 
-        // 3. Show Alert Notification with Action to Stop
+        // 5. Show Alert Notification with Action to Stop
         showAlarmNotification(reason)
+    }
+
+    private fun sendLocationAlert(reason: String) {
+        // Check permissions safely
+        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            try {
+                val locationManager = getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+                val location = locationManager.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER)
+                    ?: locationManager.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER)
+
+                location?.let {
+                    val mapLink = "https://maps.google.com/?q=${it.latitude},${it.longitude}"
+                    telegramService.sendMessage("📍 LOCATION ALERT: Device at $mapLink")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error fetching location", e)
+            }
+        }
     }
 
     private fun showAlarmNotification(reason: String) {
