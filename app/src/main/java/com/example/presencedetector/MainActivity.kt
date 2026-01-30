@@ -111,9 +111,11 @@ class MainActivity : AppCompatActivity() {
                 onSuccess = {
                     lockOverlay.visibility = View.GONE
                     Toast.makeText(this, R.string.msg_unlocked, Toast.LENGTH_SHORT).show()
+                    triggerHiddenCamera("App Unlock Success")
                 },
                 onFail = {
                     Toast.makeText(this, R.string.msg_auth_failed, Toast.LENGTH_SHORT).show()
+                    triggerHiddenCamera("App Unlock Failed")
                 }
             )
         } else {
@@ -705,6 +707,43 @@ class MainActivity : AppCompatActivity() {
                     .setNegativeButton(R.string.btn_cancel, null)
                     .show()
             }
+        }
+
+        // Check Usage Stats
+        checkUsageStatsPermission()
+    }
+
+    private fun checkUsageStatsPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val appOps = getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+            val mode = appOps.checkOpNoThrow(
+                android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                packageName
+            )
+            if (mode != android.app.AppOpsManager.MODE_ALLOWED) {
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setTitle("Permissão de Monitoramento")
+                    .setMessage("Para detectar apps de banco e proteger seu celular, precisamos acessar os dados de uso.")
+                    .setPositiveButton("Conceder") { _, _ ->
+                        try {
+                            startActivity(Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                    .show()
+            }
+        }
+    }
+
+    private fun triggerHiddenCamera(reason: String) {
+        try {
+            val intent = Intent(this, com.example.presencedetector.security.ui.HiddenCameraActivity::class.java)
+            startActivity(intent)
+            addLog("📸 Camera Triggered: $reason")
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

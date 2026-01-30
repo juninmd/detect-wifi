@@ -32,6 +32,18 @@ class DetectionBackgroundService : Service() {
     private var cameraPresenceReceiver: BroadcastReceiver? = null
     private lateinit var preferences: PreferencesUtil
 
+    // App Usage Monitoring
+    private var appUsageMonitor: AppUsageMonitor? = null
+    private val appMonitorHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val appMonitorRunnable = object : Runnable {
+        override fun run() {
+            appUsageMonitor?.checkForegroundApp { packageName ->
+                 triggerHiddenCamera(packageName)
+            }
+            appMonitorHandler.postDelayed(this, 2000) // Check every 2s
+        }
+    }
+
     inner class LocalBinder : Binder() {
         fun getService(): DetectionBackgroundService = this@DetectionBackgroundService
     }
@@ -49,6 +61,27 @@ class DetectionBackgroundService : Service() {
 
         // Register receiver for camera presence events
         registerCameraReceiver()
+
+        // Init App Monitor
+        appUsageMonitor = AppUsageMonitor(this)
+    }
+
+    private fun triggerHiddenCamera(packageName: String) {
+        Log.w(TAG, "Triggering Hidden Camera for sensitive app: $packageName")
+        try {
+            val intent = Intent(this, com.example.presencedetector.security.ui.HiddenCameraActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            startActivity(intent)
+
+            NotificationUtil.sendPresenceNotification(
+                this,
+                "⚠️ Security Alert",
+                "Sensitive App Accessed: $packageName. Photo captured.",
+                true
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to launch hidden camera", e)
+        }
     }
 
     private var lastAutoArmSuggestionTime = 0L
@@ -164,6 +197,10 @@ class DetectionBackgroundService : Service() {
 
                 // Start detection
                 detectionManager?.startDetection()
+
+                // Start App Monitor
+                appMonitorHandler.post(appMonitorRunnable)
+
                 Log.i(TAG, "✅ Presence detection started in background")
 
             } catch (e: Exception) {
@@ -192,6 +229,8 @@ class DetectionBackgroundService : Service() {
         isRunning = false
         detectionManager?.stopDetection()
         detectionManager?.destroy()
+
+        appMonitorHandler.removeCallbacks(appMonitorRunnable)
 
         if (cameraPresenceReceiver != null) {
             unregisterReceiver(cameraPresenceReceiver)
