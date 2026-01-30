@@ -102,4 +102,12 @@
     <string name="title_app_locked">App Bloqueado</string>
     <string name="msg_auth_required">Autenticação Necessária</string>
 
+    <!-- Global Status -->
+    <string name="status_system_secure">Sistema Protegido</string>
+    <string name="desc_system_secure">Segurança do celular ativa.</string>
+    <string name="status_system_monitoring">Monitorando Casa</string>
+    <string name="desc_system_monitoring">Escaneando presença WiFi...</string>
+    <string name="status_system_idle">Sistema Ocioso</string>
+    <string name="desc_system_idle">Toque para armar segurança total.</string>
+
 </resources>

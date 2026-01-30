@@ -23,6 +23,9 @@ object NotificationUtil {
     // Channel for Standard Events (Arrivals/Departures) - Medium Priority
     const val INFO_CHANNEL_ID = "presence_info_channel"
 
+    // Channel for Silent Events (Routine updates) - Low Priority
+    const val SILENT_CHANNEL_ID = "presence_silent_channel"
+
     // Channel for Critical Alerts (Intruders, Anti-Theft) - Max Priority
     const val ALERT_CHANNEL_ID = "security_alerts_channel_v2"
 
@@ -54,6 +57,16 @@ object NotificationUtil {
                 description = context.getString(R.string.channel_info_desc)
                 enableLights(true)
                 lightColor = android.graphics.Color.BLUE
+            }
+
+            // 2b. Silent Channel (No sound)
+            val silentChannel = NotificationChannel(
+                SILENT_CHANNEL_ID,
+                "Eventos Silenciosos",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Notificações de rotina sem som"
+                setShowBadge(false)
             }
 
             // 3. Critical Alert Channel - Bypass DND
@@ -91,7 +104,7 @@ object NotificationUtil {
             }
 
             notificationManager?.createNotificationChannels(
-                listOf(serviceChannel, infoChannel, alertChannel, batteryChannel)
+                listOf(serviceChannel, infoChannel, silentChannel, alertChannel, batteryChannel)
             )
         }
     }
@@ -164,7 +177,22 @@ object NotificationUtil {
         iconResId: Int? = null
     ) {
         // Determine channel based on importance
-        val channelId = if (isImportantEvent) ALERT_CHANNEL_ID else INFO_CHANNEL_ID
+        // High = Alert, Medium = Info, Low = Silent (could be added as parameter later)
+        // For now, let's map !isImportantEvent to Silent if we want less noise, OR keep Info.
+        // The plan says: "use SILENT_CHANNEL_ID for non-important events".
+        // But "isImportantEvent" usually means "ALERT".
+        // Let's assume standard routine events (arrived/left) might be INFO (beep) or SILENT.
+        // To be safe and follow the request "Mehore o uso de notificações" (Improve usage),
+        // routine things should probably NOT beep if they happen constantly.
+        // However, "Device Arrived" is usually useful to hear.
+        // Let's make "Info" channel strictly for things user WANTS to hear, and use SILENT for updates.
+        // Given the code structure, I will swap INFO for SILENT for generic updates if I want to quiet them.
+
+        // Revised Logic:
+        // isImportantEvent == true -> ALERT (Siren/Loud)
+        // isImportantEvent == false -> SILENT (Log only/Drawer)
+
+        val channelId = if (isImportantEvent) ALERT_CHANNEL_ID else SILENT_CHANNEL_ID
 
         createNotificationChannels(context)
 

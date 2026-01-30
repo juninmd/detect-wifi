@@ -39,6 +39,7 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         const val ACTION_START = "com.example.presencedetector.action.START_ANTITHEFT"
         const val ACTION_STOP = "com.example.presencedetector.action.STOP_ANTITHEFT"
         const val ACTION_SNOOZE = "com.example.presencedetector.ACTION_SNOOZE"
+        const val ACTION_PANIC = "com.example.presencedetector.action.PANIC"
         private const val NOTIFICATION_ID = 999
         private const val ALARM_NOTIFICATION_ID = 1000
         private const val GRACE_PERIOD_MS = 5000L // Time to put phone down after arming
@@ -148,6 +149,7 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
             ACTION_START -> startMonitoring()
             ACTION_STOP -> stopMonitoring()
             ACTION_SNOOZE -> snoozeAlarm()
+            ACTION_PANIC -> triggerAlarm("PÂNICO MANUAL")
         }
         return START_STICKY
     }
