@@ -27,6 +27,15 @@
     <!-- Notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Telephony for SIM Protection -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <!-- Audio Recording for Evidence -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- App Usage Stats for Monitoring -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
+
     <!-- Background Service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- For Android 14+ (API 34+) -->
@@ -106,6 +115,13 @@
             android:excludeFromRecents="true"
             android:exported="false" />
 
+        <activity
+            android:name=".security.ui.HiddenCameraActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true" />
+
         <!-- Camera Monitoring Foreground Service -->
         <service
             android:name=".security.service.CameraMonitoringService"
@@ -133,6 +149,13 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".receivers.SimStateReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SIM_STATE_CHANGED" />
             </intent-filter>
         </receiver>
 

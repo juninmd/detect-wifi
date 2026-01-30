@@ -128,4 +128,53 @@ open class TelegramService(
             }
         }
     }
+
+    open fun sendAudio(audioFile: File, caption: String = "") {
+        if (!prefs.isTelegramEnabled()) return
+
+        val token = prefs.getTelegramToken()
+        val chatId = prefs.getTelegramChatId()
+
+        if (token.isNullOrEmpty() || chatId.isNullOrEmpty()) {
+            Log.w(TAG, "Telegram credentials missing")
+            return
+        }
+
+        if (!audioFile.exists()) {
+            Log.e(TAG, "Audio file does not exist: ${audioFile.absolutePath}")
+            return
+        }
+
+        CoroutineScope(ioDispatcher).launch {
+            try {
+                val url = "https://api.telegram.org/bot$token/sendAudio"
+
+                val mediaType = "audio/mp4".toMediaTypeOrNull()
+                val fileBody = audioFile.asRequestBody(mediaType)
+
+                val requestBody = MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("chat_id", chatId)
+                    .addFormDataPart("caption", caption)
+                    .addFormDataPart("audio", audioFile.name, fileBody)
+                    .build()
+
+                val request = Request.Builder()
+                    .url(url)
+                    .post(requestBody)
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) {
+                        Log.d(TAG, "Audio sent successfully")
+                    } else {
+                        Log.e(TAG, "Failed to send audio: ${response.code} ${response.message}")
+                        Log.e(TAG, "Response: ${response.body?.string()}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error sending Telegram audio", e)
+            }
+        }
+    }
 }

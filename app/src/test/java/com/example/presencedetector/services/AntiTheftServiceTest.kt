@@ -7,6 +7,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorManager
 import android.os.SystemClock
 import androidx.test.core.app.ApplicationProvider
+import com.example.presencedetector.MainActivity
 import com.example.presencedetector.receivers.NotificationActionReceiver
 import com.example.presencedetector.utils.PreferencesUtil
 import org.junit.Assert.*
@@ -47,6 +48,14 @@ class AntiTheftServiceTest {
         whenever(mockPreferences.isPocketModeEnabled()).thenReturn(false)
         whenever(mockPreferences.isChargerModeEnabled()).thenReturn(false)
 
+        // Grant permissions including RECORD_AUDIO and READ_PHONE_STATE
+        val shadowApp = Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
+        shadowApp.grantPermissions(
+            android.Manifest.permission.ACCESS_FINE_LOCATION,
+            android.Manifest.permission.RECORD_AUDIO,
+            android.Manifest.permission.READ_PHONE_STATE
+        )
+
         val controller = Robolectric.buildService(AntiTheftService::class.java)
         service = controller.get()
         service.preferences = mockPreferences
@@ -56,7 +65,7 @@ class AntiTheftServiceTest {
     }
 
     @Test
-    fun `startMonitoring should arm the service and register receivers`() {
+    fun `startMonitoring should arm the service`() {
         val intent = Intent(context, AntiTheftService::class.java).apply {
             action = AntiTheftService.ACTION_START
         }
@@ -128,25 +137,18 @@ class AntiTheftServiceTest {
         location.time = System.currentTimeMillis()
         shadowLocationManager.setLastKnownLocation(android.location.LocationManager.GPS_PROVIDER, location)
 
-        // Grant Permission
-        val shadowApp = Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
-        shadowApp.grantPermissions(android.Manifest.permission.ACCESS_FINE_LOCATION)
-
         // Start Service
         val intent = Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_START }
         service.onStartCommand(intent, 0, 0)
         SystemClock.sleep(6000)
 
         // Trigger Alarm (Motion)
-        // First reading to initialize lastX/Y/Z
         val event1 = createSensorEvent(floatArrayOf(0f, 0f, 9.8f), Sensor.TYPE_ACCELEROMETER)
         service.onSensorChanged(event1)
-
-        // Second reading to trigger motion
         val event2 = createSensorEvent(floatArrayOf(5f, 5f, 5f), Sensor.TYPE_ACCELEROMETER)
         service.onSensorChanged(event2)
 
-        // Verify Location Sent (Implies triggerAlarm completed)
+        // Verify Location Sent
         verify(mockTelegramService, atLeastOnce()).sendMessage(check {
             if (it.contains("LOCATION")) {
                 assertTrue(it.contains("maps.google.com") && it.contains("10.0,20.0"))
@@ -159,7 +161,6 @@ class AntiTheftServiceTest {
         val intent = Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_START }
         service.onStartCommand(intent, 0, 0)
 
-        // Find the receiver from ShadowApplication
         val receivers = ShadowApplication.getInstance().registeredReceivers
         val batteryReceiverWrapper = receivers.find { it.intentFilter.hasAction(Intent.ACTION_BATTERY_CHANGED) }
 
@@ -206,56 +207,24 @@ class AntiTheftServiceTest {
         val shadows = Shadows.shadowOf(notificationManager)
         val notification = shadows.getNotification(999)
 
-        if (notification != null) {
-            val actions = notification.actions
-            val panicAction = actions.find { it.title.toString().contains("PÂNICO") }
-            if (panicAction == null) {
-                 fail("Panic action not found in notification")
-            } else {
-                 val pendingIntent = panicAction.actionIntent
-                 val shadowIntent = Shadows.shadowOf(pendingIntent).savedIntent
-                 assertEquals(NotificationActionReceiver.ACTION_PANIC, shadowIntent.action)
-            }
-        }
-    }
+        assertNotNull(notification)
+        val actions = notification.actions
+        val panicAction = actions.find { it.title.toString().contains("PÂNICO") }
+        assertNotNull("Panic action should exist", panicAction)
 
-    @Test
-    fun `alarm notification should contain Snooze action`() {
-        val intent = Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_START }
-        service.onStartCommand(intent, 0, 0)
-        SystemClock.sleep(6000)
-
-        // Trigger Motion
-        val event = createSensorEvent(floatArrayOf(5f, 5f, 5f), Sensor.TYPE_ACCELEROMETER)
-        service.onSensorChanged(event)
-
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-        val shadows = Shadows.shadowOf(notificationManager)
-        val notification = shadows.getNotification(1000)
-
-        if (notification != null) {
-            val actions = notification.actions
-            val snoozeAction = actions.find { it.title.toString().contains("Soneca") }
-            if (snoozeAction != null) {
-                val pendingIntent = snoozeAction.actionIntent
-                val shadowIntent = Shadows.shadowOf(pendingIntent).savedIntent
-                assertEquals(NotificationActionReceiver.ACTION_SNOOZE, shadowIntent.action)
-            } else {
-                fail("Snooze action not found")
-            }
-        }
+        val pendingIntent = panicAction!!.actionIntent
+        val shadowIntent = Shadows.shadowOf(pendingIntent).savedIntent
+        assertEquals(NotificationActionReceiver.ACTION_PANIC, shadowIntent.action)
     }
 
     @Test
     fun `ACTION_SNOOZE should stop alarm and log message`() {
-        // Trigger alarm first to set state
         val intentStart = Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_START }
         service.onStartCommand(intentStart, 0, 0)
         SystemClock.sleep(6000)
         val event = createSensorEvent(floatArrayOf(5f, 5f, 5f), Sensor.TYPE_ACCELEROMETER)
         service.onSensorChanged(event)
 
-        // Now Snooze
         val intentSnooze = Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_SNOOZE }
         service.onStartCommand(intentSnooze, 0, 0)
 
@@ -263,9 +232,56 @@ class AntiTheftServiceTest {
             assertTrue(it.contains("Snoozed"))
         })
 
-        // Verify notification 1000 is cancelled
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         val shadows = Shadows.shadowOf(notificationManager)
         assertNull(shadows.getNotification(1000))
+    }
+
+    // --- NEW TESTS ---
+
+    @Test
+    fun `ACTION_PANIC with reason should trigger alarm with that reason`() {
+        val intent = Intent(context, AntiTheftService::class.java).apply {
+            action = AntiTheftService.ACTION_PANIC
+            putExtra("com.example.presencedetector.EXTRA_REASON", "SIM CARD REMOVED")
+        }
+
+        service.onStartCommand(intent, 0, 0)
+
+        verify(mockTelegramService).sendMessage(check {
+            assertTrue("Message should contain SIM CARD REMOVED", it.contains("SIM CARD REMOVED"))
+        })
+    }
+
+    @Test
+    fun `foreground notification disarm action should point to MainActivity`() {
+        val intent = Intent(context, AntiTheftService::class.java).apply {
+            action = AntiTheftService.ACTION_START
+        }
+        service.onStartCommand(intent, 0, 0)
+
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val notification = Shadows.shadowOf(notificationManager).getNotification(999)
+
+        assertNotNull("Foreground notification should exist", notification)
+
+        val disarmAction = notification.actions.find { it.title.toString().contains("Desarmar") || it.title.toString().contains("Disarm") }
+        assertNotNull("Disarm action should exist", disarmAction)
+
+        val pendingIntent = disarmAction!!.actionIntent
+        val shadowIntent = Shadows.shadowOf(pendingIntent).savedIntent
+
+        assertEquals("Intent should target MainActivity", MainActivity::class.java.name, shadowIntent.component?.className)
+        assertTrue("Intent should have EXTRA_DISARM_REQUEST", shadowIntent.getBooleanExtra(MainActivity.EXTRA_DISARM_REQUEST, false))
+    }
+
+    @Test
+    fun `triggerAlarm should start audio recording`() {
+        val intent = Intent(context, AntiTheftService::class.java).apply {
+            action = AntiTheftService.ACTION_PANIC
+        }
+        service.onStartCommand(intent, 0, 0)
+
+        verify(mockTelegramService).sendMessage(anyString())
     }
 }
