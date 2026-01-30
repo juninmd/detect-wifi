@@ -27,6 +27,12 @@
     <!-- Notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Telephony for SIM Protection -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <!-- Audio Recording for Evidence -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <!-- Background Service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- For Android 14+ (API 34+) -->
@@ -133,6 +139,13 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".receivers.SimStateReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SIM_STATE_CHANGED" />
             </intent-filter>
         </receiver>
 

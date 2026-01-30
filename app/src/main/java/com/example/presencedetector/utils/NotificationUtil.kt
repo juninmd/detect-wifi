@@ -5,6 +5,8 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.RingtoneManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.example.presencedetector.MainActivity
@@ -17,19 +19,19 @@ import com.example.presencedetector.R
 object NotificationUtil {
     private const val TAG = "NotificationUtil"
 
-    // Channel for Foreground Service (Scanning status)
+    // 1. Foreground Service Channel (Low noise, sticky)
     const val CHANNEL_ID = "presence_detection_channel"
 
-    // Channel for Standard Events (Arrivals/Departures) - Medium Priority
+    // 2. Info Channel (Standard beeps for non-critical events like arrivals)
     const val INFO_CHANNEL_ID = "presence_info_channel"
 
-    // Channel for Silent Events (Routine updates) - Low Priority
+    // 3. Silent Channel (No sound, for routine logs)
     const val SILENT_CHANNEL_ID = "presence_silent_channel"
 
-    // Channel for Critical Alerts (Intruders, Anti-Theft) - Max Priority
-    const val ALERT_CHANNEL_ID = "security_alerts_channel_v2"
+    // 4. Critical Security Channel (Max Priority, Bypasses DND, Loud)
+    const val SECURITY_CHANNEL_ID = "security_critical_channel_v1"
 
-    // Channel for Battery Alerts
+    // 5. Battery Channel
     const val BATTERY_CHANNEL_ID = "battery_alert_channel"
 
     private const val GROUP_KEY_PRESENCE = "com.example.presencedetector.PRESENCE_UPDATES"
@@ -38,7 +40,7 @@ object NotificationUtil {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = context.getSystemService(NotificationManager::class.java)
 
-            // 1. Service Channel (Low noise)
+            // 1. Service Channel
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
                 context.getString(R.string.channel_service_name),
@@ -48,7 +50,7 @@ object NotificationUtil {
                 setShowBadge(false)
             }
 
-            // 2. Info Channel (Standard beeps)
+            // 2. Info Channel
             val infoChannel = NotificationChannel(
                 INFO_CHANNEL_ID,
                 context.getString(R.string.channel_info_name),
@@ -59,7 +61,7 @@ object NotificationUtil {
                 lightColor = android.graphics.Color.BLUE
             }
 
-            // 2b. Silent Channel (No sound)
+            // 3. Silent Channel
             val silentChannel = NotificationChannel(
                 SILENT_CHANNEL_ID,
                 "Eventos Silenciosos",
@@ -69,29 +71,29 @@ object NotificationUtil {
                 setShowBadge(false)
             }
 
-            // 3. Critical Alert Channel - Bypass DND
-            val alertChannel = NotificationChannel(
-                ALERT_CHANNEL_ID,
-                context.getString(R.string.channel_alert_name),
+            // 4. Critical Security Channel
+            val securityChannel = NotificationChannel(
+                SECURITY_CHANNEL_ID,
+                "Alerta de Segurança Crítico",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = context.getString(R.string.channel_alert_desc)
+                description = "Alertas de intrusão e roubo. Toca mesmo em modo não perturbe."
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500, 1000)
                 enableLights(true)
                 lightColor = android.graphics.Color.RED
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
-                setBypassDnd(true) // Bypass silent/DND mode for security alerts
+                setBypassDnd(true) // Crucial for security
                 setSound(
-                    android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM),
-                    android.media.AudioAttributes.Builder()
-                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
-                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                         .build()
                 )
             }
 
-            // 4. Battery Channel
+            // 5. Battery Channel
             val batteryChannel = NotificationChannel(
                 BATTERY_CHANNEL_ID,
                 context.getString(R.string.channel_battery_name),
@@ -104,9 +106,105 @@ object NotificationUtil {
             }
 
             notificationManager?.createNotificationChannels(
-                listOf(serviceChannel, infoChannel, silentChannel, alertChannel, batteryChannel)
+                listOf(serviceChannel, infoChannel, silentChannel, securityChannel, batteryChannel)
             )
         }
+    }
+
+    /**
+     * Send a standard notification for presence events.
+     * @param isImportantEvent If true, uses INFO channel (Sound). If false, uses SILENT channel.
+     */
+    fun sendPresenceNotification(
+        context: Context,
+        title: String,
+        message: String,
+        isImportantEvent: Boolean,
+        actionTitle: String? = null,
+        actionIntent: PendingIntent? = null,
+        notificationId: Int? = null,
+        secondActionTitle: String? = null,
+        secondActionIntent: PendingIntent? = null,
+        iconResId: Int? = null
+    ) {
+        createNotificationChannels(context)
+
+        val channelId = if (isImportantEvent) INFO_CHANNEL_ID else SILENT_CHANNEL_ID
+
+        val intent = Intent(context, WifiRadarActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("from_notification", true)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            System.currentTimeMillis().toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val icon = iconResId ?: R.drawable.ic_notification
+
+        val builder = NotificationCompat.Builder(context, channelId)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setSmallIcon(icon)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setGroup(GROUP_KEY_PRESENCE)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+
+        if (isImportantEvent) {
+            builder.setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        } else {
+            builder.setPriority(NotificationCompat.PRIORITY_LOW)
+        }
+
+        if (actionTitle != null && actionIntent != null) {
+            builder.addAction(R.drawable.ic_status_inactive, actionTitle, actionIntent)
+        }
+        if (secondActionTitle != null && secondActionIntent != null) {
+            builder.addAction(R.drawable.ic_status_active, secondActionTitle, secondActionIntent)
+        }
+
+        val notificationManager = context.getSystemService(NotificationManager::class.java)
+        notificationManager?.notify(notificationId ?: System.currentTimeMillis().toInt(), builder.build())
+    }
+
+    /**
+     * Send a Critical Security Alert.
+     * Always uses SECURITY_CHANNEL_ID (High Priority, Alarm Sound, Bypass DND).
+     */
+    fun sendCriticalAlert(
+        context: Context,
+        title: String,
+        message: String,
+        notificationId: Int,
+        fullScreenIntent: PendingIntent? = null,
+        actions: List<NotificationCompat.Action> = emptyList()
+    ) {
+        createNotificationChannels(context)
+
+        val builder = NotificationCompat.Builder(context, SECURITY_CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setSmallIcon(R.drawable.ic_notification_alert) // Ensure this resource exists or use generic
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setAutoCancel(false)
+            .setOngoing(true)
+            .setVibrate(longArrayOf(0, 1000, 500, 1000, 500, 1000))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+
+        if (fullScreenIntent != null) {
+            builder.setFullScreenIntent(fullScreenIntent, true)
+        }
+
+        actions.forEach { builder.addAction(it) }
+
+        val notificationManager = context.getSystemService(NotificationManager::class.java)
+        notificationManager?.notify(notificationId, builder.build())
     }
 
     fun sendBatteryAlert(context: Context, level: Int) {
@@ -164,92 +262,6 @@ object NotificationUtil {
             .build()
     }
 
-    fun sendPresenceNotification(
-        context: Context,
-        title: String,
-        message: String,
-        isImportantEvent: Boolean,
-        actionTitle: String? = null,
-        actionIntent: PendingIntent? = null,
-        notificationId: Int? = null,
-        secondActionTitle: String? = null,
-        secondActionIntent: PendingIntent? = null,
-        iconResId: Int? = null
-    ) {
-        // Determine channel based on importance
-        // High = Alert, Medium = Info, Low = Silent (could be added as parameter later)
-        // For now, let's map !isImportantEvent to Silent if we want less noise, OR keep Info.
-        // The plan says: "use SILENT_CHANNEL_ID for non-important events".
-        // But "isImportantEvent" usually means "ALERT".
-        // Let's assume standard routine events (arrived/left) might be INFO (beep) or SILENT.
-        // To be safe and follow the request "Mehore o uso de notificações" (Improve usage),
-        // routine things should probably NOT beep if they happen constantly.
-        // However, "Device Arrived" is usually useful to hear.
-        // Let's make "Info" channel strictly for things user WANTS to hear, and use SILENT for updates.
-        // Given the code structure, I will swap INFO for SILENT for generic updates if I want to quiet them.
-
-        // Revised Logic:
-        // isImportantEvent == true -> ALERT (Siren/Loud)
-        // isImportantEvent == false -> SILENT (Log only/Drawer)
-
-        val channelId = if (isImportantEvent) ALERT_CHANNEL_ID else SILENT_CHANNEL_ID
-
-        createNotificationChannels(context)
-
-        // Default Tap Action -> WifiRadarActivity (Dashboard)
-        val intent = Intent(context, WifiRadarActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            putExtra("from_notification", true)
-        }
-
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            System.currentTimeMillis().toInt(),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        // Logic: Alert Icon for Security, Normal Icon for Info, or Custom
-        val icon = iconResId ?: if (isImportantEvent) R.drawable.ic_notification_alert else R.drawable.ic_notification
-
-        val builder = NotificationCompat.Builder(context, channelId)
-            .setContentTitle(title)
-            .setContentText(message)
-            .setSmallIcon(icon)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .setGroup(GROUP_KEY_PRESENCE) // Group notifications
-            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-
-        // Configure Priority
-        if (isImportantEvent) {
-            builder.setPriority(NotificationCompat.PRIORITY_MAX)
-            builder.setCategory(NotificationCompat.CATEGORY_ALARM)
-            builder.setVibrate(longArrayOf(0, 1000, 500, 1000))
-            builder.setDefaults(NotificationCompat.DEFAULT_ALL)
-            // Sticky for alarms
-            if (actionTitle != null) {
-                builder.setFullScreenIntent(pendingIntent, true)
-            }
-        } else {
-            builder.setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            builder.setCategory(NotificationCompat.CATEGORY_STATUS)
-        }
-
-        // Actions
-        if (actionTitle != null && actionIntent != null) {
-            builder.addAction(R.drawable.ic_status_inactive, actionTitle, actionIntent)
-        }
-
-        if (secondActionTitle != null && secondActionIntent != null) {
-            builder.addAction(R.drawable.ic_status_active, secondActionTitle, secondActionIntent)
-        }
-
-        val notificationManager = context.getSystemService(NotificationManager::class.java)
-        val finalId = notificationId ?: System.currentTimeMillis().toInt()
-        notificationManager?.notify(finalId, builder.build())
-
-        // Ensure summary exists if multiple notifications pile up (optional but good practice)
-        // For now, grouping handles the folding UI automatically on Android 7+.
-    }
+    // Deprecated constant compatibility if needed by other classes not yet updated
+    const val ALERT_CHANNEL_ID = SECURITY_CHANNEL_ID
 }

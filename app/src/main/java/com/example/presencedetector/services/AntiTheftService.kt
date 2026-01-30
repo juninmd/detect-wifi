@@ -55,6 +55,11 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
     private var isArmed = false
     private var isAlarmPlaying = false
 
+    // Audio Recording
+    private var mediaRecorder: android.media.MediaRecorder? = null
+    private var audioFile: java.io.File? = null
+    private val stopRecordingRunnable = Runnable { stopRecording(true) }
+
     // Motion state
     private var lastX = 0f
     private var lastY = 0f
@@ -149,7 +154,10 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
             ACTION_START -> startMonitoring()
             ACTION_STOP -> stopMonitoring()
             ACTION_SNOOZE -> snoozeAlarm()
-            ACTION_PANIC -> triggerAlarm("PÂNICO MANUAL")
+            ACTION_PANIC -> {
+                val reason = intent.getStringExtra("com.example.presencedetector.EXTRA_REASON") ?: "PÂNICO MANUAL"
+                triggerAlarm(reason)
+            }
         }
         return START_STICKY
     }
@@ -218,10 +226,12 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
     private fun createForegroundNotification(): Notification {
         NotificationUtil.createNotificationChannels(this)
 
-        val stopIntent = Intent(this, AntiTheftService::class.java).apply {
-            action = ACTION_STOP
+        // Secure Disarm: Open App instead of direct stop
+        val disarmIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra(MainActivity.EXTRA_DISARM_REQUEST, true)
         }
-        val pendingStopIntent = PendingIntent.getService(this, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE)
+        val pendingDisarmIntent = PendingIntent.getActivity(this, 0, disarmIntent, PendingIntent.FLAG_IMMUTABLE)
 
         // Panic Action
         val panicIntent = Intent(this, NotificationActionReceiver::class.java).apply {
@@ -242,7 +252,7 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
             .setContentText(modeText)
             .setSmallIcon(R.drawable.ic_status_active)
             .setOngoing(true)
-            .addAction(R.drawable.ic_status_inactive, getString(R.string.action_disarm), pendingStopIntent)
+            .addAction(R.drawable.ic_status_inactive, getString(R.string.action_disarm), pendingDisarmIntent)
             .addAction(android.R.drawable.ic_lock_power_off, "PÂNICO", pendingPanicIntent)
 
         // Add intent to open app
@@ -368,6 +378,60 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
 
         // 5. Show Alert Notification with Action to Stop
         showAlarmNotification(reason)
+
+        // 6. Record Audio Evidence
+        startRecording()
+    }
+
+    private fun startRecording() {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "Audio recording permission missing.")
+            return
+        }
+
+        try {
+            val fileName = "ALARM_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".m4a"
+            audioFile = java.io.File(cacheDir, fileName)
+
+            mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                android.media.MediaRecorder(this)
+            } else {
+                @Suppress("DEPRECATION")
+                android.media.MediaRecorder()
+            }
+
+            mediaRecorder?.apply {
+                setAudioSource(android.media.MediaRecorder.AudioSource.MIC)
+                setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AAC)
+                setOutputFile(audioFile?.absolutePath)
+                prepare()
+                start()
+            }
+            Log.d(TAG, "Audio recording started: ${audioFile?.absolutePath}")
+
+            // Auto-stop after 30 seconds
+            reportHandler.postDelayed(stopRecordingRunnable, 30000)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start audio recording", e)
+        }
+    }
+
+    private fun stopRecording(send: Boolean) {
+        try {
+            mediaRecorder?.stop()
+            mediaRecorder?.release()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping recorder (might be too short)", e)
+        } finally {
+            mediaRecorder = null
+        }
+
+        if (send && audioFile != null && audioFile!!.exists()) {
+            telegramService.sendAudio(audioFile!!, "🎤 Audio Evidence")
+            audioFile = null // Prevent double send
+        }
     }
 
     private fun sendLocationAlert(reason: String) {
@@ -459,6 +523,10 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         if (!isAlarmPlaying) return
         isAlarmPlaying = false
         reportHandler.removeCallbacks(reportRunnable)
+
+        // Stop recording and send if anything was recorded
+        reportHandler.removeCallbacks(stopRecordingRunnable)
+        stopRecording(true)
 
         try {
             alarmRingtone?.stop()

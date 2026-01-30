@@ -625,6 +625,8 @@ class MainActivity : AppCompatActivity() {
         permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
         permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
         permissions.add(Manifest.permission.CAMERA) // Added for Intruder Snap
+        permissions.add(Manifest.permission.RECORD_AUDIO) // Added for Audio Evidence
+        permissions.add(Manifest.permission.READ_PHONE_STATE) // Added for SIM Protection
 
         // Bluetooth permissions (Android 12+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -656,6 +658,8 @@ class MainActivity : AppCompatActivity() {
         permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
         permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
         permissions.add(Manifest.permission.CAMERA) // Added for Intruder Snap
+        permissions.add(Manifest.permission.RECORD_AUDIO) // Added for Audio Evidence
+        permissions.add(Manifest.permission.READ_PHONE_STATE) // Added for SIM Protection
 
         // Bluetooth permissions (Android 12+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
