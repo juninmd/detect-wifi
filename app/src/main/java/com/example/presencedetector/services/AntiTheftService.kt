@@ -247,8 +247,8 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         if (isChargerModeArmed) modes.add("Carregador")
         val modeText = "Ativo: " + modes.joinToString(", ")
 
-        val builder = NotificationCompat.Builder(this, NotificationUtil.CHANNEL_ID)
-            .setContentTitle("Segurança do Dispositivo")
+        val builder = NotificationCompat.Builder(this, NotificationUtil.MOBILE_SECURITY_CHANNEL_ID)
+            .setContentTitle("Segurança do Celular")
             .setContentText(modeText)
             .setSmallIcon(R.drawable.ic_status_active)
             .setOngoing(true)

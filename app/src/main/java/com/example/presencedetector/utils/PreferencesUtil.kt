@@ -35,6 +35,7 @@ open class PreferencesUtil(context: Context) {
         private const val KEY_APP_LOCK_ENABLED = "app_lock_enabled"
         private const val KEY_POCKET_MODE_ENABLED = "pocket_mode_enabled"
         private const val KEY_CHARGER_MODE_ENABLED = "charger_mode_enabled"
+        private const val KEY_SMART_MODE_ENABLED = "smart_mode_enabled"
 
         private const val PREFIX_HISTORY = "history_"
         private const val PREFIX_NICKNAME = "nickname_"
@@ -183,6 +184,14 @@ open class PreferencesUtil(context: Context) {
 
     open fun isChargerModeEnabled(): Boolean {
         return preferences.getBoolean(KEY_CHARGER_MODE_ENABLED, false)
+    }
+
+    open fun setSmartModeEnabled(enabled: Boolean) {
+        preferences.edit().putBoolean(KEY_SMART_MODE_ENABLED, enabled).apply()
+    }
+
+    open fun isSmartModeEnabled(): Boolean {
+        return preferences.getBoolean(KEY_SMART_MODE_ENABLED, false)
     }
 
     open fun saveNickname(bssid: String, nickname: String) {

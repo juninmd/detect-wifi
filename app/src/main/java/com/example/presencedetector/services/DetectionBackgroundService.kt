@@ -121,8 +121,29 @@ class DetectionBackgroundService : Service() {
     }
 
     private fun checkForAutoArmSuggestion() {
-        if (!preferences.isAntiTheftArmed() &&
-            System.currentTimeMillis() - lastAutoArmSuggestionTime > 30 * 60 * 1000L) { // Suggest every 30m if still unarmed
+        if (preferences.isAntiTheftArmed()) return
+
+        // SMART MODE LOGIC: Auto-arm if enabled
+        if (preferences.isSmartModeEnabled()) {
+             Log.i(TAG, "Smart Mode Active: Outside Safe Zone -> Auto-Arming Anti-Theft.")
+             val startIntent = Intent(this, AntiTheftService::class.java).apply {
+                 action = AntiTheftService.ACTION_START
+             }
+             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                 startForegroundService(startIntent)
+             } else {
+                 startService(startIntent)
+             }
+             NotificationUtil.sendPresenceNotification(
+                 this,
+                 "🛡️ Modo Inteligente",
+                 "Anti-Furto ativado automaticamente ao sair de casa.",
+                 false
+             )
+             return
+        }
+
+        if (System.currentTimeMillis() - lastAutoArmSuggestionTime > 30 * 60 * 1000L) { // Suggest every 30m if still unarmed
 
             Log.i(TAG, "Outside Safe Zone and unarmed. Suggesting Anti-Theft.")
 
@@ -185,8 +206,9 @@ class DetectionBackgroundService : Service() {
                 // Create foreground notification to keep service alive
                 val notification = NotificationUtil.createForegroundNotification(
                     this,
-                    "🔍 Presence Detector Active",
-                    "Scanning for devices..."
+                    "Monitoramento Residencial Ativo",
+                    "Escaneando dispositivos...",
+                    NotificationUtil.HOME_SECURITY_CHANNEL_ID
                 )
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -252,13 +274,15 @@ class DetectionBackgroundService : Service() {
                 NotificationUtil.createForegroundNotification(
                     this,
                     "✓ Presença Detectada",
-                    "$method • $details"
+                    "$method • $details",
+                    NotificationUtil.HOME_SECURITY_CHANNEL_ID
                 )
             } else {
                 NotificationUtil.createForegroundNotification(
                     this,
                     "✗ Nenhuma Presença",
-                    "$method • Aguardando..."
+                    "$method • Aguardando...",
+                    NotificationUtil.HOME_SECURITY_CHANNEL_ID
                 )
             }
 
