@@ -37,7 +37,7 @@ jobs:
       run: ./gradlew jacocoTestReport
 
     - name: Verify Coverage
-      run: ./gradlew jacocoTestCoverageVerification || echo "Coverage verification failed but continuing pipeline"
+      run: ./gradlew jacocoTestCoverageVerification
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
