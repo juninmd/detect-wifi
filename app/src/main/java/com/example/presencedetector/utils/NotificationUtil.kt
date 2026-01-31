@@ -34,6 +34,10 @@ object NotificationUtil {
     // 5. Battery Channel
     const val BATTERY_CHANNEL_ID = "battery_alert_channel"
 
+    // 6. New Specific Channels
+    const val HOME_SECURITY_CHANNEL_ID = "home_security_channel"
+    const val MOBILE_SECURITY_CHANNEL_ID = "mobile_security_channel"
+
     private const val GROUP_KEY_PRESENCE = "com.example.presencedetector.PRESENCE_UPDATES"
 
     fun createNotificationChannels(context: Context) {
@@ -105,8 +109,28 @@ object NotificationUtil {
                 lightColor = android.graphics.Color.YELLOW
             }
 
+            // 6. Home Security Channel
+            val homeChannel = NotificationChannel(
+                HOME_SECURITY_CHANNEL_ID,
+                "Segurança Residencial",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Notificações de monitoramento WiFi e presença em casa"
+                setShowBadge(false)
+            }
+
+            // 7. Mobile Security Channel
+            val mobileChannel = NotificationChannel(
+                MOBILE_SECURITY_CHANNEL_ID,
+                "Segurança do Celular",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Notificações de monitoramento anti-furto (bolso, movimento)"
+                setShowBadge(true)
+            }
+
             notificationManager?.createNotificationChannels(
-                listOf(serviceChannel, infoChannel, silentChannel, securityChannel, batteryChannel)
+                listOf(serviceChannel, infoChannel, silentChannel, securityChannel, batteryChannel, homeChannel, mobileChannel)
             )
         }
     }
@@ -235,8 +259,9 @@ object NotificationUtil {
 
     fun createForegroundNotification(
         context: Context,
-        title: String = "Monitoring Active",
-        subtitle: String = "Scanning for devices and motion..."
+        title: String = "Monitoramento Ativo",
+        subtitle: String = "Verificando sensores...",
+        channelId: String = CHANNEL_ID
     ): android.app.Notification {
         createNotificationChannels(context)
 
@@ -251,7 +276,7 @@ object NotificationUtil {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        return NotificationCompat.Builder(context, CHANNEL_ID)
+        return NotificationCompat.Builder(context, channelId)
             .setContentTitle(title)
             .setContentText(subtitle)
             .setSmallIcon(R.drawable.ic_notification)

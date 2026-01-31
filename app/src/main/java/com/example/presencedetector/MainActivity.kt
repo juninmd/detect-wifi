@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var switchHomeMonitor: com.google.android.material.materialswitch.MaterialSwitch
+    private lateinit var switchSmartMode: com.google.android.material.materialswitch.MaterialSwitch
     private lateinit var tvHomeStatusTitle: TextView
     private lateinit var btnOpenRadarFromGrid: android.view.View // Changed to View (LinearLayout in XML)
     private lateinit var btnSettings: MaterialCardView
@@ -312,6 +313,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun initializeViews() {
         switchHomeMonitor = findViewById(R.id.switchHomeMonitor)
+        switchSmartMode = findViewById(R.id.switchSmartMode)
+        switchSmartMode.isChecked = preferences.isSmartModeEnabled()
+        switchSmartMode.setOnCheckedChangeListener { _, isChecked ->
+            preferences.setSmartModeEnabled(isChecked)
+        }
+
         tvHomeStatusTitle = findViewById(R.id.tvHomeStatusTitle)
         btnOpenRadarFromGrid = findViewById(R.id.btnOpenRadarFromGrid)
         btnSettings = findViewById(R.id.btnSettings)
@@ -478,6 +485,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateGlobalStatus() {
         val isArmed = preferences.isAntiTheftArmed()
+        val statusCard = findViewById<MaterialCardView>(R.id.statusCard)
 
         // Determine Global State
         // Priority 1: Armed (Secure)
@@ -485,23 +493,29 @@ class MainActivity : AppCompatActivity() {
         // Default: Idle
 
         if (isArmed) {
+            statusCard.setCardBackgroundColor(ContextCompat.getColor(this, R.color.success_color))
             ivGlobalStatus.setImageResource(R.drawable.ic_status_active)
-            ivGlobalStatus.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
+            ivGlobalStatus.setColorFilter(ContextCompat.getColor(this, R.color.white))
             tvGlobalStatus.text = getString(R.string.status_system_secure)
-            tvGlobalStatus.setTextColor(ContextCompat.getColor(this, R.color.success_color))
+            tvGlobalStatus.setTextColor(ContextCompat.getColor(this, R.color.white))
             tvGlobalDesc.text = getString(R.string.desc_system_secure)
+            tvGlobalDesc.setTextColor(ContextCompat.getColor(this, R.color.white))
         } else if (isDetecting) {
+            statusCard.setCardBackgroundColor(ContextCompat.getColor(this, R.color.primary_color))
             ivGlobalStatus.setImageResource(android.R.drawable.ic_menu_rotate) // or radar icon
-            ivGlobalStatus.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
+            ivGlobalStatus.setColorFilter(ContextCompat.getColor(this, R.color.white))
             tvGlobalStatus.text = getString(R.string.status_system_monitoring)
-            tvGlobalStatus.setTextColor(ContextCompat.getColor(this, R.color.primary_color))
+            tvGlobalStatus.setTextColor(ContextCompat.getColor(this, R.color.white))
             tvGlobalDesc.text = getString(R.string.desc_system_monitoring)
+            tvGlobalDesc.setTextColor(ContextCompat.getColor(this, R.color.white))
         } else {
+            statusCard.setCardBackgroundColor(ContextCompat.getColor(this, R.color.card_background_elevated))
             ivGlobalStatus.setImageResource(android.R.drawable.ic_lock_idle_lock)
             ivGlobalStatus.setColorFilter(ContextCompat.getColor(this, R.color.light_text))
             tvGlobalStatus.text = getString(R.string.status_system_idle)
             tvGlobalStatus.setTextColor(ContextCompat.getColor(this, R.color.light_text))
             tvGlobalDesc.text = getString(R.string.desc_system_idle)
+            tvGlobalDesc.setTextColor(ContextCompat.getColor(this, R.color.light_text))
         }
     }
 
