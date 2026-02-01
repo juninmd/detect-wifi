@@ -65,4 +65,25 @@ class WiFiDeviceTest {
         val legacyDevice = WiFiDevice("Router", "aa:bb:cc", -50, 5000, standard = 5)
         assertFalse(legacyDevice.isWifi6)
     }
+
+    @Test
+    fun testDataClassMethods() {
+        val device1 = WiFiDevice("Name", "AA:BB:CC:DD:EE:FF", -50, 2412)
+        val device2 = WiFiDevice("Name", "AA:BB:CC:DD:EE:FF", -50, 2412)
+        val device3 = WiFiDevice("Other", "AA:BB:CC:DD:EE:FF", -50, 2412)
+
+        // Equals
+        assertTrue(device1 == device2)
+        assertFalse(device1 == device3)
+
+        // HashCode
+        assertEquals(device1.hashCode(), device2.hashCode())
+
+        // ToString
+        assertTrue(device1.toString().contains("Name"))
+
+        // Copy
+        val copy = device1.copy(ssid = "Copied")
+        assertEquals("Copied", copy.ssid)
+    }
 }

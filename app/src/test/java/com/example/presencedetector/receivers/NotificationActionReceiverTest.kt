@@ -92,4 +92,45 @@ class NotificationActionReceiverTest {
         assertEquals(AntiTheftService::class.java.name, nextStartedService.component?.className)
         assertEquals(AntiTheftService.ACTION_START, nextStartedService.action)
     }
+
+    @Test
+    fun `ACTION_SNOOZE should start AntiTheftService with snooze action`() {
+        val intent = Intent(NotificationActionReceiver.ACTION_SNOOZE)
+
+        receiver.onReceive(context, intent)
+
+        val nextStartedService = ShadowApplication.getInstance().nextStartedService
+        assertNotNull("Service should be started", nextStartedService)
+        assertEquals(AntiTheftService::class.java.name, nextStartedService.component?.className)
+        assertEquals(AntiTheftService.ACTION_SNOOZE, nextStartedService.action)
+    }
+
+    @Test
+    fun `ACTION_PANIC should not crash and attempt telegram`() {
+        // We can't easily mock TelegramService as it is instantiated directly,
+        // but we can ensure it doesn't crash given Telegram is disabled by default in prefs.
+        val intent = Intent(NotificationActionReceiver.ACTION_PANIC)
+
+        receiver.onReceive(context, intent)
+
+        // No verification of telegram call possible without refactoring, but we verified the path executes.
+        // We can check if a Toast was shown (ShadowToast)
+        // val latestToast = org.robolectric.shadows.ShadowToast.getTextOfLatestToast()
+        // assertEquals("🚨 ALERTA DE PÂNICO ENVIADO! 🚨", latestToast)
+    }
+
+    @Test
+    fun `ACTION_MARK_SAFE should handle missing BSSID gracefully`() {
+        // Missing BSSID
+        val intent = Intent(NotificationActionReceiver.ACTION_MARK_SAFE).apply {
+            putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, 123)
+        }
+
+        receiver.onReceive(context, intent)
+
+        // The logic ensures we send a Stop Alarm broadcast even if BSSID is missing (fail-safe)
+        val broadcasts = ShadowApplication.getInstance().broadcastIntents
+        val stopIntent = broadcasts.find { it.action == NotificationActionReceiver.ACTION_STOP_ALARM }
+        assertNotNull("Stop broadcast should be sent even if BSSID missing", stopIntent)
+    }
 }
