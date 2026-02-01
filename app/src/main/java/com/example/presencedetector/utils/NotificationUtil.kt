@@ -1,14 +1,20 @@
 package com.example.presencedetector.utils
 
+import android.Manifest
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.example.presencedetector.MainActivity
 import com.example.presencedetector.WifiRadarActivity
 import com.example.presencedetector.R
@@ -191,8 +197,10 @@ object NotificationUtil {
             builder.addAction(R.drawable.ic_status_active, secondActionTitle, secondActionIntent)
         }
 
-        val notificationManager = context.getSystemService(NotificationManager::class.java)
-        notificationManager?.notify(notificationId ?: System.currentTimeMillis().toInt(), builder.build())
+        if (checkPermission(context)) {
+            val notificationManager = NotificationManagerCompat.from(context)
+            notificationManager.notify(notificationId ?: System.currentTimeMillis().toInt(), builder.build())
+        }
     }
 
     /**
@@ -227,8 +235,10 @@ object NotificationUtil {
 
         actions.forEach { builder.addAction(it) }
 
-        val notificationManager = context.getSystemService(NotificationManager::class.java)
-        notificationManager?.notify(notificationId, builder.build())
+        if (checkPermission(context)) {
+            val notificationManager = NotificationManagerCompat.from(context)
+            notificationManager.notify(notificationId, builder.build())
+        }
     }
 
     fun sendBatteryAlert(context: Context, level: Int) {
@@ -253,8 +263,10 @@ object NotificationUtil {
             .setCategory(NotificationCompat.CATEGORY_SYSTEM)
             .setAutoCancel(true)
 
-        val notificationManager = context.getSystemService(NotificationManager::class.java)
-        notificationManager?.notify(2001, builder.build())
+        if (checkPermission(context)) {
+            val notificationManager = NotificationManagerCompat.from(context)
+            notificationManager.notify(2001, builder.build())
+        }
     }
 
     fun createForegroundNotification(
@@ -262,7 +274,7 @@ object NotificationUtil {
         title: String = "Monitoramento Ativo",
         subtitle: String = "Verificando sensores...",
         channelId: String = CHANNEL_ID
-    ): android.app.Notification {
+    ): Notification {
         createNotificationChannels(context)
 
         val intent = Intent(context, MainActivity::class.java).apply {
@@ -285,6 +297,17 @@ object NotificationUtil {
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
+    }
+
+    fun checkPermission(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
     }
 
     // Deprecated constant compatibility if needed by other classes not yet updated
