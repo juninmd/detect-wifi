@@ -110,4 +110,15 @@
     <string name="status_system_idle">Sistema Ocioso</string>
     <string name="desc_system_idle">Toque para armar segurança total.</string>
 
+    <!-- New Feature Dialogs -->
+    <string name="dialog_test_alarm_title">Teste de Alarme</string>
+    <string name="dialog_test_alarm_msg">Deseja testar a sirene e a notificação de roubo por 5 segundos?</string>
+    <string name="btn_test">Testar</string>
+    <string name="dialog_safe_zone_title">Zona Segura</string>
+    <string name="dialog_safe_zone_msg">Deseja definir \'%1$s\' como sua rede segura doméstica?</string>
+    <string name="btn_yes">Sim</string>
+    <string name="btn_no">Não</string>
+    <string name="msg_safe_zone_set">Rede segura definida!</string>
+    <string name="reason_siren_test">TESTE DE SIRENE</string>
+
 </resources>

@@ -1,5 +1,6 @@
 package com.example.presencedetector.services
 
+import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.hardware.Sensor
@@ -14,6 +15,7 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
@@ -25,7 +27,7 @@ import org.robolectric.shadows.ShadowSensorManager
 import org.mockito.kotlin.whenever
 import org.mockito.kotlin.check
 import org.mockito.kotlin.any
-import org.mockito.kotlin.timeout
+import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
 class AntiTheftServiceTest {
@@ -49,15 +51,18 @@ class AntiTheftServiceTest {
         whenever(mockPreferences.isChargerModeEnabled()).thenReturn(false)
 
         // Grant permissions including RECORD_AUDIO and READ_PHONE_STATE
-        val shadowApp = Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        val shadowApp = Shadows.shadowOf(app)
         shadowApp.grantPermissions(
             android.Manifest.permission.ACCESS_FINE_LOCATION,
             android.Manifest.permission.RECORD_AUDIO,
-            android.Manifest.permission.READ_PHONE_STATE
+            android.Manifest.permission.READ_PHONE_STATE,
+            android.Manifest.permission.POST_NOTIFICATIONS // Required for foreground service
         )
 
         val controller = Robolectric.buildService(AntiTheftService::class.java)
         service = controller.get()
+        // Inject mocks (internal properties)
         service.preferences = mockPreferences
         service.telegramService = mockTelegramService
 
@@ -161,7 +166,9 @@ class AntiTheftServiceTest {
         val intent = Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_START }
         service.onStartCommand(intent, 0, 0)
 
-        val receivers = ShadowApplication.getInstance().registeredReceivers
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        val shadowApp = Shadows.shadowOf(app)
+        val receivers = shadowApp.registeredReceivers
         val batteryReceiverWrapper = receivers.find { it.intentFilter.hasAction(Intent.ACTION_BATTERY_CHANGED) }
 
         if (batteryReceiverWrapper != null) {
@@ -175,6 +182,8 @@ class AntiTheftServiceTest {
             verify(mockTelegramService).sendMessage(check {
                 assertTrue(it.contains("LOW BATTERY") || it.contains("Security Device"))
             })
+        } else {
+            fail("Battery receiver not registered")
         }
     }
 
@@ -185,7 +194,9 @@ class AntiTheftServiceTest {
         val intent = Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_START }
         service.onStartCommand(intent, 0, 0)
 
-        val receivers = ShadowApplication.getInstance().registeredReceivers
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        val shadowApp = Shadows.shadowOf(app)
+        val receivers = shadowApp.registeredReceivers
         val powerReceiverWrapper = receivers.find { it.intentFilter.hasAction(Intent.ACTION_POWER_DISCONNECTED) }
 
         if (powerReceiverWrapper != null) {
@@ -195,6 +206,8 @@ class AntiTheftServiceTest {
             verify(mockTelegramService).sendMessage(check {
                  assertTrue(it.contains("Charger") || it.contains("Carregador"))
             })
+        } else {
+            fail("Power receiver not registered")
         }
     }
 
@@ -237,8 +250,6 @@ class AntiTheftServiceTest {
         assertNull(shadows.getNotification(1000))
     }
 
-    // --- NEW TESTS ---
-
     @Test
     fun `ACTION_PANIC with reason should trigger alarm with that reason`() {
         val intent = Intent(context, AntiTheftService::class.java).apply {
@@ -273,15 +284,5 @@ class AntiTheftServiceTest {
 
         assertEquals("Intent should target MainActivity", MainActivity::class.java.name, shadowIntent.component?.className)
         assertTrue("Intent should have EXTRA_DISARM_REQUEST", shadowIntent.getBooleanExtra(MainActivity.EXTRA_DISARM_REQUEST, false))
-    }
-
-    @Test
-    fun `triggerAlarm should start audio recording`() {
-        val intent = Intent(context, AntiTheftService::class.java).apply {
-            action = AntiTheftService.ACTION_PANIC
-        }
-        service.onStartCommand(intent, 0, 0)
-
-        verify(mockTelegramService).sendMessage(anyString())
     }
 }

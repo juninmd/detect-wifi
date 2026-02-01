@@ -1,20 +1,13 @@
-package com.example.presencedetector.ui
+package com.example.presencedetector
 
+import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.BatteryManager
 import android.view.View
-import android.widget.Button
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
-import com.example.presencedetector.MainActivity
-import com.example.presencedetector.R
-import com.example.presencedetector.WifiRadarActivity
-import com.example.presencedetector.HistoryActivity
-import com.example.presencedetector.SettingsActivity
 import com.example.presencedetector.services.AntiTheftService
-import com.example.presencedetector.services.DetectionBackgroundService
-import com.example.presencedetector.services.TelegramService
 import com.example.presencedetector.utils.PreferencesUtil
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -41,9 +34,12 @@ class MainActivityTest {
         val util = PreferencesUtil(context)
         util.clear()
 
-        ShadowApplication.getInstance().grantPermissions(
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        Shadows.shadowOf(app).grantPermissions(
             android.Manifest.permission.ACCESS_FINE_LOCATION,
-            android.Manifest.permission.CAMERA
+            android.Manifest.permission.CAMERA,
+            android.Manifest.permission.ACCESS_WIFI_STATE,
+            android.Manifest.permission.READ_PHONE_STATE
         )
     }
 
@@ -86,6 +82,42 @@ class MainActivityTest {
     }
 
     @Test
+    fun `AntiTheft button should trigger Test Alarm on long click`() {
+        val controller = Robolectric.buildActivity(MainActivity::class.java)
+        val activity = controller.create().start().resume().get()
+
+        val ivIcon = activity.findViewById<View>(R.id.ivAntiTheftIcon)
+        val result = ivIcon.performLongClick()
+        assertTrue("performLongClick should return true", result)
+
+        val latestDialog = org.robolectric.shadows.ShadowDialog.getLatestDialog()
+        assertNotNull("Dialog should be shown on long click", latestDialog)
+
+        // Verify title if possible. ShadowDialog is generic.
+        // If it is an AlertDialog, we can cast.
+        assertTrue(latestDialog is android.app.Dialog)
+
+        // Since we can't easily click "positive" on a generic dialog without casting,
+        // we'll try to find the button view if possible, or cast to AlertDialog.
+        // MaterialAlertDialogBuilder creates androidx.appcompat.app.AlertDialog
+
+        if (latestDialog is androidx.appcompat.app.AlertDialog) {
+             val positiveButton = latestDialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE)
+             positiveButton?.performClick()
+        } else if (latestDialog is android.app.AlertDialog) {
+             latestDialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE)?.performClick()
+        }
+
+        ShadowLooper.idleMainLooper()
+
+        val shadowActivity = Shadows.shadowOf(activity)
+        val startedIntent = shadowActivity.nextStartedService
+        assertNotNull("Service should start after confirming test", startedIntent)
+        assertEquals(AntiTheftService.ACTION_PANIC, startedIntent.action)
+        assertEquals("TESTE DE SIRENE", startedIntent.getStringExtra("com.example.presencedetector.EXTRA_REASON"))
+    }
+
+    @Test
     fun `Disarm request intent should stop service`() {
         val util = PreferencesUtil(context)
         util.setAntiTheftArmed(true)
@@ -99,9 +131,27 @@ class MainActivityTest {
 
         val shadowActivity = Shadows.shadowOf(activity)
         val startedIntent = shadowActivity.nextStartedService
-        if (startedIntent != null) {
-             assertEquals(AntiTheftService.ACTION_STOP, startedIntent.action)
+
+        // We iterate through all started services to find STOP
+        var stopIntentFound = false
+        var currentIntent = startedIntent
+        while (currentIntent != null) {
+            if (currentIntent.action == AntiTheftService.ACTION_STOP) {
+                stopIntentFound = true
+                break
+            }
+            currentIntent = shadowActivity.nextStartedService
         }
+
+        // It might not trigger immediately if permissions are missing or flow differs, but assuming permissions granted in setUp
+        // For now just assert true if we expect it to work, or remove the check if it's flaky.
+        // But we want 100% coverage.
+        // The code:
+        // if (intent?.getBooleanExtra(EXTRA_DISARM_REQUEST, false) == true) {
+        //     if (preferences.isAntiTheftArmed()) { toggleAntiTheft() -> performDisarm() -> startService(ACTION_STOP) }
+        // }
+
+        assertTrue("Should have started STOP service", stopIntentFound)
     }
 
     @Test
@@ -112,16 +162,10 @@ class MainActivityTest {
         val btnPanic = activity.findViewById<View>(R.id.btnPanic)
         btnPanic.performClick()
 
-        ShadowLooper.runUiThreadTasks()
-
-        // Re-read prefs from context
-        val util = PreferencesUtil(context)
-        val logs = util.getSystemLogs()
-
-        // Assert log is present. If fails, it means click handler failed or log not written.
-        // We ensure logs are not empty first.
-        // assertTrue("System logs should not be empty after Panic", logs.isNotEmpty())
-        // assertTrue("Panic log not found", logs.any { it.contains("Panic") })
+        val shadowActivity = Shadows.shadowOf(activity)
+        val startedIntent = shadowActivity.nextStartedService
+        assertNotNull(startedIntent)
+        assertEquals(AntiTheftService.ACTION_PANIC, startedIntent.action)
     }
 
     @Test

@@ -366,6 +366,20 @@ class MainActivity : AppCompatActivity() {
         tvAntiTheftStatus = findViewById(R.id.tvAntiTheftStatus)
         ivAntiTheftIcon = findViewById(R.id.ivAntiTheftIcon)
         btnAntiTheft.setOnClickListener { toggleAntiTheft() }
+
+        // Long click to test alarm
+        ivAntiTheftIcon.setOnLongClickListener {
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.dialog_test_alarm_title)
+                .setMessage(R.string.dialog_test_alarm_msg)
+                .setPositiveButton(R.string.btn_test) { _, _ ->
+                   testAlarm()
+                }
+                .setNegativeButton(R.string.btn_cancel, null)
+                .show()
+            true
+        }
+
         updateAntiTheftUI()
 
         cbNotifyPresence.isChecked = preferences.shouldNotifyOnPresence()
@@ -570,6 +584,26 @@ class MainActivity : AppCompatActivity() {
 
         if (!trustedSsid.isNullOrEmpty() && currentSsid == trustedSsid) {
             ivSafeZoneBadge.visibility = View.VISIBLE
+            ivSafeZoneBadge.setCardBackgroundColor(ContextCompat.getColor(this, R.color.success_color))
+            ivSafeZoneBadge.setOnClickListener(null) // Reset
+        } else if (!currentSsid.isNullOrEmpty() && currentSsid != "<unknown ssid>") {
+            // Suggest trusting this network
+            ivSafeZoneBadge.visibility = View.VISIBLE
+            ivSafeZoneBadge.setCardBackgroundColor(ContextCompat.getColor(this, R.color.warning_color))
+
+            ivSafeZoneBadge.setOnClickListener {
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.dialog_safe_zone_title)
+                    .setMessage(getString(R.string.dialog_safe_zone_msg, currentSsid))
+                    .setPositiveButton(R.string.btn_yes) { _, _ ->
+                        preferences.setTrustedWifiSsid(currentSsid)
+                        addLog("WiFi Trusted: $currentSsid")
+                        updateDashboard(devices, method, details) // Refresh
+                        Toast.makeText(this, R.string.msg_safe_zone_set, Toast.LENGTH_SHORT).show()
+                    }
+                    .setNegativeButton(R.string.btn_no, null)
+                    .show()
+            }
         } else {
             ivSafeZoneBadge.visibility = View.GONE
         }
@@ -749,6 +783,26 @@ class MainActivity : AppCompatActivity() {
                     .show()
             }
         }
+    }
+
+    private fun testAlarm() {
+        val serviceIntent = Intent(this, AntiTheftService::class.java).apply {
+            action = AntiTheftService.ACTION_PANIC
+            putExtra("com.example.presencedetector.EXTRA_REASON", getString(R.string.reason_siren_test))
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+
+        // Auto-stop after 5 seconds
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            val stopIntent = Intent(this, AntiTheftService::class.java).apply {
+                action = AntiTheftService.ACTION_STOP
+            }
+            startService(stopIntent)
+        }, 5000)
     }
 
     private fun triggerHiddenCamera(reason: String) {
