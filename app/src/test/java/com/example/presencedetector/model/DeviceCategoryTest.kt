@@ -12,5 +12,11 @@ class DeviceCategoryTest {
 
         assertEquals("Unknown Device", DeviceCategory.UNKNOWN.displayName)
         assertEquals("❓", DeviceCategory.UNKNOWN.iconRes)
+
+        // Iterate all values to ensure full coverage
+        DeviceCategory.values().forEach {
+            it.displayName
+            it.iconRes
+        }
     }
 }

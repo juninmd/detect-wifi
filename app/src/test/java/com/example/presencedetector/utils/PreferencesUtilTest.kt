@@ -213,10 +213,35 @@ class PreferencesUtilTest {
     }
 
     @Test
-    fun `test security schedule logic`() {
-        // Mocking time is hard inside the class without dependency injection of a Clock.
-        // But we can test the range logic if we assume the test runs at a certain time, which we can't.
-        // However, we can test that the method runs without error.
-        preferencesUtil.isCurrentTimeInSecuritySchedule()
+    fun `isCurrentTimeInSecuritySchedule should work for day schedule`() {
+        // Set a day schedule that covers the entire day
+        preferencesUtil.setSecuritySchedule("00:00", "23:59")
+        assertTrue("Should be in schedule for full day range", preferencesUtil.isCurrentTimeInSecuritySchedule())
+    }
+
+    @Test
+    fun `isCurrentTimeInSecuritySchedule should work for overnight schedule`() {
+        // Set an overnight schedule that effectively covers everything
+        // 00:01 > 00:00 is true.
+        // If now is 12:00. 12:00 >= 00:01 (True).
+        preferencesUtil.setSecuritySchedule("00:01", "00:00")
+        assertTrue("Should be in schedule for overnight full coverage", preferencesUtil.isCurrentTimeInSecuritySchedule())
+    }
+
+    @Test
+    fun `isCurrentTimeInSecuritySchedule should detect out of schedule`() {
+        // Set schedule to a time definitely in the future/past relative to now
+        val now = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
+        val hour = now.split(":")[0].toInt()
+
+        // Pick a 1-hour window 2 hours from now
+        val nextHour = (hour + 2) % 24
+        val nextNextHour = (hour + 3) % 24
+
+        val start = String.format("%02d:00", nextHour)
+        val end = String.format("%02d:00", nextNextHour)
+
+        preferencesUtil.setSecuritySchedule(start, end)
+        assertFalse("Should be out of schedule", preferencesUtil.isCurrentTimeInSecuritySchedule())
     }
 }

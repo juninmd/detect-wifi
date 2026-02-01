@@ -34,4 +34,13 @@ class LoggerUtilTest {
         val content = files[0].readText()
         assertTrue("Log content should contain the message", content.contains(message))
     }
+
+    @Test
+    fun `logEvent handles exception when storage unavailable`() {
+        // Simulate unmounted storage to trigger potential IO issues or at least verify no crash
+        ShadowEnvironment.setExternalStorageState(Environment.MEDIA_UNMOUNTED)
+
+        // Should catch exception and log to Logcat (not crash)
+        LoggerUtil.logEvent("Test Event")
+    }
 }

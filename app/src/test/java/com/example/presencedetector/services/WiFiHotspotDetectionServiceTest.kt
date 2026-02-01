@@ -109,4 +109,61 @@ class WiFiHotspotDetectionServiceTest {
 
         assertFalse("Should not detect Netgear", detected)
     }
+
+    @Test
+    fun `performScan handles empty results`() {
+        shadowWifiManager.setScanResults(emptyList())
+        service.startDetection()
+        shadowOf(Looper.getMainLooper()).idleFor(6000, TimeUnit.MILLISECONDS)
+        // Verify no crash and 0 count
+        assertEquals(0, service.getDetectedHotspotCount())
+    }
+
+    @Test
+    fun `performScan handles exception`() {
+        // Mock context and WifiManager to throw exception
+        val mockContext = org.mockito.Mockito.mock(Context::class.java)
+        val mockWifiManager = org.mockito.Mockito.mock(WifiManager::class.java)
+
+        // Ensure applicationContext returns self or mock
+        org.mockito.Mockito.`when`(mockContext.applicationContext).thenReturn(mockContext)
+        org.mockito.Mockito.`when`(mockContext.getSystemService(Context.WIFI_SERVICE)).thenReturn(mockWifiManager)
+
+        // Make scanResults throw
+        org.mockito.Mockito.`when`(mockWifiManager.scanResults).thenThrow(RuntimeException("Scan failed"))
+
+        val serviceWithMock = WiFiHotspotDetectionService(mockContext)
+
+        serviceWithMock.startDetection()
+        shadowOf(Looper.getMainLooper()).idleFor(6000, TimeUnit.MILLISECONDS)
+
+        // Should catch exception and not crash, service remains scanning
+        assertTrue(serviceWithMock.isScanning())
+        serviceWithMock.destroy()
+    }
+
+    @Test
+    fun `detects galaxy hotspot`() {
+        var detected = false
+        val listener = object : WiFiHotspotDetectionService.HotspotListener {
+            override fun onHotspotDetected(ssid: String, bssid: String, signal: Int) {
+                detected = true
+            }
+            override fun onHotspotsUpdated(c: Int) {}
+        }
+        service.setHotspotListener(listener)
+
+        val result = ScanResult().apply {
+            SSID = "My Galaxy S21"
+            BSSID = "00:AA:BB:CC:DD:EE"
+            level = -50
+        }
+        shadowWifiManager.setScanResults(listOf(result))
+
+        service.startDetection()
+        shadowOf(Looper.getMainLooper()).idleFor(6000, TimeUnit.MILLISECONDS)
+
+        assertTrue(detected)
+        assertEquals(1, service.getDetectedHotspotCount())
+    }
 }

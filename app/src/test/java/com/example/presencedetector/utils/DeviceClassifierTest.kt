@@ -52,4 +52,31 @@ class DeviceClassifierTest {
         assertEquals(DeviceCategory.UNKNOWN, DeviceClassifier.classify("Unknown Device", "00:00:00:00:00:00"))
         assertEquals(DeviceCategory.UNKNOWN, DeviceClassifier.classify("MyNetwork", "00:00:00:00:00:00"))
     }
+
+    @Test
+    fun `classify should identify kindle devices`() {
+        assertEquals(DeviceCategory.KINDLE, DeviceClassifier.classify("Kindle Paperwhite", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.KINDLE, DeviceClassifier.classify("My ebook", "00:00:00:00:00:00"))
+    }
+
+    @Test
+    fun `classify should identify complex router names`() {
+        assertEquals(DeviceCategory.ROUTER, DeviceClassifier.classify("Familia Smith", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.ROUTER, DeviceClassifier.classify("Adriana WiFi", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.ROUTER, DeviceClassifier.classify("Gateway 2.4G", "00:00:00:00:00:00"))
+    }
+
+    @Test
+    fun `classify should identify other smart lights`() {
+        assertEquals(DeviceCategory.SMART_LIGHT, DeviceClassifier.classify("Smart Life Bulb", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.SMART_LIGHT, DeviceClassifier.classify("Continua Light", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.SMART_LIGHT, DeviceClassifier.classify("Batcaverna Leds", "00:00:00:00:00:00"))
+    }
+
+    @Test
+    fun `classify should detect other hotspots`() {
+        assertEquals(DeviceCategory.SMARTPHONE, DeviceClassifier.classify("Vivo X60", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.SMARTPHONE, DeviceClassifier.classify("Oppo Reno", "00:00:00:00:00:00"))
+        assertEquals(DeviceCategory.SMARTPHONE, DeviceClassifier.classify("Honor Magic", "00:00:00:00:00:00"))
+    }
 }
