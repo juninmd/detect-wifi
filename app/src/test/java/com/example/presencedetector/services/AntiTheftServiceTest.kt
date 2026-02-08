@@ -265,6 +265,28 @@ class AntiTheftServiceTest {
     }
 
     @Test
+    fun `ACTION_PANIC should trigger panic notification with specific ID`() {
+        val intent = Intent(context, AntiTheftService::class.java).apply {
+            action = AntiTheftService.ACTION_PANIC
+        }
+
+        service.onStartCommand(intent, 0, 0)
+
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val shadows = Shadows.shadowOf(notificationManager)
+
+        // NotificationUtil.sendPanicAlert uses ID 1000
+        val notification = shadows.getNotification(1000)
+        assertNotNull("Panic notification should be posted", notification)
+
+        val title = notification.extras.getString(android.app.Notification.EXTRA_TITLE)
+        assertTrue("Title should contain Panic", title?.contains("PÂNICO") == true)
+
+        val actions = notification.actions
+        assertTrue("Should have Call 190 action", actions.any { it.title.toString().contains("190") })
+    }
+
+    @Test
     fun `foreground notification disarm action should point to MainActivity`() {
         val intent = Intent(context, AntiTheftService::class.java).apply {
             action = AntiTheftService.ACTION_START
