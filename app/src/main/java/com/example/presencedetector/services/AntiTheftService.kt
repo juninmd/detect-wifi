@@ -377,7 +377,11 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
         }
 
         // 5. Show Alert Notification with Action to Stop
-        showAlarmNotification(reason)
+        if (reason.contains("PANIC", true) || reason.contains("PÂNICO", true)) {
+            NotificationUtil.sendPanicAlert(this)
+        } else {
+            showAlarmNotification(reason)
+        }
 
         // 6. Record Audio Evidence
         startRecording()

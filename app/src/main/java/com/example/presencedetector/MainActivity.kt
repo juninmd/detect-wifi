@@ -148,141 +148,24 @@ class MainActivity : AppCompatActivity() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return
 
         val textureView = findViewById<android.view.TextureView>(R.id.cameraPreview)
+        val cameraHelper = com.example.presencedetector.utils.CameraHelper(this)
+
         if (textureView.isAvailable && textureView.surfaceTexture != null) {
-            startCameraCapture(textureView.surfaceTexture!!)
+            cameraHelper.captureSelfie(textureView.surfaceTexture!!) {
+                runOnUiThread { addLog("📸 Snapshot Captured") }
+            }
         } else {
             textureView.surfaceTextureListener = object : android.view.TextureView.SurfaceTextureListener {
                 override fun onSurfaceTextureAvailable(surface: android.graphics.SurfaceTexture, width: Int, height: Int) {
-                    startCameraCapture(surface)
+                    cameraHelper.captureSelfie(surface) {
+                        runOnUiThread { addLog("📸 Snapshot Captured") }
+                    }
                 }
                 override fun onSurfaceTextureSizeChanged(surface: android.graphics.SurfaceTexture, width: Int, height: Int) {}
                 override fun onSurfaceTextureDestroyed(surface: android.graphics.SurfaceTexture): Boolean = true
                 override fun onSurfaceTextureUpdated(surface: android.graphics.SurfaceTexture) {}
             }
         }
-    }
-
-    private fun startCameraCapture(surfaceTexture: android.graphics.SurfaceTexture) {
-        try {
-            val cameraManager = getSystemService(android.content.Context.CAMERA_SERVICE) as android.hardware.camera2.CameraManager
-            val cameraId = cameraManager.cameraIdList.firstOrNull {
-                cameraManager.getCameraCharacteristics(it).get(android.hardware.camera2.CameraCharacteristics.LENS_FACING) == android.hardware.camera2.CameraCharacteristics.LENS_FACING_FRONT
-            } ?: cameraManager.cameraIdList.firstOrNull()
-
-            if (cameraId == null || ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return
-
-            // Variables to hold references for cleanup
-            var activeCamera: android.hardware.camera2.CameraDevice? = null
-            var activeSession: android.hardware.camera2.CameraCaptureSession? = null
-
-            // Prepare ImageReader for JPEG
-            val imageReader = android.media.ImageReader.newInstance(640, 480, android.graphics.ImageFormat.JPEG, 1)
-
-            val cleanup = {
-                try {
-                    activeSession?.close()
-                    activeCamera?.close()
-                    imageReader.close()
-                } catch (e: Exception) { e.printStackTrace() }
-            }
-
-            imageReader.setOnImageAvailableListener({ reader ->
-                try {
-                    val image = reader.acquireLatestImage()
-                    val buffer = image.planes[0].buffer
-                    val bytes = ByteArray(buffer.remaining())
-                    buffer.get(bytes)
-                    image.close()
-                    saveIntruderImage(bytes)
-
-                    // Close camera resources immediately after capturing
-                    android.os.Handler(android.os.Looper.getMainLooper()).post(cleanup)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    cleanup()
-                }
-            }, android.os.Handler(android.os.Looper.getMainLooper()))
-
-            cameraManager.openCamera(cameraId, object : android.hardware.camera2.CameraDevice.StateCallback() {
-                override fun onOpened(camera: android.hardware.camera2.CameraDevice) {
-                    activeCamera = camera
-                    try {
-                        val previewSurface = android.view.Surface(surfaceTexture)
-                        val captureSurface = imageReader.surface
-
-                        camera.createCaptureSession(listOf(previewSurface, captureSurface), object : android.hardware.camera2.CameraCaptureSession.StateCallback() {
-                            override fun onConfigured(session: android.hardware.camera2.CameraCaptureSession) {
-                                activeSession = session
-                                try {
-                                    // 1. Start Preview (needed for some devices to warm up)
-                                    val previewRequest = camera.createCaptureRequest(android.hardware.camera2.CameraDevice.TEMPLATE_PREVIEW)
-                                    previewRequest.addTarget(previewSurface)
-                                    session.setRepeatingRequest(previewRequest.build(), null, null)
-
-                                    // 2. Capture Still after short delay to allow auto-exposure/focus to settle
-                                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                                        try {
-                                            val captureRequest = camera.createCaptureRequest(android.hardware.camera2.CameraDevice.TEMPLATE_STILL_CAPTURE)
-                                            captureRequest.addTarget(captureSurface)
-                                            // Set orientation if needed, but for front camera usually 270 or 90.
-                                            // Leaving default for now.
-                                            session.capture(captureRequest.build(), null, null)
-                                            addLog("📸 Taking Intruder Snapshot...")
-                                        } catch (e: Exception) {
-                                            e.printStackTrace()
-                                            cleanup()
-                                        }
-                                    }, 500)
-
-                                } catch (e: android.hardware.camera2.CameraAccessException) {
-                                    e.printStackTrace()
-                                    cleanup()
-                                }
-                            }
-
-                            override fun onConfigureFailed(session: android.hardware.camera2.CameraCaptureSession) {
-                                cleanup()
-                            }
-                        }, null)
-                    } catch (e: Exception) {
-                         cleanup()
-                    }
-                }
-
-                override fun onDisconnected(camera: android.hardware.camera2.CameraDevice) {
-                    activeCamera = camera // Ensure we have the reference
-                    cleanup()
-                }
-
-                override fun onError(camera: android.hardware.camera2.CameraDevice, error: Int) {
-                    activeCamera = camera
-                    cleanup()
-                }
-            }, null)
-
-        } catch (e: Exception) {
-            android.util.Log.e("IntruderSnap", "Error accessing camera", e)
-        }
-    }
-
-    private fun saveIntruderImage(bytes: ByteArray) {
-        Thread {
-            try {
-                val filename = "INTRUDER_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg"
-                val file = java.io.File(getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES), filename)
-                java.io.FileOutputStream(file).use { it.write(bytes) }
-                runOnUiThread {
-                    addLog(getString(R.string.log_intruder_photo, filename))
-                }
-
-                // Send to Telegram
-                val telegramService = com.example.presencedetector.services.TelegramService(this)
-                telegramService.sendPhoto(file, "🚨 INTRUDER DETECTED! Photo captured.")
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }.start()
     }
 
     override fun onResume() {

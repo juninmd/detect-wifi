@@ -111,7 +111,6 @@ task jacocoTestReport(type: JacocoReport, dependsOn: 'testDebugUnitTest') {
             '**/utils/CameraHelper*', '**/utils/BiometricAuthenticator*',
             '**/PresenceDetectorApp*',
             '**/*Activity*', '**/*Fragment*',
-            '**/utils/MotionDetector*', '**/utils/DeviceClassifier*',
             '**/services/SignalHistoryManager*'
     ]
     def debugTree = fileTree(dir: "${project.buildDir}/tmp/kotlin-classes/debug", excludes: fileFilter)
@@ -135,7 +134,6 @@ task jacocoTestCoverageVerification(type: JacocoCoverageVerification, dependsOn:
             '**/utils/CameraHelper*', '**/utils/BiometricAuthenticator*',
             '**/PresenceDetectorApp*',
             '**/*Activity*', '**/*Fragment*',
-            '**/utils/MotionDetector*', '**/utils/DeviceClassifier*',
             '**/services/SignalHistoryManager*'
     ]
     def debugTree = fileTree(dir: "${project.buildDir}/tmp/kotlin-classes/debug", excludes: fileFilter)
@@ -152,7 +150,7 @@ task jacocoTestCoverageVerification(type: JacocoCoverageVerification, dependsOn:
     violationRules {
         rule {
             limit {
-                minimum = 0.60 // Enforce 60% coverage (1.0 target for core services, excluded UI/Legacy)
+                minimum = 0.65 // Enforce 65% coverage (Improved from 60%, targeting 1.0 iteratively)
             }
         }
     }

@@ -202,4 +202,47 @@ class MainActivityTest {
         activity.findViewById<View>(R.id.btnOpenRadarFromGrid).performClick()
         assertEquals(WifiRadarActivity::class.java.name, shadowActivity.nextStartedActivity.component?.className)
     }
+
+    @Test
+    fun `Smart Mode switch updates preference`() {
+        val controller = Robolectric.buildActivity(MainActivity::class.java)
+        val activity = controller.create().start().resume().get()
+        val switchSmartMode = activity.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.switchSmartMode)
+
+        switchSmartMode.performClick()
+
+        val util = PreferencesUtil(context)
+        // Default is usually false (or whatever preference was before), check if it toggles
+        // Since we clear prefs in setup, default is false. Click -> True.
+        assertTrue("Smart Mode should be enabled after click", util.isSmartModeEnabled())
+    }
+
+    @Test
+    fun `Security Settings button opens Camera Dashboard`() {
+        val controller = Robolectric.buildActivity(MainActivity::class.java)
+        val activity = controller.create().start().resume().get()
+        val shadowActivity = Shadows.shadowOf(activity)
+
+        activity.findViewById<View>(R.id.btnSecuritySettings).performClick()
+        assertEquals("com.example.presencedetector.security.ui.CameraDashboardActivity", shadowActivity.nextStartedActivity.component?.className)
+    }
+
+    @Test
+    fun `updateDashboard updates UI counts`() {
+        val controller = Robolectric.buildActivity(MainActivity::class.java)
+        val activity = controller.create().start().resume().get()
+
+        val devices = listOf(
+            com.example.presencedetector.model.WiFiDevice("Dev1", "00:00:00:00:00:01", -50, 2400, source = com.example.presencedetector.model.DeviceSource.WIFI),
+            com.example.presencedetector.model.WiFiDevice("Dev2", "00:00:00:00:00:02", -60, 2400, source = com.example.presencedetector.model.DeviceSource.WIFI)
+        )
+
+        // Use reflection to call private updateDashboard
+        val method = MainActivity::class.java.getDeclaredMethod("updateDashboard", List::class.java, String::class.java, String::class.java)
+        method.isAccessible = true
+        method.invoke(activity, devices, "WiFi", "Test Details")
+
+        val tvCountUnknown = activity.findViewById<TextView>(R.id.tvCountUnknown)
+        assertEquals("2", tvCountUnknown.text.toString())
+    }
 }

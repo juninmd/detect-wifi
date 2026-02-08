@@ -22,7 +22,7 @@ class CameraHelper(private val context: Context) {
 
     private val telegramService = TelegramService(context)
 
-    fun captureSelfie(onComplete: (() -> Unit)? = null) {
+    fun captureSelfie(surfaceTexture: SurfaceTexture? = null, onComplete: (() -> Unit)? = null) {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             Log.w("CameraHelper", "Camera permission not granted")
             onComplete?.invoke()
@@ -41,9 +41,9 @@ class CameraHelper(private val context: Context) {
                 return
             }
 
-            // Create a dummy surface texture since we don't have a view
-            val surfaceTexture = SurfaceTexture(10)
-            surfaceTexture.setDefaultBufferSize(640, 480)
+            // Create a dummy surface texture if not provided
+            val texture = surfaceTexture ?: SurfaceTexture(10)
+            texture.setDefaultBufferSize(640, 480)
 
             val imageReader = ImageReader.newInstance(640, 480, ImageFormat.JPEG, 1)
 
@@ -56,7 +56,7 @@ class CameraHelper(private val context: Context) {
                     activeSession?.close()
                     activeCamera?.close()
                     imageReader.close()
-                    surfaceTexture.release()
+                    if (surfaceTexture == null) texture.release() // Only release if we created it
                     onComplete?.invoke()
                 } catch (e: Exception) { e.printStackTrace() }
             }
@@ -85,7 +85,7 @@ class CameraHelper(private val context: Context) {
                 override fun onOpened(camera: CameraDevice) {
                     activeCamera = camera
                     try {
-                        val previewSurface = Surface(surfaceTexture)
+                        val previewSurface = Surface(texture)
                         val captureSurface = imageReader.surface
 
                         camera.createCaptureSession(listOf(previewSurface, captureSurface), object : CameraCaptureSession.StateCallback() {
@@ -153,6 +153,10 @@ class CameraHelper(private val context: Context) {
                 prefs.logSystemEvent("📸 Photo Captured: $filename")
 
                 telegramService.sendPhoto(file, "📸 Security Event Captured")
+
+                // Show Notification
+                val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                NotificationUtil.sendIntruderAlert(context, bitmap)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
