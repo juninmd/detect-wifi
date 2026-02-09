@@ -84,7 +84,7 @@ class WifiRadarActivityTest {
         if (adapter.itemCount > 0) {
             val holder = adapter.onCreateViewHolder(recyclerView, 0)
             adapter.onBindViewHolder(holder, 0)
-            assertEquals("TestDevice", holder.tvName.text.toString())
+            assertEquals("TestDevice", holder.binding.tvName.text.toString())
         } else {
             // If async scan didn't trigger, manually trigger update for test stability
             // This ensures we test the Adapter logic at least
@@ -101,7 +101,7 @@ class WifiRadarActivityTest {
             assertEquals(1, adapter.itemCount)
             val holder = adapter.onCreateViewHolder(recyclerView, 0)
             adapter.onBindViewHolder(holder, 0)
-            assertEquals("TestDevice", holder.tvName.text.toString())
+            assertEquals("TestDevice", holder.binding.tvName.text.toString())
         }
     }
 

@@ -1,5 +1,6 @@
 package com.example.presencedetector.utils
 
+import android.content.Context
 import android.util.Log
 import java.io.BufferedWriter
 import java.io.File
@@ -13,9 +14,10 @@ object LoggerUtil {
     private const val TAG = "LoggerUtil"
     private const val LOG_DIR = "presence_detector_logs"
 
-    fun logEvent(event: String) {
+    fun logEvent(context: Context, event: String) {
         try {
-            val logsDir = File(android.os.Environment.getExternalStorageDirectory(), LOG_DIR)
+            // Use scoped storage directory (Android 10+)
+            val logsDir = File(context.getExternalFilesDir(null), LOG_DIR)
             if (!logsDir.exists()) {
                 logsDir.mkdirs()
             }
