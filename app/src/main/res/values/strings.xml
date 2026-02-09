@@ -121,4 +121,41 @@
     <string name="msg_safe_zone_set">Rede segura definida!</string>
     <string name="reason_siren_test">TESTE DE SIRENE</string>
 
+    <!-- Missing Strings -->
+    <string name="mode_motion">Movimento</string>
+    <string name="mode_pocket">Bolso</string>
+    <string name="mode_charger">Carregador</string>
+    <string name="status_active_format">Ativo: %1$s</string>
+    <string name="title_home_monitor_active">Monitoramento Ativo</string>
+    <string name="title_home_monitor_idle">Monitoramento Parado</string>
+    <string name="msg_scanning">Escaneando...</string>
+    <string name="msg_error_open_settings">Não foi possível abrir as configurações</string>
+    <string name="dialog_usage_stats_title">Permissão de Monitoramento</string>
+    <string name="dialog_usage_stats_msg">Para detectar apps de banco e proteger seu celular, precisamos acessar os dados de uso.</string>
+    <string name="btn_grant">Conceder</string>
+    <string name="log_snapshot_captured">📸 Snapshot Capturado</string>
+    <string name="log_camera_triggered">📸 Câmera Acionada: %1$s</string>
+    <string name="log_wifi_trusted">WiFi Confiável: %1$s</string>
+
+    <!-- WiFi Radar Strings -->
+    <string name="dialog_sort_title">Ordenar Dispositivos Por</string>
+    <string name="sort_option_distance">📍 Distância (Padrão)</string>
+    <string name="sort_option_name">🔤 Nome do Dispositivo</string>
+    <string name="sort_option_category">📂 Categoria</string>
+    <string name="format_bssid">BSSID: %1$s</string>
+    <string name="btn_save">Salvar</string>
+    <string name="text_hidden_network">🔒 [Rede Oculta]</string>
+    <string name="badge_wifi">📶 WiFi</string>
+    <string name="badge_bluetooth">🔵 Bluetooth</string>
+
+    <!-- History Strings -->
+    <string name="title_history_full">Histórico Completo (%1$d eventos)</string>
+    <string name="title_history_filtered">Resultados Filtrados (%1$d)</string>
+    <string name="text_unknown">Desconhecido</string>
+    <string name="label_security">Segurança</string>
+    <string name="label_system_log">Log do Sistema</string>
+    <string name="label_arrived">Chegou</string>
+    <string name="label_left">Saiu</string>
+    <string name="text_na">N/A</string>
+
 </resources>

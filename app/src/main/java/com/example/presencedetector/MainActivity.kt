@@ -10,25 +10,20 @@ import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
 import android.view.View
-import android.widget.Button
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.ScrollView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.example.presencedetector.databinding.ActivityMainBinding
 import com.example.presencedetector.model.WiFiDevice
 import com.example.presencedetector.security.ui.SecuritySettingsActivity
 import com.example.presencedetector.services.AntiTheftService
 import com.example.presencedetector.services.DetectionBackgroundService
 import com.example.presencedetector.services.PresenceDetectionManager
 import com.example.presencedetector.utils.BiometricAuthenticator
+import com.example.presencedetector.utils.LoggerUtil
 import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil
-import com.google.android.material.card.MaterialCardView
-import com.google.android.material.checkbox.MaterialCheckBox
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -40,42 +35,7 @@ class MainActivity : AppCompatActivity() {
         const val EXTRA_NOTIFICATION_ID = "EXTRA_NOTIFICATION_ID"
     }
 
-    private lateinit var switchHomeMonitor: com.google.android.material.materialswitch.MaterialSwitch
-    private lateinit var switchSmartMode: com.google.android.material.materialswitch.MaterialSwitch
-    private lateinit var tvHomeStatusTitle: TextView
-    private lateinit var btnOpenRadarFromGrid: android.view.View // Changed to View (LinearLayout in XML)
-    private lateinit var btnSettings: MaterialCardView
-    private lateinit var btnOpenHistory: MaterialCardView
-    private lateinit var btnSecuritySettings: MaterialCardView
-    private lateinit var btnAntiTheft: MaterialCardView
-
-    // New Dashboard Views
-    private lateinit var ivHomeStatus: ImageView
-    private lateinit var tvHomeStatus: TextView
-    private lateinit var ivSafeZoneBadge: com.google.android.material.card.MaterialCardView
-    private lateinit var ivGlobalStatus: ImageView
-    private lateinit var tvGlobalStatus: TextView
-    private lateinit var tvGlobalDesc: TextView
-    private lateinit var btnQuickScan: android.view.View // Changed to View (LinearLayout in XML)
-
-    private lateinit var detectionLog: TextView
-    private lateinit var cbNotifyPresence: MaterialCheckBox
-    
-    private lateinit var tvCountKnown: TextView
-    private lateinit var tvNamesKnown: TextView
-    private lateinit var tvCountUnknown: TextView
-    private lateinit var tvAntiTheftStatus: TextView
-    private lateinit var ivAntiTheftIcon: ImageView
-
-    // Battery Monitor
-    private lateinit var tvBatteryLevel: TextView
-    private lateinit var tvBatteryTemp: TextView
-    private lateinit var tvBatteryVoltage: TextView
-
-    // App Lock
-    private lateinit var lockOverlay: FrameLayout
-    private lateinit var btnUnlockApp: Button
-
+    private lateinit var binding: ActivityMainBinding
     private var detectionManager: PresenceDetectionManager? = null
     private var isDetecting = false
     private lateinit var preferences: PreferencesUtil
@@ -88,7 +48,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         preferences = PreferencesUtil(this)
         NotificationUtil.createNotificationChannels(this)
@@ -106,11 +67,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkAppLock() {
         if (preferences.isAppLockEnabled()) {
-            lockOverlay.visibility = View.VISIBLE
+            binding.lockOverlay.visibility = View.VISIBLE
             // Trigger auth
             BiometricAuthenticator(this).authenticate(
                 onSuccess = {
-                    lockOverlay.visibility = View.GONE
+                    binding.lockOverlay.visibility = View.GONE
                     Toast.makeText(this, R.string.msg_unlocked, Toast.LENGTH_SHORT).show()
                     triggerHiddenCamera("App Unlock Success")
                 },
@@ -120,7 +81,7 @@ class MainActivity : AppCompatActivity() {
                 }
             )
         } else {
-            lockOverlay.visibility = View.GONE
+            binding.lockOverlay.visibility = View.GONE
         }
     }
 
@@ -152,13 +113,13 @@ class MainActivity : AppCompatActivity() {
 
         if (textureView.isAvailable && textureView.surfaceTexture != null) {
             cameraHelper.captureSelfie(textureView.surfaceTexture!!) {
-                runOnUiThread { addLog("📸 Snapshot Captured") }
+                runOnUiThread { addLog(getString(R.string.log_snapshot_captured)) }
             }
         } else {
             textureView.surfaceTextureListener = object : android.view.TextureView.SurfaceTextureListener {
                 override fun onSurfaceTextureAvailable(surface: android.graphics.SurfaceTexture, width: Int, height: Int) {
                     cameraHelper.captureSelfie(surface) {
-                        runOnUiThread { addLog("📸 Snapshot Captured") }
+                        runOnUiThread { addLog(getString(R.string.log_snapshot_captured)) }
                     }
                 }
                 override fun onSurfaceTextureSizeChanged(surface: android.graphics.SurfaceTexture, width: Int, height: Int) {}
@@ -189,69 +150,32 @@ class MainActivity : AppCompatActivity() {
         val voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0)
         val temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0)
 
-        tvBatteryLevel.text = "${batteryPct.toInt()}%"
-        tvBatteryVoltage.text = "${String.format("%.1f", voltage / 1000f)}V"
-        tvBatteryTemp.text = "${String.format("%.1f", temp / 10f)}°C"
+        binding.tvBatteryLevel.text = "${batteryPct.toInt()}%"
+        binding.tvBatteryVoltage.text = "${String.format("%.1f", voltage / 1000f)}V"
+        binding.tvBatteryTemp.text = "${String.format("%.1f", temp / 10f)}°C"
     }
 
     private fun initializeViews() {
-        switchHomeMonitor = findViewById(R.id.switchHomeMonitor)
-        switchSmartMode = findViewById(R.id.switchSmartMode)
-        switchSmartMode.isChecked = preferences.isSmartModeEnabled()
-        switchSmartMode.setOnCheckedChangeListener { _, isChecked ->
+        binding.switchSmartMode.isChecked = preferences.isSmartModeEnabled()
+        binding.switchSmartMode.setOnCheckedChangeListener { _, isChecked ->
             preferences.setSmartModeEnabled(isChecked)
         }
 
-        tvHomeStatusTitle = findViewById(R.id.tvHomeStatusTitle)
-        btnOpenRadarFromGrid = findViewById(R.id.btnOpenRadarFromGrid)
-        btnSettings = findViewById(R.id.btnSettings)
-        btnOpenHistory = findViewById(R.id.btnOpenHistory)
-
-        // New Dashboard
-        ivHomeStatus = findViewById(R.id.ivHomeStatus)
-        tvHomeStatus = findViewById(R.id.tvHomeStatus)
-        ivSafeZoneBadge = findViewById(R.id.ivSafeZoneBadge)
-
-        ivGlobalStatus = findViewById(R.id.ivGlobalStatus)
-        tvGlobalStatus = findViewById(R.id.tvGlobalStatus)
-        tvGlobalDesc = findViewById(R.id.tvGlobalDesc)
-
         // Make Status Card clickable to arm/disarm
-        findViewById<View>(R.id.statusCard).setOnClickListener {
+        binding.statusCard.setOnClickListener {
             if (preferences.isAntiTheftArmed()) {
                 toggleAntiTheft()
             } else {
-                // If not armed, check what to do.
-                // Prioritize Anti-Theft arming as it's the main "Lock" action.
                 toggleAntiTheft()
             }
         }
 
-        detectionLog = findViewById(R.id.detectionLog)
-        cbNotifyPresence = findViewById(R.id.cbNotifyPresence)
-        
-        tvCountKnown = findViewById(R.id.tvCountKnown)
-        // tvNamesKnown = findViewById(R.id.tvNamesKnown) // Removed from XML
-        tvCountUnknown = findViewById(R.id.tvCountUnknown)
+        binding.btnUnlockApp.setOnClickListener { checkAppLock() }
 
-        // Battery
-        tvBatteryLevel = findViewById(R.id.tvBatteryLevel)
-        tvBatteryTemp = findViewById(R.id.tvBatteryTemp)
-        tvBatteryVoltage = findViewById(R.id.tvBatteryVoltage)
-
-        // App Lock
-        lockOverlay = findViewById(R.id.lockOverlay)
-        btnUnlockApp = findViewById(R.id.btnUnlockApp)
-        btnUnlockApp.setOnClickListener { checkAppLock() }
-
-        // Anti-Theft
-        btnAntiTheft = findViewById(R.id.btnAntiTheft)
-        tvAntiTheftStatus = findViewById(R.id.tvAntiTheftStatus)
-        ivAntiTheftIcon = findViewById(R.id.ivAntiTheftIcon)
-        btnAntiTheft.setOnClickListener { toggleAntiTheft() }
+        binding.btnAntiTheft.setOnClickListener { toggleAntiTheft() }
 
         // Long click to test alarm
-        ivAntiTheftIcon.setOnLongClickListener {
+        binding.ivAntiTheftIcon.setOnLongClickListener {
             com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.dialog_test_alarm_title)
                 .setMessage(R.string.dialog_test_alarm_msg)
@@ -265,41 +189,38 @@ class MainActivity : AppCompatActivity() {
 
         updateAntiTheftUI()
 
-        cbNotifyPresence.isChecked = preferences.shouldNotifyOnPresence()
-        cbNotifyPresence.setOnCheckedChangeListener { _, isChecked ->
+        binding.cbNotifyPresence.isChecked = preferences.shouldNotifyOnPresence()
+        binding.cbNotifyPresence.setOnCheckedChangeListener { _, isChecked ->
             preferences.setNotifyOnPresence(isChecked)
         }
 
-        switchHomeMonitor.setOnCheckedChangeListener { _, isChecked ->
+        binding.switchHomeMonitor.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) startDetection() else stopDetection()
         }
 
-        btnQuickScan = findViewById(R.id.btnQuickScan)
-        btnQuickScan.setOnClickListener {
-            Toast.makeText(this, "Scanning...", Toast.LENGTH_SHORT).show()
+        binding.btnQuickScan.setOnClickListener {
+            Toast.makeText(this, getString(R.string.msg_scanning), Toast.LENGTH_SHORT).show()
             startDetection()
         }
 
-        btnOpenRadarFromGrid.setOnClickListener {
+        binding.btnOpenRadarFromGrid.setOnClickListener {
             startActivity(Intent(this, WifiRadarActivity::class.java))
         }
 
-        btnSettings.setOnClickListener {
+        binding.btnSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
-        btnOpenHistory.setOnClickListener {
+        binding.btnOpenHistory.setOnClickListener {
             startActivity(Intent(this, HistoryActivity::class.java))
         }
 
         // Security Monitoring (RTSP Cameras)
-        btnSecuritySettings = findViewById(R.id.btnSecuritySettings)
-        btnSecuritySettings.setOnClickListener {
+        binding.btnSecuritySettings.setOnClickListener {
             startActivity(Intent(this, com.example.presencedetector.security.ui.CameraDashboardActivity::class.java))
         }
 
-        val btnPanic = findViewById<View>(R.id.btnPanic)
-        btnPanic.setOnClickListener {
+        binding.btnPanic.setOnClickListener {
             triggerPanicMode()
         }
     }
@@ -342,7 +263,7 @@ class MainActivity : AppCompatActivity() {
         startService(serviceIntent)
         preferences.setAntiTheftArmed(false)
         addLog(getString(R.string.log_mobile_disarmed))
-        preferences.logSystemEvent("Mobile Security Disarmed") // Keep system log consistent or localized? Let's localize for now
+        preferences.logSystemEvent("Mobile Security Disarmed")
         updateAntiTheftUI()
     }
 
@@ -364,25 +285,24 @@ class MainActivity : AppCompatActivity() {
     private fun updateAntiTheftUI() {
         val armed = preferences.isAntiTheftArmed()
         if (armed) {
-            val modes = mutableListOf("Movimento")
-            if (preferences.isPocketModeEnabled()) modes.add("Bolso")
-            if (preferences.isChargerModeEnabled()) modes.add("Carregador")
+            val modes = mutableListOf(getString(R.string.mode_motion))
+            if (preferences.isPocketModeEnabled()) modes.add(getString(R.string.mode_pocket))
+            if (preferences.isChargerModeEnabled()) modes.add(getString(R.string.mode_charger))
 
             val modeString = modes.joinToString(", ")
-            tvAntiTheftStatus.text = "Ativo: $modeString"
-            ivAntiTheftIcon.setImageResource(R.drawable.ic_status_active)
-            ivAntiTheftIcon.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
+            binding.tvAntiTheftStatus.text = getString(R.string.status_active_format, modeString)
+            binding.ivAntiTheftIcon.setImageResource(R.drawable.ic_status_active)
+            binding.ivAntiTheftIcon.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
         } else {
-            tvAntiTheftStatus.text = getString(R.string.text_tap_to_arm)
-            ivAntiTheftIcon.setImageResource(android.R.drawable.ic_lock_idle_lock)
-            ivAntiTheftIcon.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
+            binding.tvAntiTheftStatus.text = getString(R.string.text_tap_to_arm)
+            binding.ivAntiTheftIcon.setImageResource(android.R.drawable.ic_lock_idle_lock)
+            binding.ivAntiTheftIcon.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
         }
         updateGlobalStatus()
     }
 
     private fun updateGlobalStatus() {
         val isArmed = preferences.isAntiTheftArmed()
-        val statusCard = findViewById<MaterialCardView>(R.id.statusCard)
 
         // Determine Global State
         // Priority 1: Armed (Secure)
@@ -390,29 +310,29 @@ class MainActivity : AppCompatActivity() {
         // Default: Idle
 
         if (isArmed) {
-            statusCard.setCardBackgroundColor(ContextCompat.getColor(this, R.color.success_color))
-            ivGlobalStatus.setImageResource(R.drawable.ic_status_active)
-            ivGlobalStatus.setColorFilter(ContextCompat.getColor(this, R.color.white))
-            tvGlobalStatus.text = getString(R.string.status_system_secure)
-            tvGlobalStatus.setTextColor(ContextCompat.getColor(this, R.color.white))
-            tvGlobalDesc.text = getString(R.string.desc_system_secure)
-            tvGlobalDesc.setTextColor(ContextCompat.getColor(this, R.color.white))
+            binding.statusCard.setCardBackgroundColor(ContextCompat.getColor(this, R.color.success_color))
+            binding.ivGlobalStatus.setImageResource(R.drawable.ic_status_active)
+            binding.ivGlobalStatus.setColorFilter(ContextCompat.getColor(this, R.color.white))
+            binding.tvGlobalStatus.text = getString(R.string.status_system_secure)
+            binding.tvGlobalStatus.setTextColor(ContextCompat.getColor(this, R.color.white))
+            binding.tvGlobalDesc.text = getString(R.string.desc_system_secure)
+            binding.tvGlobalDesc.setTextColor(ContextCompat.getColor(this, R.color.white))
         } else if (isDetecting) {
-            statusCard.setCardBackgroundColor(ContextCompat.getColor(this, R.color.primary_color))
-            ivGlobalStatus.setImageResource(android.R.drawable.ic_menu_rotate) // or radar icon
-            ivGlobalStatus.setColorFilter(ContextCompat.getColor(this, R.color.white))
-            tvGlobalStatus.text = getString(R.string.status_system_monitoring)
-            tvGlobalStatus.setTextColor(ContextCompat.getColor(this, R.color.white))
-            tvGlobalDesc.text = getString(R.string.desc_system_monitoring)
-            tvGlobalDesc.setTextColor(ContextCompat.getColor(this, R.color.white))
+            binding.statusCard.setCardBackgroundColor(ContextCompat.getColor(this, R.color.primary_color))
+            binding.ivGlobalStatus.setImageResource(android.R.drawable.ic_menu_rotate) // or radar icon
+            binding.ivGlobalStatus.setColorFilter(ContextCompat.getColor(this, R.color.white))
+            binding.tvGlobalStatus.text = getString(R.string.status_system_monitoring)
+            binding.tvGlobalStatus.setTextColor(ContextCompat.getColor(this, R.color.white))
+            binding.tvGlobalDesc.text = getString(R.string.desc_system_monitoring)
+            binding.tvGlobalDesc.setTextColor(ContextCompat.getColor(this, R.color.white))
         } else {
-            statusCard.setCardBackgroundColor(ContextCompat.getColor(this, R.color.card_background_elevated))
-            ivGlobalStatus.setImageResource(android.R.drawable.ic_lock_idle_lock)
-            ivGlobalStatus.setColorFilter(ContextCompat.getColor(this, R.color.light_text))
-            tvGlobalStatus.text = getString(R.string.status_system_idle)
-            tvGlobalStatus.setTextColor(ContextCompat.getColor(this, R.color.light_text))
-            tvGlobalDesc.text = getString(R.string.desc_system_idle)
-            tvGlobalDesc.setTextColor(ContextCompat.getColor(this, R.color.light_text))
+            binding.statusCard.setCardBackgroundColor(ContextCompat.getColor(this, R.color.card_background_elevated))
+            binding.ivGlobalStatus.setImageResource(android.R.drawable.ic_lock_idle_lock)
+            binding.ivGlobalStatus.setColorFilter(ContextCompat.getColor(this, R.color.light_text))
+            binding.tvGlobalStatus.text = getString(R.string.status_system_idle)
+            binding.tvGlobalStatus.setTextColor(ContextCompat.getColor(this, R.color.light_text))
+            binding.tvGlobalDesc.text = getString(R.string.desc_system_idle)
+            binding.tvGlobalDesc.setTextColor(ContextCompat.getColor(this, R.color.light_text))
         }
     }
 
@@ -420,7 +340,7 @@ class MainActivity : AppCompatActivity() {
         val logs = preferences.getSystemLogs()
         if (logs.isNotEmpty()) {
             val recent = logs.take(5).joinToString("\n")
-            detectionLog.text = "--- Recent Events ---\n$recent\n---------------------\n"
+            binding.detectionLog.text = "--- Recent Events ---\n$recent\n---------------------\n"
         }
     }
 
@@ -437,26 +357,24 @@ class MainActivity : AppCompatActivity() {
         val knownDevices = devices.filter { preferences.getNickname(it.bssid) != null }
         val unknownDevices = devices.filter { preferences.getNickname(it.bssid) == null }
         
-        tvCountKnown.text = knownDevices.size.toString()
-        // tvNamesKnown.text = ... Removed
-        
-        tvCountUnknown.text = unknownDevices.size.toString()
+        binding.tvCountKnown.text = knownDevices.size.toString()
+        binding.tvCountUnknown.text = unknownDevices.size.toString()
 
         // Update Home Status (WiFi)
         if (isDetecting) {
-            ivHomeStatus.setImageResource(R.drawable.ic_status_active)
-            ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
-            tvHomeStatus.text = getString(R.string.status_scanning)
-            tvHomeStatus.setTextColor(ContextCompat.getColor(this, R.color.success_color))
-            tvHomeStatusTitle.text = "Monitoramento Ativo"
-            if (!switchHomeMonitor.isChecked) switchHomeMonitor.isChecked = true
+            binding.ivHomeStatus.setImageResource(R.drawable.ic_status_active)
+            binding.ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
+            binding.tvHomeStatus.text = getString(R.string.status_scanning)
+            binding.tvHomeStatus.setTextColor(ContextCompat.getColor(this, R.color.success_color))
+            binding.tvHomeStatusTitle.text = getString(R.string.title_home_monitor_active)
+            if (!binding.switchHomeMonitor.isChecked) binding.switchHomeMonitor.isChecked = true
         } else {
-            ivHomeStatus.setImageResource(R.drawable.ic_status_inactive)
-            ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
-            tvHomeStatus.text = getString(R.string.status_home_idle)
-            tvHomeStatus.setTextColor(ContextCompat.getColor(this, R.color.light_text))
-            tvHomeStatusTitle.text = "Monitoramento Parado"
-            if (switchHomeMonitor.isChecked) switchHomeMonitor.isChecked = false
+            binding.ivHomeStatus.setImageResource(R.drawable.ic_status_inactive)
+            binding.ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
+            binding.tvHomeStatus.text = getString(R.string.status_home_idle)
+            binding.tvHomeStatus.setTextColor(ContextCompat.getColor(this, R.color.light_text))
+            binding.tvHomeStatusTitle.text = getString(R.string.title_home_monitor_idle)
+            if (binding.switchHomeMonitor.isChecked) binding.switchHomeMonitor.isChecked = false
         }
 
         // Safe Zone Check
@@ -466,21 +384,21 @@ class MainActivity : AppCompatActivity() {
         val currentSsid = info?.ssid?.replace("\"", "")
 
         if (!trustedSsid.isNullOrEmpty() && currentSsid == trustedSsid) {
-            ivSafeZoneBadge.visibility = View.VISIBLE
-            ivSafeZoneBadge.setCardBackgroundColor(ContextCompat.getColor(this, R.color.success_color))
-            ivSafeZoneBadge.setOnClickListener(null) // Reset
+            binding.ivSafeZoneBadge.visibility = View.VISIBLE
+            binding.ivSafeZoneBadge.setCardBackgroundColor(ContextCompat.getColor(this, R.color.success_color))
+            binding.ivSafeZoneBadge.setOnClickListener(null) // Reset
         } else if (!currentSsid.isNullOrEmpty() && currentSsid != "<unknown ssid>") {
             // Suggest trusting this network
-            ivSafeZoneBadge.visibility = View.VISIBLE
-            ivSafeZoneBadge.setCardBackgroundColor(ContextCompat.getColor(this, R.color.warning_color))
+            binding.ivSafeZoneBadge.visibility = View.VISIBLE
+            binding.ivSafeZoneBadge.setCardBackgroundColor(ContextCompat.getColor(this, R.color.warning_color))
 
-            ivSafeZoneBadge.setOnClickListener {
+            binding.ivSafeZoneBadge.setOnClickListener {
                 com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                     .setTitle(R.string.dialog_safe_zone_title)
                     .setMessage(getString(R.string.dialog_safe_zone_msg, currentSsid))
                     .setPositiveButton(R.string.btn_yes) { _, _ ->
                         preferences.setTrustedWifiSsid(currentSsid)
-                        addLog("WiFi Trusted: $currentSsid")
+                        addLog(getString(R.string.log_wifi_trusted, currentSsid))
                         updateDashboard(devices, method, details) // Refresh
                         Toast.makeText(this, R.string.msg_safe_zone_set, Toast.LENGTH_SHORT).show()
                     }
@@ -488,7 +406,7 @@ class MainActivity : AppCompatActivity() {
                     .show()
             }
         } else {
-            ivSafeZoneBadge.visibility = View.GONE
+            binding.ivSafeZoneBadge.visibility = View.GONE
         }
 
         // Update Mobile Status (Anti-Theft) - Also called in updateAntiTheftUI, but good to refresh here
@@ -511,12 +429,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         isDetecting = true
-        if (!switchHomeMonitor.isChecked) switchHomeMonitor.isChecked = true
+        if (!binding.switchHomeMonitor.isChecked) binding.switchHomeMonitor.isChecked = true
 
         // UI Update
-        ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
-        tvHomeStatus.text = getString(R.string.status_scanning)
-        tvHomeStatus.setTextColor(ContextCompat.getColor(this, R.color.success_color))
+        binding.ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.success_color))
+        binding.tvHomeStatus.text = getString(R.string.status_scanning)
+        binding.tvHomeStatus.setTextColor(ContextCompat.getColor(this, R.color.success_color))
 
         val serviceIntent = Intent(this, DetectionBackgroundService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -530,13 +448,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun stopDetection() {
         isDetecting = false
-        if (switchHomeMonitor.isChecked) switchHomeMonitor.isChecked = false
+        if (binding.switchHomeMonitor.isChecked) binding.switchHomeMonitor.isChecked = false
 
         // UI Update
-        ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
-        ivHomeStatus.setImageResource(R.drawable.ic_status_inactive)
-        tvHomeStatus.text = getString(R.string.status_home_idle)
-        tvHomeStatus.setTextColor(ContextCompat.getColor(this, R.color.light_text))
+        binding.ivHomeStatus.setColorFilter(ContextCompat.getColor(this, R.color.primary_color))
+        binding.ivHomeStatus.setImageResource(R.drawable.ic_status_inactive)
+        binding.tvHomeStatus.text = getString(R.string.status_home_idle)
+        binding.tvHomeStatus.setTextColor(ContextCompat.getColor(this, R.color.light_text))
 
         val serviceIntent = Intent(this, DetectionBackgroundService::class.java)
         stopService(serviceIntent)
@@ -546,9 +464,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun addLog(message: String) {
         val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-        val current = detectionLog.text.toString()
+        val current = binding.detectionLog.text.toString()
         val newText = "[$timestamp] $message\n$current"
-        detectionLog.text = newText.take(1000)
+        binding.detectionLog.text = newText.take(1000)
+
+        // Log to file as well
+        LoggerUtil.logEvent(this, message)
     }
 
     private fun hasRequiredPermissions(): Boolean {
@@ -632,7 +553,7 @@ class MainActivity : AppCompatActivity() {
                             val intent = Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
                             startActivity(intent)
                         } catch (e: Exception) {
-                            Toast.makeText(this, "Could not open settings", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this, getString(R.string.msg_error_open_settings), Toast.LENGTH_SHORT).show()
                         }
                     }
                     .setNegativeButton(R.string.btn_cancel, null)
@@ -654,9 +575,9 @@ class MainActivity : AppCompatActivity() {
             )
             if (mode != android.app.AppOpsManager.MODE_ALLOWED) {
                 com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                    .setTitle("Permissão de Monitoramento")
-                    .setMessage("Para detectar apps de banco e proteger seu celular, precisamos acessar os dados de uso.")
-                    .setPositiveButton("Conceder") { _, _ ->
+                    .setTitle(getString(R.string.dialog_usage_stats_title))
+                    .setMessage(getString(R.string.dialog_usage_stats_msg))
+                    .setPositiveButton(getString(R.string.btn_grant)) { _, _ ->
                         try {
                             startActivity(Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
                         } catch (e: Exception) {
@@ -692,7 +613,7 @@ class MainActivity : AppCompatActivity() {
         try {
             val intent = Intent(this, com.example.presencedetector.security.ui.HiddenCameraActivity::class.java)
             startActivity(intent)
-            addLog("📸 Camera Triggered: $reason")
+            addLog(getString(R.string.log_camera_triggered, reason))
         } catch (e: Exception) {
             e.printStackTrace()
         }

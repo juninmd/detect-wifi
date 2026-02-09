@@ -5,16 +5,14 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.presencedetector.databinding.ActivityHistoryBinding
+import com.example.presencedetector.databinding.ItemHistoryEventBinding
 import com.example.presencedetector.utils.PreferencesUtil
-import com.google.android.material.appbar.MaterialToolbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -22,34 +20,28 @@ import kotlinx.coroutines.withContext
 
 class HistoryActivity : AppCompatActivity() {
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var etFilter: EditText
-    private lateinit var tvHistoryTitle: TextView
+    private lateinit var binding: ActivityHistoryBinding
     private lateinit var preferences: PreferencesUtil
     private val adapter = HistoryAdapter()
     private var loadJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_history)
+        binding = ActivityHistoryBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
-        setSupportActionBar(toolbar)
+        setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        toolbar.setNavigationOnClickListener { finish() }
+        binding.toolbar.setNavigationOnClickListener { finish() }
 
         preferences = PreferencesUtil(this)
 
-        etFilter = findViewById(R.id.etFilterBssid)
-        tvHistoryTitle = findViewById(R.id.tvHistoryTitle)
-        recyclerView = findViewById(R.id.rvHistory)
-
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = adapter
+        binding.rvHistory.layoutManager = LinearLayoutManager(this)
+        binding.rvHistory.adapter = adapter
 
         loadAllHistory()
 
-        etFilter.addTextChangedListener(object : TextWatcher {
+        binding.etFilterBssid.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val query = s.toString().lowercase()
@@ -70,7 +62,7 @@ class HistoryActivity : AppCompatActivity() {
             val allLogs = mutableListOf<HistoryItem>()
 
             bssids.forEach { bssid ->
-                val nickname = preferences.getNickname(bssid) ?: "Unknown"
+                val nickname = preferences.getNickname(bssid) ?: getString(R.string.text_unknown)
                 val eventLogs = preferences.getEventLogs(bssid)
                 eventLogs.forEach { logLine ->
                     // Parse log line to extract event type and timestamp
@@ -90,7 +82,7 @@ class HistoryActivity : AppCompatActivity() {
 
             withContext(Dispatchers.Main) {
                 adapter.setItems(sortedLogs)
-                tvHistoryTitle.text = "Full History (${sortedLogs.size} events)"
+                binding.tvHistoryTitle.text = getString(R.string.title_history_full, sortedLogs.size)
             }
         }
     }
@@ -111,7 +103,7 @@ class HistoryActivity : AppCompatActivity() {
                         filteredLogs.add(
                             HistoryItem(
                                 bssid,
-                                nickname.ifEmpty { "Unknown" },
+                                nickname.ifEmpty { getString(R.string.text_unknown) },
                                 logLine,
                                 isArrival,
                                 isDeparture
@@ -125,14 +117,14 @@ class HistoryActivity : AppCompatActivity() {
 
             withContext(Dispatchers.Main) {
                 adapter.setItems(sortedLogs)
-                tvHistoryTitle.text = "Filtered Results (${sortedLogs.size})"
+                binding.tvHistoryTitle.text = getString(R.string.title_history_filtered, sortedLogs.size)
             }
         }
     }
 
     data class HistoryItem(val bssid: String, val nickname: String, val logDetail: String, val isArrival: Boolean = false, val isDeparture: Boolean = false)
 
-    class HistoryAdapter : RecyclerView.Adapter<HistoryAdapter.ViewHolder>() {
+    inner class HistoryAdapter : RecyclerView.Adapter<HistoryAdapter.ViewHolder>() {
         private var items: List<HistoryItem> = emptyList()
 
         fun setItems(newItems: List<HistoryItem>) {
@@ -141,42 +133,41 @@ class HistoryActivity : AppCompatActivity() {
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_history_event, parent, false)
-            return ViewHolder(view)
+            val binding = ItemHistoryEventBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return ViewHolder(binding)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
 
             // Set nickname
-            holder.tvNickname.text = item.nickname
+            holder.binding.tvNickname.text = item.nickname
 
             // Parse timestamp from log detail
             val timestamp = extractTime(item.logDetail)
-            holder.tvTimestamp.text = timestamp
+            holder.binding.tvTimestamp.text = timestamp
 
             // Set BSSID (show last 8 chars for brevity)
-            holder.tvBssid.text = item.bssid.takeLast(8)
+            holder.binding.tvBssid.text = item.bssid.takeLast(8)
 
             // Determine event type and set UI accordingly
             if (item.bssid == "SYSTEM") {
-                holder.tvEventIcon.text = "🛡️"
-                holder.chipEventType.text = "Security"
-                holder.tvBssid.text = "System Log"
+                holder.binding.tvEventIcon.text = "🛡️"
+                holder.binding.chipEventType.text = getString(R.string.label_security)
+                holder.binding.tvBssid.text = getString(R.string.label_system_log)
                 // Parse message from logDetail "[timestamp] Message"
                 val parts = item.logDetail.split("] ")
                 if (parts.size > 1) {
-                    holder.tvNickname.text = parts[1] // Show the message as the main text
+                    holder.binding.tvNickname.text = parts[1] // Show the message as the main text
                 }
             } else if (item.isArrival) {
-                holder.tvEventIcon.text = "🟢"
-                holder.chipEventType.text = "Arrived"
-                holder.chipEventType.setChipBackgroundColorResource(R.color.success_bright)
+                holder.binding.tvEventIcon.text = "🟢"
+                holder.binding.chipEventType.text = getString(R.string.label_arrived)
+                holder.binding.chipEventType.setChipBackgroundColorResource(R.color.success_bright)
             } else if (item.isDeparture) {
-                holder.tvEventIcon.text = "🔴"
-                holder.chipEventType.text = "Left"
-                holder.chipEventType.setChipBackgroundColorResource(R.color.danger_color)
+                holder.binding.tvEventIcon.text = "🔴"
+                holder.binding.chipEventType.text = getString(R.string.label_left)
+                holder.binding.chipEventType.setChipBackgroundColorResource(R.color.danger_color)
             }
 
             if (item.bssid == "SYSTEM") {
@@ -197,15 +188,9 @@ class HistoryActivity : AppCompatActivity() {
         private fun extractTime(logDetail: String): String {
             // Log format: "Arrived 01:49" or "Left 01:49"
             val parts = logDetail.split(" ")
-            return if (parts.size >= 2) parts[1] else "N/A"
+            return if (parts.size >= 2) parts[1] else getString(R.string.text_na)
         }
 
-        class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val tvEventIcon: TextView = view.findViewById(R.id.tvEventIcon)
-            val tvNickname: TextView = view.findViewById(R.id.tvNickname)
-            val tvTimestamp: TextView = view.findViewById(R.id.tvTimestamp)
-            val tvBssid: TextView = view.findViewById(R.id.tvBssid)
-            val chipEventType: com.google.android.material.chip.Chip = view.findViewById(R.id.chipEventType)
-        }
+        inner class ViewHolder(val binding: ItemHistoryEventBinding) : RecyclerView.ViewHolder(binding.root)
     }
 }

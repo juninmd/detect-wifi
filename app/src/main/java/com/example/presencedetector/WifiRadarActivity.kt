@@ -6,40 +6,26 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.RadioGroup
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.presencedetector.databinding.ActivityWifiRadarBinding
+import com.example.presencedetector.databinding.DialogEditNicknameBinding
+import com.example.presencedetector.databinding.ItemWifiDeviceBinding
 import com.example.presencedetector.model.DeviceCategory
 import com.example.presencedetector.model.DeviceSource
 import com.example.presencedetector.model.WiFiDevice
 import com.example.presencedetector.services.PresenceDetectionManager
-import com.example.presencedetector.ui.RadarView
 import com.example.presencedetector.utils.PreferencesUtil
-import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.checkbox.MaterialCheckBox
-import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.radiobutton.MaterialRadioButton
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class WifiRadarActivity : AppCompatActivity() {
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var radarView: RadarView
+    private lateinit var binding: ActivityWifiRadarBinding
     private lateinit var detectionManager: PresenceDetectionManager
     private lateinit var preferences: PreferencesUtil
     private lateinit var adapter: WifiAdapter
-
-    // Summary card views removed for Dragon Radar UI
-    // private lateinit var tvTotalDevices: TextView
-    // ...
-
 
     // Sorting
     enum class SortOrder {
@@ -49,32 +35,25 @@ class WifiRadarActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_wifi_radar)
+        binding = ActivityWifiRadarBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
-        setSupportActionBar(toolbar)
+        setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeAsUpIndicator(android.R.drawable.ic_menu_revert)
 
-        toolbar.setNavigationOnClickListener {
+        binding.toolbar.setNavigationOnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
 
         preferences = PreferencesUtil(this)
-        radarView = findViewById(R.id.radarView)
-        recyclerView = findViewById(R.id.wifiRecyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(this)
-
-        // Summary card removed
-        // val summaryCard = findViewById<View>(R.id.card_summary)
-        // ...
-
+        binding.wifiRecyclerView.layoutManager = LinearLayoutManager(this)
 
         adapter = WifiAdapter(
             onItemClick = { device -> showDeviceInfoDialog(device) },
             onItemLongClick = { device -> showDeviceInfoDialog(device) }
         )
-        recyclerView.adapter = adapter
+        binding.wifiRecyclerView.adapter = adapter
 
         detectionManager = PresenceDetectionManager(this, false)
         detectionManager.setPresenceListener { _, _, devices, _ ->
@@ -86,8 +65,7 @@ class WifiRadarActivity : AppCompatActivity() {
                     }
                 }
                 adapter.updateDevices(processedDevices, currentSortOrder)
-                radarView.updateDevices(processedDevices)
-                // updateSummary(processedDevices)
+                binding.radarView.updateDevices(processedDevices)
             }
         }
     }
@@ -112,11 +90,15 @@ class WifiRadarActivity : AppCompatActivity() {
     }
 
     private fun showSortDialog() {
-        val sortOptions = arrayOf("📍 Distance (Default)", "🔤 Device Name", "📂 Category")
+        val sortOptions = arrayOf(
+            getString(R.string.sort_option_distance),
+            getString(R.string.sort_option_name),
+            getString(R.string.sort_option_category)
+        )
         val checkedItem = currentSortOrder.ordinal
 
         MaterialAlertDialogBuilder(this)
-            .setTitle("Sort Devices By")
+            .setTitle(getString(R.string.dialog_sort_title))
             .setSingleChoiceItems(sortOptions, checkedItem) { dialog, which ->
                 currentSortOrder = SortOrder.values()[which]
                 adapter.notifyDataSetChanged()  // Force re-sort
@@ -124,12 +106,6 @@ class WifiRadarActivity : AppCompatActivity() {
             }
             .show()
     }
-
-    /*
-    private fun updateSummary(devices: List<WiFiDevice>) {
-        ...
-    }
-    */
 
     private fun forceRefreshDevices() {
         // Force WiFi scan to update device list
@@ -142,8 +118,6 @@ class WifiRadarActivity : AppCompatActivity() {
             putExtra(DeviceDetailActivity.EXTRA_SSID, device.ssid)
             putExtra(DeviceDetailActivity.EXTRA_SIGNAL, device.level)
             putExtra(DeviceDetailActivity.EXTRA_LAST_SEEN, device.lastSeen)
-            // Ideally passing the standard via intent if Parcelable or extra field
-            // But since WiFiDevice is a data class, we can make it Parcelable or just pass the int
             putExtra("extra_standard", device.standard)
             putExtra("extra_channel_width", device.channelWidth)
         }
@@ -151,17 +125,12 @@ class WifiRadarActivity : AppCompatActivity() {
     }
 
     private fun showEditDialog(device: WiFiDevice) {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_edit_nickname, null)
-        val etNickname = dialogView.findViewById<EditText>(R.id.etNickname)
-        val tvBssid = dialogView.findViewById<TextView>(R.id.tvBssid)
-        val cbNotifyArrival = dialogView.findViewById<MaterialCheckBox>(R.id.cbNotifyArrival)
-        val cbNotifyDeparture = dialogView.findViewById<MaterialCheckBox>(R.id.cbNotifyDeparture)
-        val rgCategories = dialogView.findViewById<RadioGroup>(R.id.rgCategories)
+        val dialogBinding = DialogEditNicknameBinding.inflate(layoutInflater)
 
-        tvBssid.text = "BSSID: ${device.bssid}"
-        etNickname.setText(preferences.getNickname(device.bssid) ?: device.ssid)
-        cbNotifyArrival.isChecked = preferences.shouldNotifyArrival(device.bssid)
-        cbNotifyDeparture.isChecked = preferences.shouldNotifyDeparture(device.bssid)
+        dialogBinding.tvBssid.text = getString(R.string.format_bssid, device.bssid)
+        dialogBinding.etNickname.setText(preferences.getNickname(device.bssid) ?: device.ssid)
+        dialogBinding.cbNotifyArrival.isChecked = preferences.shouldNotifyArrival(device.bssid)
+        dialogBinding.cbNotifyDeparture.isChecked = preferences.shouldNotifyDeparture(device.bssid)
 
         val categories = DeviceCategory.values()
         categories.forEach { category ->
@@ -172,29 +141,29 @@ class WifiRadarActivity : AppCompatActivity() {
                 tag = category
                 setPadding(0, 12, 0, 12)
             }
-            rgCategories.addView(rb)
+            dialogBinding.rgCategories.addView(rb)
             if (category == device.category) {
-                rgCategories.check(rb.id)
+                dialogBinding.rgCategories.check(rb.id)
             }
         }
 
         MaterialAlertDialogBuilder(this)
-            .setView(dialogView)
-            .setPositiveButton("Save") { _, _ ->
-                val newNickname = etNickname.text.toString()
+            .setView(dialogBinding.root)
+            .setPositiveButton(getString(R.string.btn_save)) { _, _ ->
+                val newNickname = dialogBinding.etNickname.text.toString()
                 preferences.saveNickname(device.bssid, newNickname)
 
-                val checkedId = rgCategories.checkedRadioButtonId
-                val selectedRb = rgCategories.findViewById<MaterialRadioButton>(checkedId)
+                val checkedId = dialogBinding.rgCategories.checkedRadioButtonId
+                val selectedRb = dialogBinding.rgCategories.findViewById<MaterialRadioButton>(checkedId)
                 val selectedCategory = selectedRb?.tag as? DeviceCategory ?: device.category
 
                 preferences.saveManualCategory(device.bssid, selectedCategory)
-                preferences.setNotifyArrival(device.bssid, cbNotifyArrival.isChecked)
-                preferences.setNotifyDeparture(device.bssid, cbNotifyDeparture.isChecked)
+                preferences.setNotifyArrival(device.bssid, dialogBinding.cbNotifyArrival.isChecked)
+                preferences.setNotifyDeparture(device.bssid, dialogBinding.cbNotifyDeparture.isChecked)
 
                 adapter.notifyDataSetChanged()
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.btn_cancel), null)
             .show()
     }
 
@@ -229,9 +198,8 @@ class WifiRadarActivity : AppCompatActivity() {
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_wifi_device, parent, false)
-            return ViewHolder(view)
+            val binding = ItemWifiDeviceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return ViewHolder(binding)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -239,29 +207,29 @@ class WifiRadarActivity : AppCompatActivity() {
             val nickname = preferences.getNickname(device.bssid)
             val hasNotify = preferences.shouldNotifyArrival(device.bssid) || preferences.shouldNotifyDeparture(device.bssid)
 
-            holder.tvIcon.text = device.category.iconRes
+            holder.binding.tvIcon.text = device.category.iconRes
 
             if (device.isHidden) {
-                holder.tvName.text = "🔒 [Hidden Network]"
+                holder.binding.tvName.text = getString(R.string.text_hidden_network)
             } else {
-                holder.tvName.text = nickname ?: device.ssid
+                holder.binding.tvName.text = nickname ?: device.ssid
             }
 
             if (nickname != null) {
-                holder.tvName.setTextColor(getColor(R.color.primary_color))
-                holder.chipNickname.visibility = View.VISIBLE
+                holder.binding.tvName.setTextColor(getColor(R.color.primary_color))
+                holder.binding.chipNickname.visibility = View.VISIBLE
             } else {
-                holder.tvName.setTextColor(getColor(R.color.dark_text))
-                holder.chipNickname.visibility = View.GONE
+                holder.binding.tvName.setTextColor(getColor(R.color.dark_text))
+                holder.binding.chipNickname.visibility = View.GONE
             }
 
             val details = "${device.category.displayName} • ${device.level} dBm"
-            holder.tvDetails.text = details
+            holder.binding.tvDetails.text = details
 
             if (hasNotify) {
-                holder.tvNotificationStatus.visibility = View.VISIBLE
+                holder.binding.tvNotificationStatus.visibility = View.VISIBLE
             } else {
-                holder.tvNotificationStatus.visibility = View.GONE
+                holder.binding.tvNotificationStatus.visibility = View.GONE
             }
 
             holder.itemView.setOnClickListener { onItemClick(device) }
@@ -273,25 +241,18 @@ class WifiRadarActivity : AppCompatActivity() {
             // Show source badge (WiFi or Bluetooth)
             when (device.source) {
                 DeviceSource.WIFI -> {
-                    holder.chipSourceBadge.text = "📶 WiFi"
-                    holder.chipSourceBadge.setChipBackgroundColorResource(R.color.success_color)
+                    holder.binding.chipSourceBadge.text = getString(R.string.badge_wifi)
+                    holder.binding.chipSourceBadge.setChipBackgroundColorResource(R.color.success_color)
                 }
                 DeviceSource.BLUETOOTH -> {
-                    holder.chipSourceBadge.text = "🔵 Bluetooth"
-                    holder.chipSourceBadge.setChipBackgroundColorResource(R.color.primary_vibrant)
+                    holder.binding.chipSourceBadge.text = getString(R.string.badge_bluetooth)
+                    holder.binding.chipSourceBadge.setChipBackgroundColorResource(R.color.primary_vibrant)
                 }
             }
         }
 
         override fun getItemCount(): Int = devices.size
 
-        inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val tvIcon: TextView = view.findViewById(R.id.tvIcon)
-            val tvName: TextView = view.findViewById(R.id.tvName)
-            val tvDetails: TextView = view.findViewById(R.id.tvDetails)
-            val tvNotificationStatus: TextView = view.findViewById(R.id.tvNotificationStatus)
-            val chipNickname: Chip = view.findViewById(R.id.chipNickname)
-            val chipSourceBadge: Chip = view.findViewById(R.id.chipSourceBadge)
-        }
+        inner class ViewHolder(val binding: ItemWifiDeviceBinding) : RecyclerView.ViewHolder(binding.root)
     }
 }
