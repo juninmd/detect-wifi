@@ -51,19 +51,19 @@ jobs:
       run: ./gradlew jacocoTestCoverageVerification
 
     - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: app-debug
         path: app/build/outputs/apk/debug/app-debug.apk
 
     - name: Upload Coverage Report Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: coverage-report
         path: app/build/reports/jacoco/jacocoTestReport/html/
 
     - name: Upload Test Results Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: test-results
         path: app/build/test-results/testDebugUnitTest/
