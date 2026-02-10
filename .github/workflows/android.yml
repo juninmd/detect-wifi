@@ -1,4 +1,4 @@
-name: Android CI - Build, Test & Coverage
+name: Android CI - Build, Test, Coverage & Security
 
 on:
   push:
@@ -16,6 +16,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Secret Scanning (Gitleaks)
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      continue-on-error: true
 
     - name: set up JDK 17
       uses: actions/setup-java@v4
@@ -29,6 +37,9 @@ jobs:
 
     - name: Build with Gradle
       run: ./gradlew assembleDebug
+
+    - name: Run Android Lint
+      run: ./gradlew lintDebug
 
     - name: Run Unit Tests
       run: ./gradlew testDebugUnitTest
