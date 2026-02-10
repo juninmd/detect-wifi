@@ -499,7 +499,7 @@ class AntiTheftService : Service(), SensorEventListener, SharedPreferences.OnSha
             else -> R.drawable.ic_notification_alert
         }
 
-        val notification = NotificationCompat.Builder(this, NotificationUtil.ALERT_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(this, NotificationUtil.SECURITY_CHANNEL_ID)
             .setContentTitle(getString(R.string.notif_theft_alert_title))
             .setContentText(getString(R.string.notif_theft_alert_text, reason))
             .setSmallIcon(icon)

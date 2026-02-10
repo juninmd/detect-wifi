@@ -12,7 +12,7 @@ import android.graphics.Bitmap
 import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
-import androidx.core.app.ActivityCompat
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -27,122 +27,75 @@ import com.example.presencedetector.receivers.NotificationActionReceiver
 object NotificationUtil {
     private const val TAG = "NotificationUtil"
 
-    // 1. Foreground Service Channel (Low noise, sticky)
+    // Channel IDs
     const val CHANNEL_ID = "presence_detection_channel"
-
-    // 2. Info Channel (Standard beeps for non-critical events like arrivals)
     const val INFO_CHANNEL_ID = "presence_info_channel"
-
-    // 3. Silent Channel (No sound, for routine logs)
     const val SILENT_CHANNEL_ID = "presence_silent_channel"
-
-    // 4. Critical Security Channel (Max Priority, Bypasses DND, Loud)
     const val SECURITY_CHANNEL_ID = "security_critical_channel_v1"
-
-    // 5. Battery Channel
     const val BATTERY_CHANNEL_ID = "battery_alert_channel"
-
-    // 6. New Specific Channels
     const val HOME_SECURITY_CHANNEL_ID = "home_security_channel"
     const val MOBILE_SECURITY_CHANNEL_ID = "mobile_security_channel"
 
     private const val GROUP_KEY_PRESENCE = "com.example.presencedetector.PRESENCE_UPDATES"
 
-    // Deprecated constant compatibility if needed by other classes not yet updated
-    const val ALERT_CHANNEL_ID = SECURITY_CHANNEL_ID
-
     fun createNotificationChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = context.getSystemService(NotificationManager::class.java)
+            val notificationManager = context.getSystemService(NotificationManager::class.java) ?: return
 
-            // 1. Service Channel
-            val serviceChannel = NotificationChannel(
-                CHANNEL_ID,
-                context.getString(R.string.channel_service_name),
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = context.getString(R.string.channel_service_desc)
-                setShowBadge(false)
-            }
-
-            // 2. Info Channel
-            val infoChannel = NotificationChannel(
-                INFO_CHANNEL_ID,
-                context.getString(R.string.channel_info_name),
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = context.getString(R.string.channel_info_desc)
-                enableLights(true)
-                lightColor = android.graphics.Color.BLUE
-            }
-
-            // 3. Silent Channel
-            val silentChannel = NotificationChannel(
-                SILENT_CHANNEL_ID,
-                "Eventos Silenciosos",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Notificações de rotina sem som"
-                setShowBadge(false)
-            }
-
-            // 4. Critical Security Channel
-            val securityChannel = NotificationChannel(
-                SECURITY_CHANNEL_ID,
-                "Alerta de Segurança Crítico",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Alertas de intrusão e roubo. Toca mesmo em modo não perturbe."
-                enableVibration(true)
-                vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500, 1000)
-                enableLights(true)
-                lightColor = android.graphics.Color.RED
-                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
-                setBypassDnd(true) // Crucial for security
-                setSound(
-                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ALARM)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
-                )
-            }
-
-            // 5. Battery Channel
-            val batteryChannel = NotificationChannel(
-                BATTERY_CHANNEL_ID,
-                context.getString(R.string.channel_battery_name),
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = context.getString(R.string.channel_battery_desc)
-                enableVibration(true)
-                enableLights(true)
-                lightColor = android.graphics.Color.YELLOW
-            }
-
-            // 6. Home Security Channel
-            val homeChannel = NotificationChannel(
-                HOME_SECURITY_CHANNEL_ID,
-                "Segurança Residencial",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Notificações de monitoramento WiFi e presença em casa"
-                setShowBadge(false)
-            }
-
-            // 7. Mobile Security Channel
-            val mobileChannel = NotificationChannel(
-                MOBILE_SECURITY_CHANNEL_ID,
-                "Segurança do Celular",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Notificações de monitoramento anti-furto (bolso, movimento)"
-                setShowBadge(true)
-            }
-
-            notificationManager?.createNotificationChannels(
-                listOf(serviceChannel, infoChannel, silentChannel, securityChannel, batteryChannel, homeChannel, mobileChannel)
+            val channels = listOf(
+                createChannel(CHANNEL_ID, context.getString(R.string.channel_service_name), NotificationManager.IMPORTANCE_LOW, context.getString(R.string.channel_service_desc)) {
+                    setShowBadge(false)
+                },
+                createChannel(INFO_CHANNEL_ID, context.getString(R.string.channel_info_name), NotificationManager.IMPORTANCE_DEFAULT, context.getString(R.string.channel_info_desc)) {
+                    enableLights(true)
+                    lightColor = android.graphics.Color.BLUE
+                },
+                createChannel(SILENT_CHANNEL_ID, "Eventos Silenciosos", NotificationManager.IMPORTANCE_LOW, "Notificações de rotina sem som") {
+                    setShowBadge(false)
+                },
+                createChannel(SECURITY_CHANNEL_ID, "Alerta de Segurança Crítico", NotificationManager.IMPORTANCE_HIGH, "Alertas de intrusão e roubo. Toca mesmo em modo não perturbe.") {
+                    enableVibration(true)
+                    vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500, 1000)
+                    enableLights(true)
+                    lightColor = android.graphics.Color.RED
+                    lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                    setBypassDnd(true)
+                    setSound(
+                        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ALARM)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build()
+                    )
+                },
+                createChannel(BATTERY_CHANNEL_ID, context.getString(R.string.channel_battery_name), NotificationManager.IMPORTANCE_HIGH, context.getString(R.string.channel_battery_desc)) {
+                    enableVibration(true)
+                    enableLights(true)
+                    lightColor = android.graphics.Color.YELLOW
+                },
+                createChannel(HOME_SECURITY_CHANNEL_ID, "Segurança Residencial", NotificationManager.IMPORTANCE_LOW, "Notificações de monitoramento WiFi e presença em casa") {
+                    setShowBadge(false)
+                },
+                createChannel(MOBILE_SECURITY_CHANNEL_ID, "Segurança do Celular", NotificationManager.IMPORTANCE_LOW, "Notificações de monitoramento anti-furto (bolso, movimento)") {
+                    setShowBadge(true)
+                }
             )
+
+            notificationManager.createNotificationChannels(channels)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun createChannel(
+        id: String,
+        name: String,
+        importance: Int,
+        desc: String? = null,
+        configure: (NotificationChannel.() -> Unit)? = null
+    ): NotificationChannel {
+        return NotificationChannel(id, name, importance).apply {
+            description = desc
+            configure?.invoke(this)
         }
     }
 
@@ -177,22 +130,15 @@ object NotificationUtil {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val icon = iconResId ?: R.drawable.ic_notification
-
         val builder = NotificationCompat.Builder(context, channelId)
             .setContentTitle(title)
             .setContentText(message)
-            .setSmallIcon(icon)
+            .setSmallIcon(iconResId ?: R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setGroup(GROUP_KEY_PRESENCE)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-
-        if (isImportantEvent) {
-            builder.setPriority(NotificationCompat.PRIORITY_DEFAULT)
-        } else {
-            builder.setPriority(NotificationCompat.PRIORITY_LOW)
-        }
+            .setPriority(if (isImportantEvent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_LOW)
 
         if (actionTitle != null && actionIntent != null) {
             builder.addAction(R.drawable.ic_status_inactive, actionTitle, actionIntent)
@@ -201,10 +147,7 @@ object NotificationUtil {
             builder.addAction(R.drawable.ic_status_active, secondActionTitle, secondActionIntent)
         }
 
-        if (checkPermission(context)) {
-            val notificationManager = NotificationManagerCompat.from(context)
-            notificationManager.notify(notificationId ?: System.currentTimeMillis().toInt(), builder.build())
-        }
+        notify(context, notificationId ?: System.currentTimeMillis().toInt(), builder.build())
     }
 
     /**
@@ -238,10 +181,7 @@ object NotificationUtil {
 
         actions.forEach { builder.addAction(it) }
 
-        if (checkPermission(context)) {
-            val notificationManager = NotificationManagerCompat.from(context)
-            notificationManager.notify(notificationId, builder.build())
-        }
+        notify(context, notificationId, builder.build())
     }
 
     fun sendBatteryAlert(context: Context, level: Int) {
@@ -266,10 +206,7 @@ object NotificationUtil {
             .setCategory(NotificationCompat.CATEGORY_SYSTEM)
             .setAutoCancel(true)
 
-        if (checkPermission(context)) {
-            val notificationManager = NotificationManagerCompat.from(context)
-            notificationManager.notify(2001, builder.build())
-        }
+        notify(context, 2001, builder.build())
     }
 
     fun sendIntruderAlert(context: Context, bitmap: Bitmap) {
@@ -299,10 +236,7 @@ object NotificationUtil {
             .setAutoCancel(false)
             .setOngoing(true)
 
-        if (checkPermission(context)) {
-            val notificationManager = NotificationManagerCompat.from(context)
-            notificationManager.notify(3001, builder.build())
-        }
+        notify(context, 3001, builder.build())
     }
 
     fun sendPanicAlert(context: Context) {
@@ -341,10 +275,7 @@ object NotificationUtil {
             .setOngoing(true)
             .setAutoCancel(false)
 
-        if (checkPermission(context)) {
-            val notificationManager = NotificationManagerCompat.from(context)
-            notificationManager.notify(1000, builder.build())
-        }
+        notify(context, 1000, builder.build())
     }
 
     fun createForegroundNotification(
@@ -385,6 +316,12 @@ object NotificationUtil {
             ) == PackageManager.PERMISSION_GRANTED
         } else {
             true
+        }
+    }
+
+    private fun notify(context: Context, id: Int, notification: Notification) {
+        if (checkPermission(context)) {
+            NotificationManagerCompat.from(context).notify(id, notification)
         }
     }
 }
