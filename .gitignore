@@ -13,3 +13,17 @@ captures/
 .externalNativeBuild
 .cxx
 local.properties
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.p12
+*.jks
+*.keystore
+secrets/
+config/secrets.yml
+google-services.json
+GoogleService-Info.plist
