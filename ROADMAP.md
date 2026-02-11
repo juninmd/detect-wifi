@@ -19,7 +19,7 @@ To become the definitive, privacy-focused Android solution for residential prese
 **Key Achievements:**
 *   ✅ **Robust Background Service:** Reliable detection even when the app is closed or the screen is off.
 *   ✅ **Modern UI:** Vibrant, responsive interface with Dark Mode support and intuitive controls.
-*   ✅ **Notification Intelligence:** implemented "Smart Notifications" with debounce to reduce spam and focus on meaningful events (Arrival/Departure).
+*   ✅ **Notification Intelligence:** Implemented "Smart Notifications" with debounce to reduce spam and focus on meaningful events (Arrival/Departure).
 *   ✅ **Anti-Theft Features:** Motion, Pocket, and Charger alarms fully implemented.
 *   ✅ **Labeled Badges:** Visual distinction for manually named devices.
 
