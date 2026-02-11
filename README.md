@@ -80,6 +80,32 @@ Ao iniciar pela primeira vez, você deve conceder:
     *   `AndroidX Biometric` para autenticação.
     *   `Coroutines` para tarefas assíncronas.
 
+## 📦 Processo de Release
+
+O projeto utiliza GitHub Actions para automatizar a geração de releases.
+
+### Criar uma Nova Release
+
+1.  Crie uma tag git seguindo o versionamento semântico (ex: `v1.2.0`).
+2.  Faça o push da tag para o repositório:
+    ```bash
+    git tag v1.2.0
+    git push origin v1.2.0
+    ```
+3.  A pipeline `Android Release` será iniciada automaticamente.
+4.  Após a conclusão, uma nova Release será criada no GitHub com o APK anexado.
+
+### Configuração de Assinatura (Opcional)
+
+Para gerar APKs assinados automaticamente, configure os seguintes **Secrets** no repositório GitHub (Settings -> Secrets and variables -> Actions):
+
+*   `RELEASE_KEYSTORE_BASE64`: Conteúdo do arquivo keystore (.jks) codificado em Base64 (`base64 -w 0 seu-keystore.jks`).
+*   `KEYSTORE_PASSWORD`: Senha do keystore.
+*   `KEY_ALIAS`: Alias da chave.
+*   `KEY_PASSWORD`: Senha da chave.
+
+Se esses segredos não estiverem configurados, a release conterá um APK não assinado (ou assinado com debug key, dependendo da configuração local).
+
 ## 🤝 Contribuição
 
 Por favor, leia `CONTRIBUTING.md` para padrões de código e diretrizes de CI/CD antes de submeter um Pull Request.
