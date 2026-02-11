@@ -15,73 +15,78 @@ import org.robolectric.Shadows
 @RunWith(RobolectricTestRunner::class)
 class SecurityNotificationManagerTest {
 
-    private lateinit var context: Context
-    private lateinit var securityNotificationManager: SecurityNotificationManager
+  private lateinit var context: Context
+  private lateinit var securityNotificationManager: SecurityNotificationManager
 
-    @Before
-    fun setUp() {
-        context = ApplicationProvider.getApplicationContext()
-        securityNotificationManager = SecurityNotificationManager(context)
-    }
+  @Before
+  fun setUp() {
+    context = ApplicationProvider.getApplicationContext()
+    securityNotificationManager = SecurityNotificationManager(context)
+  }
 
-    @Test
-    fun `test channel creation`() {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channel = notificationManager.getNotificationChannel("security_alerts")
+  @Test
+  fun `test channel creation`() {
+    val notificationManager =
+      context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    val channel = notificationManager.getNotificationChannel("security_alerts")
 
-        assertNotNull(channel)
-        assertEquals("Alertas de Segurança", channel.name)
-        assertEquals(NotificationManager.IMPORTANCE_HIGH, channel.importance)
-    }
+    assertNotNull(channel)
+    assertEquals("Alertas de Segurança", channel.name)
+    assertEquals(NotificationManager.IMPORTANCE_HIGH, channel.importance)
+  }
 
-    @Test
-    fun `test show detection notification`() {
-        val cameraChannel = CameraChannel(
-            id = 1,
-            name = "Front Door",
-            host = "192.168.1.100"
-        )
+  @Test
+  fun `test show detection notification`() {
+    val cameraChannel = CameraChannel(id = 1, name = "Front Door", host = "192.168.1.100")
 
-        securityNotificationManager.showDetectionNotification(cameraChannel)
+    securityNotificationManager.showDetectionNotification(cameraChannel)
 
-        val notificationManager = Shadows.shadowOf(context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-        val notifications = notificationManager.allNotifications
+    val notificationManager =
+      Shadows.shadowOf(
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+      )
+    val notifications = notificationManager.allNotifications
 
-        assertEquals(1, notifications.size)
+    assertEquals(1, notifications.size)
 
-        val notification = notifications[0]
-        assertEquals("🚨 Movimento detectado", notification.extras.getString(android.app.Notification.EXTRA_TITLE))
-        assertEquals("Front Door", notification.extras.getString(android.app.Notification.EXTRA_TEXT))
-        assertEquals("security_alerts", notification.channelId)
-    }
+    val notification = notifications[0]
+    assertEquals(
+      "🚨 Movimento detectado",
+      notification.extras.getString(android.app.Notification.EXTRA_TITLE)
+    )
+    assertEquals("Front Door", notification.extras.getString(android.app.Notification.EXTRA_TEXT))
+    assertEquals("security_alerts", notification.channelId)
+  }
 
-    @Test
-    fun `test cancel notification`() {
-        val cameraChannel = CameraChannel(
-            id = 1,
-            name = "Front Door",
-            host = "192.168.1.100"
-        )
+  @Test
+  fun `test cancel notification`() {
+    val cameraChannel = CameraChannel(id = 1, name = "Front Door", host = "192.168.1.100")
 
-        securityNotificationManager.showDetectionNotification(cameraChannel)
-        securityNotificationManager.cancelNotification(1)
+    securityNotificationManager.showDetectionNotification(cameraChannel)
+    securityNotificationManager.cancelNotification(1)
 
-        val notificationManager = Shadows.shadowOf(context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-        assertEquals(0, notificationManager.allNotifications.size)
-    }
+    val notificationManager =
+      Shadows.shadowOf(
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+      )
+    assertEquals(0, notificationManager.allNotifications.size)
+  }
 
-    @Test
-    fun `test cancel all notifications`() {
-        val cameraChannel1 = CameraChannel(id = 1, name = "Cam 1", host = "192.168.1.100")
-        val cameraChannel2 = CameraChannel(id = 2, name = "Cam 2", host = "192.168.1.101")
+  @Test
+  fun `test cancel all notifications`() {
+    val cameraChannel1 = CameraChannel(id = 1, name = "Cam 1", host = "192.168.1.100")
+    val cameraChannel2 = CameraChannel(id = 2, name = "Cam 2", host = "192.168.1.101")
 
-        securityNotificationManager.showDetectionNotification(cameraChannel1)
-        securityNotificationManager.showDetectionNotification(cameraChannel2)
+    securityNotificationManager.showDetectionNotification(cameraChannel1)
+    securityNotificationManager.showDetectionNotification(cameraChannel2)
 
-        val notificationManager = Shadows.shadowOf(context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-        assertEquals(2, notificationManager.allNotifications.size)
+    val notificationManager =
+      Shadows.shadowOf(
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+      )
+    assertEquals(2, notificationManager.allNotifications.size)
 
-        securityNotificationManager.cancelAllNotifications()
-        assertEquals(0, notificationManager.allNotifications.size)
-    }
+    securityNotificationManager.cancelAllNotifications()
+    assertEquals(0, notificationManager.allNotifications.size)
+  }
 }

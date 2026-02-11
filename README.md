@@ -1,5 +1,8 @@
 # Presence Detector & Segurança Anti-Furto
 
+[![CI/CD Pipeline](https://github.com/juninmd/detect-wifi/actions/workflows/ci.yml/badge.svg)](https://github.com/juninmd/detect-wifi/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/juninmd/detect-wifi/graph/badge.svg)](https://codecov.io/gh/juninmd/detect-wifi)
+
 Um aplicativo Android abrangente que combina detecção de presença residencial (WiFi/Bluetooth/Câmera) com medidas ativas de proteção anti-furto. Desenvolvido com Kotlin moderno e otimizado para Android 15.
 
 ## 🌟 Principais Recursos
@@ -30,7 +33,7 @@ Um aplicativo Android abrangente que combina detecção de presença residencial
 
 ### 1. Pré-requisitos
 *   Android Studio Koala ou mais recente.
-*   JDK 17.
+*   JDK 21.
 *   Android SDK Platform 35.
 
 ### 2. Instruções de Build
@@ -105,7 +108,7 @@ Se esses segredos não estiverem configurados, a release conterá um APK não as
 
 ## 🤝 Contribuição
 
-Por favor, leia `gemini.md` para padrões de código e boas práticas antes de submeter um Pull Request.
+Por favor, leia `CONTRIBUTING.md` para padrões de código e diretrizes de CI/CD antes de submeter um Pull Request.
 
 ## 📄 Licença
 

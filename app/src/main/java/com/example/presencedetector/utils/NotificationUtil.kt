@@ -17,13 +17,11 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.example.presencedetector.MainActivity
-import com.example.presencedetector.WifiRadarActivity
 import com.example.presencedetector.R
+import com.example.presencedetector.WifiRadarActivity
 import com.example.presencedetector.receivers.NotificationActionReceiver
 
-/**
- * Utility for managing notifications.
- */
+/** Utility for managing notifications. */
 object NotificationUtil {
     private const val TAG = "NotificationUtil"
 
@@ -42,44 +40,50 @@ object NotificationUtil {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = context.getSystemService(NotificationManager::class.java) ?: return
 
-            val channels = listOf(
-                createChannel(CHANNEL_ID, context.getString(R.string.channel_service_name), NotificationManager.IMPORTANCE_LOW, context.getString(R.string.channel_service_desc)) {
-                    setShowBadge(false)
-                },
-                createChannel(INFO_CHANNEL_ID, context.getString(R.string.channel_info_name), NotificationManager.IMPORTANCE_DEFAULT, context.getString(R.string.channel_info_desc)) {
-                    enableLights(true)
-                    lightColor = android.graphics.Color.BLUE
-                },
-                createChannel(SILENT_CHANNEL_ID, "Eventos Silenciosos", NotificationManager.IMPORTANCE_LOW, "Notificações de rotina sem som") {
-                    setShowBadge(false)
-                },
-                createChannel(SECURITY_CHANNEL_ID, "Alerta de Segurança Crítico", NotificationManager.IMPORTANCE_HIGH, "Alertas de intrusão e roubo. Toca mesmo em modo não perturbe.") {
-                    enableVibration(true)
-                    vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500, 1000)
-                    enableLights(true)
-                    lightColor = android.graphics.Color.RED
-                    lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-                    setBypassDnd(true)
-                    setSound(
-                        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
-                        AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_ALARM)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .build()
-                    )
-                },
-                createChannel(BATTERY_CHANNEL_ID, context.getString(R.string.channel_battery_name), NotificationManager.IMPORTANCE_HIGH, context.getString(R.string.channel_battery_desc)) {
-                    enableVibration(true)
-                    enableLights(true)
-                    lightColor = android.graphics.Color.YELLOW
-                },
-                createChannel(HOME_SECURITY_CHANNEL_ID, "Segurança Residencial", NotificationManager.IMPORTANCE_LOW, "Notificações de monitoramento WiFi e presença em casa") {
-                    setShowBadge(false)
-                },
-                createChannel(MOBILE_SECURITY_CHANNEL_ID, "Segurança do Celular", NotificationManager.IMPORTANCE_LOW, "Notificações de monitoramento anti-furto (bolso, movimento)") {
-                    setShowBadge(true)
-                }
-            )
+            val channels = mutableListOf<NotificationChannel>()
+
+            channels.add(createChannel(CHANNEL_ID, context.getString(R.string.channel_service_name), NotificationManager.IMPORTANCE_LOW, context.getString(R.string.channel_service_desc)) {
+                setShowBadge(false)
+            })
+
+            channels.add(createChannel(INFO_CHANNEL_ID, context.getString(R.string.channel_info_name), NotificationManager.IMPORTANCE_DEFAULT, context.getString(R.string.channel_info_desc)) {
+                enableLights(true)
+                lightColor = android.graphics.Color.BLUE
+            })
+
+            channels.add(createChannel(SILENT_CHANNEL_ID, "Eventos Silenciosos", NotificationManager.IMPORTANCE_LOW, "Notificações de rotina sem som") {
+                setShowBadge(false)
+            })
+
+            channels.add(createChannel(SECURITY_CHANNEL_ID, "Alerta de Segurança Crítico", NotificationManager.IMPORTANCE_HIGH, "Alertas de intrusão e roubo. Toca mesmo em modo não perturbe.") {
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500, 1000)
+                enableLights(true)
+                lightColor = android.graphics.Color.RED
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                setBypassDnd(true)
+                setSound(
+                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
+            })
+
+            channels.add(createChannel(BATTERY_CHANNEL_ID, context.getString(R.string.channel_battery_name), NotificationManager.IMPORTANCE_HIGH, context.getString(R.string.channel_battery_desc)) {
+                enableVibration(true)
+                enableLights(true)
+                lightColor = android.graphics.Color.YELLOW
+            })
+
+            channels.add(createChannel(HOME_SECURITY_CHANNEL_ID, "Segurança Residencial", NotificationManager.IMPORTANCE_LOW, "Notificações de monitoramento WiFi e presença em casa") {
+                setShowBadge(false)
+            })
+
+            channels.add(createChannel(MOBILE_SECURITY_CHANNEL_ID, "Segurança do Celular", NotificationManager.IMPORTANCE_LOW, "Notificações de monitoramento anti-furto (bolso, movimento)") {
+                setShowBadge(true)
+            })
 
             notificationManager.createNotificationChannels(channels)
         }
@@ -97,6 +101,22 @@ object NotificationUtil {
             description = desc
             configure?.invoke(this)
         }
+    }
+
+    private fun buildBaseNotification(
+        context: Context,
+        channelId: String,
+        title: String,
+        message: String,
+        priority: Int = NotificationCompat.PRIORITY_DEFAULT
+    ): NotificationCompat.Builder {
+        return NotificationCompat.Builder(context, channelId)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(priority)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setAutoCancel(true)
     }
 
     /**
@@ -130,15 +150,13 @@ object NotificationUtil {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val builder = NotificationCompat.Builder(context, channelId)
-            .setContentTitle(title)
-            .setContentText(message)
-            .setSmallIcon(iconResId ?: R.drawable.ic_notification)
+        val builder = buildBaseNotification(context, channelId, title, message, if (isImportantEvent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_LOW)
             .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
             .setGroup(GROUP_KEY_PRESENCE)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-            .setPriority(if (isImportantEvent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_LOW)
+
+        if (iconResId != null) {
+            builder.setSmallIcon(iconResId)
+        }
 
         if (actionTitle != null && actionIntent != null) {
             builder.addAction(R.drawable.ic_status_inactive, actionTitle, actionIntent)
@@ -163,17 +181,13 @@ object NotificationUtil {
     ) {
         createNotificationChannels(context)
 
-        val builder = NotificationCompat.Builder(context, SECURITY_CHANNEL_ID)
-            .setContentTitle(title)
-            .setContentText(message)
+        val builder = buildBaseNotification(context, SECURITY_CHANNEL_ID, title, message, NotificationCompat.PRIORITY_MAX)
             .setSmallIcon(R.drawable.ic_notification_alert)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(false)
             .setOngoing(true)
             .setVibrate(longArrayOf(0, 1000, 500, 1000, 500, 1000))
-            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
 
         if (fullScreenIntent != null) {
             builder.setFullScreenIntent(fullScreenIntent, true)
@@ -183,28 +197,57 @@ object NotificationUtil {
 
         notify(context, notificationId, builder.build())
     }
+  }
 
-    fun sendBatteryAlert(context: Context, level: Int) {
-        createNotificationChannels(context)
+  /** Send a standard notification for presence events. */
+  fun sendPresenceNotification(
+    context: Context,
+    title: String,
+    message: String,
+    isImportantEvent: Boolean,
+    actionTitle: String? = null,
+    actionIntent: PendingIntent? = null,
+    notificationId: Int? = null,
+    secondActionTitle: String? = null,
+    secondActionIntent: PendingIntent? = null,
+    iconResId: Int? = null
+  ) {
+    createNotificationChannels(context)
 
-        val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    val channelId = if (isImportantEvent) INFO_CHANNEL_ID else SILENT_CHANNEL_ID
+
+    val intent =
+      Intent(context, WifiRadarActivity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        putExtra("from_notification", true)
+      }
+
+    val pendingIntent =
+      PendingIntent.getActivity(
+        context,
+        System.currentTimeMillis().toInt(),
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+      )
+
+    val builder =
+      NotificationCompat.Builder(context, channelId)
+        .setContentTitle(title)
+        .setContentText(message)
+        .setSmallIcon(iconResId ?: R.drawable.ic_notification)
+        .setContentIntent(pendingIntent)
+        .setAutoCancel(true)
+        .setGroup(GROUP_KEY_PRESENCE)
+        .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+        .setPriority(
+          if (isImportantEvent) NotificationCompat.PRIORITY_DEFAULT
+          else NotificationCompat.PRIORITY_LOW
         )
 
-        val builder = NotificationCompat.Builder(context, BATTERY_CHANNEL_ID)
-            .setContentTitle(context.getString(R.string.notif_battery_warning))
-            .setContentText(context.getString(R.string.notif_battery_desc, level))
+        val builder = buildBaseNotification(context, BATTERY_CHANNEL_ID, context.getString(R.string.notif_battery_warning), context.getString(R.string.notif_battery_desc, level), NotificationCompat.PRIORITY_HIGH)
             .setSmallIcon(android.R.drawable.ic_lock_idle_low_battery)
             .setContentIntent(pendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_SYSTEM)
-            .setAutoCancel(true)
 
         notify(context, 2001, builder.build())
     }
@@ -222,15 +265,12 @@ object NotificationUtil {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val builder = NotificationCompat.Builder(context, SECURITY_CHANNEL_ID)
-            .setContentTitle("🚨 INTRUSO DETECTADO!")
-            .setContentText("Uma foto foi capturada durante o alerta de segurança.")
+        val builder = buildBaseNotification(context, SECURITY_CHANNEL_ID, "🚨 INTRUSO DETECTADO!", "Uma foto foi capturada durante o alerta de segurança.", NotificationCompat.PRIORITY_MAX)
             .setSmallIcon(R.drawable.ic_notification_alert)
             .setLargeIcon(bitmap)
             .setStyle(NotificationCompat.BigPictureStyle()
                 .bigPicture(bitmap)
                 .bigLargeIcon(null as Bitmap?))
-            .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setContentIntent(pendingIntent)
             .setAutoCancel(false)
@@ -262,11 +302,8 @@ object NotificationUtil {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val builder = NotificationCompat.Builder(context, SECURITY_CHANNEL_ID)
-            .setContentTitle("🆘 ALARME DE PÂNICO ATIVO")
-            .setContentText("Sua segurança está em risco? A ajuda está a um toque.")
+        val builder = buildBaseNotification(context, SECURITY_CHANNEL_ID, "🆘 ALARME DE PÂNICO ATIVO", "Sua segurança está em risco? A ajuda está a um toque.", NotificationCompat.PRIORITY_MAX)
             .setSmallIcon(android.R.drawable.ic_lock_power_off)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setVibrate(longArrayOf(0, 1000, 1000, 1000, 1000))
@@ -278,33 +315,68 @@ object NotificationUtil {
         notify(context, 1000, builder.build())
     }
 
-    fun createForegroundNotification(
-        context: Context,
-        title: String = "Monitoramento Ativo",
-        subtitle: String = "Verificando sensores...",
-        channelId: String = CHANNEL_ID
-    ): Notification {
-        createNotificationChannels(context)
+    actions.forEach { builder.addAction(it) }
 
-        val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        }
+    notify(context, notificationId, builder.build())
+  }
 
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+  fun sendBatteryAlert(context: Context, level: Int) {
+    createNotificationChannels(context)
+
+    val intent =
+      Intent(context, MainActivity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+      }
+    val pendingIntent =
+      PendingIntent.getActivity(
+        context,
+        0,
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+      )
+
+    val builder =
+      NotificationCompat.Builder(context, BATTERY_CHANNEL_ID)
+        .setContentTitle(context.getString(R.string.notif_battery_warning))
+        .setContentText(context.getString(R.string.notif_battery_desc, level))
+        .setSmallIcon(android.R.drawable.ic_lock_idle_low_battery)
+        .setContentIntent(pendingIntent)
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
+        .setCategory(NotificationCompat.CATEGORY_SYSTEM)
+        .setAutoCancel(true)
+
+    notify(context, 2001, builder.build())
+  }
+
+  fun sendIntruderAlert(context: Context, bitmap: Bitmap) {
+    createNotificationChannels(context)
+
+    val intent =
+      Intent(context, MainActivity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+      }
+    val pendingIntent =
+      PendingIntent.getActivity(
+        context,
+        0,
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+      )
+
+    val builder =
+      NotificationCompat.Builder(context, SECURITY_CHANNEL_ID)
+        .setContentTitle("🚨 INTRUSO DETECTADO!")
+        .setContentText("Uma foto foi capturada durante o alerta de segurança.")
+        .setSmallIcon(R.drawable.ic_notification_alert)
+        .setLargeIcon(bitmap)
+        .setStyle(
+          NotificationCompat.BigPictureStyle().bigPicture(bitmap).bigLargeIcon(null as Bitmap?)
         )
 
-        return NotificationCompat.Builder(context, channelId)
-            .setContentTitle(title)
-            .setContentText(subtitle)
-            .setSmallIcon(R.drawable.ic_notification)
+        return buildBaseNotification(context, channelId, title, subtitle, NotificationCompat.PRIORITY_LOW)
             .setContentIntent(pendingIntent)
             .setAutoCancel(false)
             .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
     }
 
@@ -318,10 +390,11 @@ object NotificationUtil {
             true
         }
     }
+  }
 
-    private fun notify(context: Context, id: Int, notification: Notification) {
-        if (checkPermission(context)) {
-            NotificationManagerCompat.from(context).notify(id, notification)
-        }
+  private fun notify(context: Context, id: Int, notification: Notification) {
+    if (checkPermission(context)) {
+      NotificationManagerCompat.from(context).notify(id, notification)
     }
+  }
 }

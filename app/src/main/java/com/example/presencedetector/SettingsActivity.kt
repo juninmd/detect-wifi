@@ -14,219 +14,222 @@ import java.util.Calendar
 
 class SettingsActivity : AppCompatActivity() {
 
-    private lateinit var preferences: PreferencesUtil
-    private lateinit var telegramService: TelegramService
+  private lateinit var preferences: PreferencesUtil
+  private lateinit var telegramService: TelegramService
 
-    private lateinit var switchNotifyWifiArrival: MaterialSwitch
-    private lateinit var etTrustedWifi: TextInputEditText
+  private lateinit var switchNotifyWifiArrival: MaterialSwitch
+  private lateinit var etTrustedWifi: TextInputEditText
 
-    private lateinit var switchTelegram: MaterialSwitch
-    private lateinit var etTelegramToken: TextInputEditText
-    private lateinit var etTelegramChatId: TextInputEditText
-    private lateinit var btnTestTelegram: com.google.android.material.button.MaterialButton
+  private lateinit var switchTelegram: MaterialSwitch
+  private lateinit var etTelegramToken: TextInputEditText
+  private lateinit var etTelegramChatId: TextInputEditText
+  private lateinit var btnTestTelegram: com.google.android.material.button.MaterialButton
 
-    private lateinit var switchAppLock: MaterialSwitch
-    private lateinit var switchSecurityAlert: MaterialSwitch
-    private lateinit var switchSecuritySound: MaterialSwitch
-    private lateinit var etSecurityStart: TextInputEditText
-    private lateinit var etSecurityEnd: TextInputEditText
+  private lateinit var switchAppLock: MaterialSwitch
+  private lateinit var switchSecurityAlert: MaterialSwitch
+  private lateinit var switchSecuritySound: MaterialSwitch
+  private lateinit var etSecurityStart: TextInputEditText
+  private lateinit var etSecurityEnd: TextInputEditText
 
-    private lateinit var switchBiometric: MaterialSwitch
-    private lateinit var switchPocketMode: MaterialSwitch
-    private lateinit var switchChargerMode: MaterialSwitch
-    private lateinit var sliderSensitivity: com.google.android.material.slider.Slider
-    private lateinit var tvSensitivityValue: android.widget.TextView
+  private lateinit var switchBiometric: MaterialSwitch
+  private lateinit var switchPocketMode: MaterialSwitch
+  private lateinit var switchChargerMode: MaterialSwitch
+  private lateinit var sliderSensitivity: com.google.android.material.slider.Slider
+  private lateinit var tvSensitivityValue: android.widget.TextView
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_settings)
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    setContentView(R.layout.activity_settings)
 
-        preferences = PreferencesUtil(this)
-        telegramService = TelegramService(this)
+    preferences = PreferencesUtil(this)
+    telegramService = TelegramService(this)
 
-        setupToolbar()
-        initializeViews()
-        loadSettings()
-        setupListeners()
+    setupToolbar()
+    initializeViews()
+    loadSettings()
+    setupListeners()
+  }
+
+  private fun setupToolbar() {
+    val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+    setSupportActionBar(toolbar)
+    supportActionBar?.setDisplayHomeAsUpEnabled(true)
+    toolbar.setNavigationOnClickListener { finish() }
+  }
+
+  private fun initializeViews() {
+    switchNotifyWifiArrival = findViewById(R.id.switchNotifyWifiArrival)
+    etTrustedWifi = findViewById(R.id.etTrustedWifi)
+
+    switchTelegram = findViewById(R.id.switchTelegram)
+    etTelegramToken = findViewById(R.id.etTelegramToken)
+    etTelegramChatId = findViewById(R.id.etTelegramChatId)
+    btnTestTelegram = findViewById(R.id.btnTestTelegram)
+
+    switchAppLock = findViewById(R.id.switchAppLock)
+    switchSecurityAlert = findViewById(R.id.switchSecurityAlert)
+    switchSecuritySound = findViewById(R.id.switchSecuritySound)
+    etSecurityStart = findViewById(R.id.etSecurityStart)
+    etSecurityEnd = findViewById(R.id.etSecurityEnd)
+
+    switchBiometric = findViewById(R.id.switchBiometric)
+    switchPocketMode = findViewById(R.id.switchPocketMode)
+    switchChargerMode = findViewById(R.id.switchChargerMode)
+    sliderSensitivity = findViewById(R.id.sliderSensitivity)
+    tvSensitivityValue = findViewById(R.id.tvSensitivityValue)
+  }
+
+  private fun loadSettings() {
+    // General
+    switchNotifyWifiArrival.isChecked = preferences.shouldNotifyWifiArrival()
+    etTrustedWifi.setText(preferences.getTrustedWifiSsid())
+
+    // Telegram
+    switchTelegram.isChecked = preferences.isTelegramEnabled()
+    etTelegramToken.setText(preferences.getTelegramToken())
+    etTelegramChatId.setText(preferences.getTelegramChatId())
+
+    // Security
+    switchAppLock.isChecked = preferences.isAppLockEnabled()
+    switchSecurityAlert.isChecked = preferences.isSecurityAlertEnabled()
+    switchSecuritySound.isChecked = preferences.isSecuritySoundEnabled()
+
+    switchBiometric.isChecked = preferences.isBiometricEnabled()
+    switchPocketMode.isChecked = preferences.isPocketModeEnabled()
+    switchChargerMode.isChecked = preferences.isChargerModeEnabled()
+
+    val schedule = preferences.getSecuritySchedule()
+    etSecurityStart.setText(schedule.first)
+    etSecurityEnd.setText(schedule.second)
+
+    val sensitivity = preferences.getAntiTheftSensitivity()
+    sliderSensitivity.value = sensitivity
+    updateSensitivityText(sensitivity)
+  }
+
+  private fun setupListeners() {
+    // Auto-save on change for switches
+    switchNotifyWifiArrival.setOnCheckedChangeListener { _, isChecked ->
+      preferences.setNotifyWifiArrival(isChecked)
     }
 
-    private fun setupToolbar() {
-        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
-        setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        toolbar.setNavigationOnClickListener {
-            finish()
-        }
+    switchTelegram.setOnCheckedChangeListener { _, isChecked ->
+      preferences.setTelegramEnabled(isChecked)
     }
 
-    private fun initializeViews() {
-        switchNotifyWifiArrival = findViewById(R.id.switchNotifyWifiArrival)
-        etTrustedWifi = findViewById(R.id.etTrustedWifi)
-
-        switchTelegram = findViewById(R.id.switchTelegram)
-        etTelegramToken = findViewById(R.id.etTelegramToken)
-        etTelegramChatId = findViewById(R.id.etTelegramChatId)
-        btnTestTelegram = findViewById(R.id.btnTestTelegram)
-
-        switchAppLock = findViewById(R.id.switchAppLock)
-        switchSecurityAlert = findViewById(R.id.switchSecurityAlert)
-        switchSecuritySound = findViewById(R.id.switchSecuritySound)
-        etSecurityStart = findViewById(R.id.etSecurityStart)
-        etSecurityEnd = findViewById(R.id.etSecurityEnd)
-
-        switchBiometric = findViewById(R.id.switchBiometric)
-        switchPocketMode = findViewById(R.id.switchPocketMode)
-        switchChargerMode = findViewById(R.id.switchChargerMode)
-        sliderSensitivity = findViewById(R.id.sliderSensitivity)
-        tvSensitivityValue = findViewById(R.id.tvSensitivityValue)
+    switchAppLock.setOnCheckedChangeListener { view, isChecked ->
+      if (isChecked) {
+        if (!BiometricAuthenticator.isAvailable(this)) {
+          view.isChecked = false
+          Toast.makeText(this, "Biometric authentication not available", Toast.LENGTH_SHORT).show()
+          return@setOnCheckedChangeListener
+        }
+      }
+      preferences.setAppLockEnabled(isChecked)
     }
 
-    private fun loadSettings() {
-        // General
-        switchNotifyWifiArrival.isChecked = preferences.shouldNotifyWifiArrival()
-        etTrustedWifi.setText(preferences.getTrustedWifiSsid())
-
-        // Telegram
-        switchTelegram.isChecked = preferences.isTelegramEnabled()
-        etTelegramToken.setText(preferences.getTelegramToken())
-        etTelegramChatId.setText(preferences.getTelegramChatId())
-
-        // Security
-        switchAppLock.isChecked = preferences.isAppLockEnabled()
-        switchSecurityAlert.isChecked = preferences.isSecurityAlertEnabled()
-        switchSecuritySound.isChecked = preferences.isSecuritySoundEnabled()
-
-        switchBiometric.isChecked = preferences.isBiometricEnabled()
-        switchPocketMode.isChecked = preferences.isPocketModeEnabled()
-        switchChargerMode.isChecked = preferences.isChargerModeEnabled()
-
-        val schedule = preferences.getSecuritySchedule()
-        etSecurityStart.setText(schedule.first)
-        etSecurityEnd.setText(schedule.second)
-
-        val sensitivity = preferences.getAntiTheftSensitivity()
-        sliderSensitivity.value = sensitivity
-        updateSensitivityText(sensitivity)
+    switchSecurityAlert.setOnCheckedChangeListener { _, isChecked ->
+      preferences.setSecurityAlertEnabled(isChecked)
     }
 
-    private fun setupListeners() {
-        // Auto-save on change for switches
-        switchNotifyWifiArrival.setOnCheckedChangeListener { _, isChecked ->
-            preferences.setNotifyWifiArrival(isChecked)
-        }
-
-        switchTelegram.setOnCheckedChangeListener { _, isChecked ->
-            preferences.setTelegramEnabled(isChecked)
-        }
-
-        switchAppLock.setOnCheckedChangeListener { view, isChecked ->
-            if (isChecked) {
-                if (!BiometricAuthenticator.isAvailable(this)) {
-                    view.isChecked = false
-                    Toast.makeText(this, "Biometric authentication not available", Toast.LENGTH_SHORT).show()
-                    return@setOnCheckedChangeListener
-                }
-            }
-            preferences.setAppLockEnabled(isChecked)
-        }
-
-        switchSecurityAlert.setOnCheckedChangeListener { _, isChecked ->
-            preferences.setSecurityAlertEnabled(isChecked)
-        }
-
-        switchSecuritySound.setOnCheckedChangeListener { _, isChecked ->
-            preferences.setSecuritySoundEnabled(isChecked)
-        }
-
-        switchBiometric.setOnCheckedChangeListener { view, isChecked ->
-            if (isChecked) {
-                if (!BiometricAuthenticator.isAvailable(this)) {
-                    view.isChecked = false
-                    Toast.makeText(this, "Biometric authentication not available", Toast.LENGTH_SHORT).show()
-                    return@setOnCheckedChangeListener
-                }
-            }
-            preferences.setBiometricEnabled(isChecked)
-        }
-
-        switchPocketMode.setOnCheckedChangeListener { _, isChecked ->
-            preferences.setPocketModeEnabled(isChecked)
-        }
-
-        switchChargerMode.setOnCheckedChangeListener { _, isChecked ->
-            preferences.setChargerModeEnabled(isChecked)
-        }
-
-        // Test Telegram Button
-        btnTestTelegram.setOnClickListener {
-            saveTelegramSettings()
-            if (preferences.getTelegramToken().isNullOrEmpty()) {
-                Toast.makeText(this, "Please enter a bot token", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "Sending test message...", Toast.LENGTH_SHORT).show()
-                telegramService.sendMessage("🔔 Test message from Presence Detector App!")
-            }
-        }
-
-        // Time Pickers
-        etSecurityStart.setOnClickListener { showTimePicker(etSecurityStart) }
-        etSecurityEnd.setOnClickListener { showTimePicker(etSecurityEnd) }
-
-        // Sensitivity Slider
-        sliderSensitivity.addOnChangeListener { _, value, _ ->
-            preferences.setAntiTheftSensitivity(value)
-            updateSensitivityText(value)
-        }
+    switchSecuritySound.setOnCheckedChangeListener { _, isChecked ->
+      preferences.setSecuritySoundEnabled(isChecked)
     }
 
-    private fun updateSensitivityText(value: Float) {
-        val label = when {
-            value < 1.0 -> "High ($value)"
-            value < 2.5 -> "Medium ($value)"
-            else -> "Low ($value)"
+    switchBiometric.setOnCheckedChangeListener { view, isChecked ->
+      if (isChecked) {
+        if (!BiometricAuthenticator.isAvailable(this)) {
+          view.isChecked = false
+          Toast.makeText(this, "Biometric authentication not available", Toast.LENGTH_SHORT).show()
+          return@setOnCheckedChangeListener
         }
-        tvSensitivityValue.text = label
+      }
+      preferences.setBiometricEnabled(isChecked)
     }
 
-    private fun showTimePicker(editText: TextInputEditText) {
-        val cal = Calendar.getInstance()
-        val currentHour = cal.get(Calendar.HOUR_OF_DAY)
-        val currentMinute = cal.get(Calendar.MINUTE)
-
-        val timePickerDialog = TimePickerDialog(this, { _, hourOfDay, minute ->
-            val time = String.format("%02d:%02d", hourOfDay, minute)
-            editText.setText(time)
-            saveSecuritySchedule()
-        }, currentHour, currentMinute, true)
-
-        timePickerDialog.show()
+    switchPocketMode.setOnCheckedChangeListener { _, isChecked ->
+      preferences.setPocketModeEnabled(isChecked)
     }
 
-    private fun saveTelegramSettings() {
-        preferences.setTelegramToken(etTelegramToken.text.toString().trim())
-        preferences.setTelegramChatId(etTelegramChatId.text.toString().trim())
+    switchChargerMode.setOnCheckedChangeListener { _, isChecked ->
+      preferences.setChargerModeEnabled(isChecked)
     }
 
-    private fun saveSecuritySchedule() {
-        preferences.setSecuritySchedule(
-            etSecurityStart.text.toString(),
-            etSecurityEnd.text.toString()
-        )
+    // Test Telegram Button
+    btnTestTelegram.setOnClickListener {
+      saveTelegramSettings()
+      if (preferences.getTelegramToken().isNullOrEmpty()) {
+        Toast.makeText(this, "Please enter a bot token", Toast.LENGTH_SHORT).show()
+      } else {
+        Toast.makeText(this, "Sending test message...", Toast.LENGTH_SHORT).show()
+        telegramService.sendMessage("🔔 Test message from Presence Detector App!")
+      }
     }
 
-    private fun saveGeneralSettings() {
-        val trustedWifi = etTrustedWifi.text.toString().trim()
-        if (trustedWifi.isNotEmpty()) {
-            preferences.setTrustedWifiSsid(trustedWifi)
-        } else {
-            preferences.setTrustedWifiSsid("")
-        }
-    }
+    // Time Pickers
+    etSecurityStart.setOnClickListener { showTimePicker(etSecurityStart) }
+    etSecurityEnd.setOnClickListener { showTimePicker(etSecurityEnd) }
 
-    override fun onPause() {
-        super.onPause()
-        saveTelegramSettings()
-        saveSecuritySchedule()
-        saveGeneralSettings()
+    // Sensitivity Slider
+    sliderSensitivity.addOnChangeListener { _, value, _ ->
+      preferences.setAntiTheftSensitivity(value)
+      updateSensitivityText(value)
     }
+  }
+
+  private fun updateSensitivityText(value: Float) {
+    val label =
+      when {
+        value < 1.0 -> "High ($value)"
+        value < 2.5 -> "Medium ($value)"
+        else -> "Low ($value)"
+      }
+    tvSensitivityValue.text = label
+  }
+
+  private fun showTimePicker(editText: TextInputEditText) {
+    val cal = Calendar.getInstance()
+    val currentHour = cal.get(Calendar.HOUR_OF_DAY)
+    val currentMinute = cal.get(Calendar.MINUTE)
+
+    val timePickerDialog =
+      TimePickerDialog(
+        this,
+        { _, hourOfDay, minute ->
+          val time = String.format("%02d:%02d", hourOfDay, minute)
+          editText.setText(time)
+          saveSecuritySchedule()
+        },
+        currentHour,
+        currentMinute,
+        true
+      )
+
+    timePickerDialog.show()
+  }
+
+  private fun saveTelegramSettings() {
+    preferences.setTelegramToken(etTelegramToken.text.toString().trim())
+    preferences.setTelegramChatId(etTelegramChatId.text.toString().trim())
+  }
+
+  private fun saveSecuritySchedule() {
+    preferences.setSecuritySchedule(etSecurityStart.text.toString(), etSecurityEnd.text.toString())
+  }
+
+  private fun saveGeneralSettings() {
+    val trustedWifi = etTrustedWifi.text.toString().trim()
+    if (trustedWifi.isNotEmpty()) {
+      preferences.setTrustedWifiSsid(trustedWifi)
+    } else {
+      preferences.setTrustedWifiSsid("")
+    }
+  }
+
+  override fun onPause() {
+    super.onPause()
+    saveTelegramSettings()
+    saveSecuritySchedule()
+    saveGeneralSettings()
+  }
 }

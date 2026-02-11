@@ -2,6 +2,14 @@ plugins {
     id 'com.android.application'
     id 'kotlin-parcelize'
     id 'jacoco'
+    id 'com.diffplug.spotless'
+}
+
+spotless {
+    kotlin {
+        target '**/*.kt'
+        ktfmt().googleStyle()
+    }
 }
 
 android {
@@ -170,7 +178,7 @@ task jacocoTestCoverageVerification(type: JacocoCoverageVerification, dependsOn:
     violationRules {
         rule {
             limit {
-                minimum = 0.65 // Enforce 65% coverage (Improved from 60%, targeting 1.0 iteratively)
+                minimum = 0.80 // Enforce 80% coverage
             }
         }
     }
