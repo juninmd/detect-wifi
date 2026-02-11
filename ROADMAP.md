@@ -23,7 +23,7 @@ To become the definitive, privacy-focused Android solution for residential prese
 *   ✅ **Anti-Theft Features:** Motion, Pocket, and Charger alarms fully implemented.
 *   ✅ **Labeled Badges:** Visual distinction for manually named devices.
 *   ✅ **Dual-Tech Detection:** Simultaneous WiFi and Bluetooth LE scanning for robust presence verification.
-*   ✅ **Hotspot Recognition:** Identifies mobile hotspots even on different networks.
+*   ✅ **Hotspot Recognition:** Identifies mobile hotspots based on common SSID naming patterns.
 *   ✅ **Telegram Integration:** Decoupled, independent alerts for arrival/departure events.
 
 **Metrics:**
