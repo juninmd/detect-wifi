@@ -22,6 +22,9 @@ To become the definitive, privacy-focused Android solution for residential prese
 *   ✅ **Notification Intelligence:** Implemented "Smart Notifications" with debounce to reduce spam and focus on meaningful events (Arrival/Departure).
 *   ✅ **Anti-Theft Features:** Motion, Pocket, and Charger alarms fully implemented.
 *   ✅ **Labeled Badges:** Visual distinction for manually named devices.
+*   ✅ **Dual-Tech Detection:** Simultaneous WiFi and Bluetooth LE scanning for robust presence verification.
+*   ✅ **Hotspot Recognition:** Identifies mobile hotspots even on different networks.
+*   ✅ **Telegram Integration:** Decoupled, independent alerts for arrival/departure events.
 
 **Metrics:**
 *   **Open Issues:** 8 (Maintenance & Minor Bugs)
@@ -69,6 +72,23 @@ To become the definitive, privacy-focused Android solution for residential prese
     *   🌐 **Internationalization:** Complete translation for ES, FR, DE, PT-BR.
 
 ## 4. Feature Details
+
+### Device Management (Q1)
+
+**User Value Proposition:**
+Allows users to prioritize and quickly access their most important devices (those with custom labels) by keeping them at the top of the list, especially useful in crowded WiFi environments.
+
+**Technical Approach:**
+*   **Sorting Logic:** Implement a custom `Comparator` in `WifiAdapter` that prioritizes devices with `nickname != null`.
+*   **UI Control:** Add a "Sort by" menu option (Signal Strength vs. Importance) to toggle this behavior.
+*   **State:** Persist the sort preference in `SharedPreferences`.
+
+**Success Criteria:**
+*   Labeled devices appear at the top of the list when enabled.
+*   Sorting is applied instantly upon labeling a device.
+*   Default sort order remains by Signal Strength until changed.
+
+**Estimated Effort:** Small (3-5 days)
 
 ### MQTT Integration (Q2)
 
