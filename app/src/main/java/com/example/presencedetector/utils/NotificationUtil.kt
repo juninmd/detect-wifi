@@ -17,13 +17,11 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.example.presencedetector.MainActivity
-import com.example.presencedetector.WifiRadarActivity
 import com.example.presencedetector.R
+import com.example.presencedetector.WifiRadarActivity
 import com.example.presencedetector.receivers.NotificationActionReceiver
 
-/**
- * Utility for managing notifications.
- */
+/** Utility for managing notifications. */
 object NotificationUtil {
     private const val TAG = "NotificationUtil"
 
@@ -199,18 +197,51 @@ object NotificationUtil {
 
         notify(context, notificationId, builder.build())
     }
+  }
 
-    fun sendBatteryAlert(context: Context, level: Int) {
-        createNotificationChannels(context)
+  /** Send a standard notification for presence events. */
+  fun sendPresenceNotification(
+    context: Context,
+    title: String,
+    message: String,
+    isImportantEvent: Boolean,
+    actionTitle: String? = null,
+    actionIntent: PendingIntent? = null,
+    notificationId: Int? = null,
+    secondActionTitle: String? = null,
+    secondActionIntent: PendingIntent? = null,
+    iconResId: Int? = null
+  ) {
+    createNotificationChannels(context)
 
-        val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    val channelId = if (isImportantEvent) INFO_CHANNEL_ID else SILENT_CHANNEL_ID
+
+    val intent =
+      Intent(context, WifiRadarActivity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        putExtra("from_notification", true)
+      }
+
+    val pendingIntent =
+      PendingIntent.getActivity(
+        context,
+        System.currentTimeMillis().toInt(),
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+      )
+
+    val builder =
+      NotificationCompat.Builder(context, channelId)
+        .setContentTitle(title)
+        .setContentText(message)
+        .setSmallIcon(iconResId ?: R.drawable.ic_notification)
+        .setContentIntent(pendingIntent)
+        .setAutoCancel(true)
+        .setGroup(GROUP_KEY_PRESENCE)
+        .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+        .setPriority(
+          if (isImportantEvent) NotificationCompat.PRIORITY_DEFAULT
+          else NotificationCompat.PRIORITY_LOW
         )
 
         val builder = buildBaseNotification(context, BATTERY_CHANNEL_ID, context.getString(R.string.notif_battery_warning), context.getString(R.string.notif_battery_desc, level), NotificationCompat.PRIORITY_HIGH)
@@ -284,23 +315,62 @@ object NotificationUtil {
         notify(context, 1000, builder.build())
     }
 
-    fun createForegroundNotification(
-        context: Context,
-        title: String = "Monitoramento Ativo",
-        subtitle: String = "Verificando sensores...",
-        channelId: String = CHANNEL_ID
-    ): Notification {
-        createNotificationChannels(context)
+    actions.forEach { builder.addAction(it) }
 
-        val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        }
+    notify(context, notificationId, builder.build())
+  }
 
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+  fun sendBatteryAlert(context: Context, level: Int) {
+    createNotificationChannels(context)
+
+    val intent =
+      Intent(context, MainActivity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+      }
+    val pendingIntent =
+      PendingIntent.getActivity(
+        context,
+        0,
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+      )
+
+    val builder =
+      NotificationCompat.Builder(context, BATTERY_CHANNEL_ID)
+        .setContentTitle(context.getString(R.string.notif_battery_warning))
+        .setContentText(context.getString(R.string.notif_battery_desc, level))
+        .setSmallIcon(android.R.drawable.ic_lock_idle_low_battery)
+        .setContentIntent(pendingIntent)
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
+        .setCategory(NotificationCompat.CATEGORY_SYSTEM)
+        .setAutoCancel(true)
+
+    notify(context, 2001, builder.build())
+  }
+
+  fun sendIntruderAlert(context: Context, bitmap: Bitmap) {
+    createNotificationChannels(context)
+
+    val intent =
+      Intent(context, MainActivity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+      }
+    val pendingIntent =
+      PendingIntent.getActivity(
+        context,
+        0,
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+      )
+
+    val builder =
+      NotificationCompat.Builder(context, SECURITY_CHANNEL_ID)
+        .setContentTitle("🚨 INTRUSO DETECTADO!")
+        .setContentText("Uma foto foi capturada durante o alerta de segurança.")
+        .setSmallIcon(R.drawable.ic_notification_alert)
+        .setLargeIcon(bitmap)
+        .setStyle(
+          NotificationCompat.BigPictureStyle().bigPicture(bitmap).bigLargeIcon(null as Bitmap?)
         )
 
         return buildBaseNotification(context, channelId, title, subtitle, NotificationCompat.PRIORITY_LOW)
@@ -320,10 +390,11 @@ object NotificationUtil {
             true
         }
     }
+  }
 
-    private fun notify(context: Context, id: Int, notification: Notification) {
-        if (checkPermission(context)) {
-            NotificationManagerCompat.from(context).notify(id, notification)
-        }
+  private fun notify(context: Context, id: Int, notification: Notification) {
+    if (checkPermission(context)) {
+      NotificationManagerCompat.from(context).notify(id, notification)
     }
+  }
 }

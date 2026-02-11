@@ -2,9 +2,7 @@ package com.example.presencedetector.utils
 
 import com.example.presencedetector.model.DeviceCategory
 
-/**
- * Utility to classify devices based on SSID and BSSID patterns.
- */
+/** Utility to classify devices based on SSID and BSSID patterns. */
 object DeviceClassifier {
 
     fun classify(ssid: String, bssid: String): DeviceCategory {
@@ -36,8 +34,9 @@ object DeviceClassifier {
             else -> DeviceCategory.UNKNOWN
         }
     }
+  }
 
-    private fun String.containsAny(patterns: List<String>): Boolean {
-        return patterns.any { this.contains(it) }
-    }
+  private fun String.containsAny(patterns: List<String>): Boolean {
+    return patterns.any { this.contains(it) }
+  }
 }
