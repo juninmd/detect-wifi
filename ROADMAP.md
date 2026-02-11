@@ -115,7 +115,7 @@ Reduces false alarms by learning normal arrival/departure patterns. For example,
 
 **Technical Approach:**
 *   **Model:** Lightweight TensorFlow Lite model or custom heuristic algorithm.
-*   **Input:** Time of day, Day of week, Signal strength history, Other devices present.
+*   **Input:** Time of day, day of week, signal strength history, other devices present.
 *   **Output:** Probability of presence.
 *   **Privacy:** Training and inference happen 100% on-device.
 
