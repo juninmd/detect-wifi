@@ -19,11 +19,12 @@ To become the definitive, privacy-focused Android solution for residential prese
 **Key Achievements:**
 *   ✅ **Robust Background Service:** Reliable detection even when the app is closed or the screen is off.
 *   ✅ **Modern UI:** Vibrant, responsive interface with Dark Mode support and intuitive controls.
-*   ✅ **Notification Intelligence:** implemented "Smart Notifications" to reduce spam and focus on meaningful events (Arrival/Departure).
+*   ✅ **Notification Intelligence:** Implemented "Smart Notifications" with debounce to reduce spam and focus on meaningful events (Arrival/Departure).
 *   ✅ **Anti-Theft Features:** Motion, Pocket, and Charger alarms fully implemented.
+*   ✅ **Labeled Badges:** Visual distinction for manually named devices.
 
 **Metrics:**
-*   **Open Issues:** 15 (Maintenance & Minor Bugs)
+*   **Open Issues:** 8 (Maintenance & Minor Bugs)
 *   **Urgency:** Medium (Feature Development)
 
 ## 3. Quarterly Roadmap (2026)
@@ -32,7 +33,7 @@ To become the definitive, privacy-focused Android solution for residential prese
 *Focus: Stability, Bug Fixes, and UI Polish*
 
 *   **High Priority (Immediate):**
-    *   🐛 **Bug Squashing:** Address the 15 open issues (minor bugs, edge cases in detection).
+    *   🐛 **Bug Squashing:** Address the 8 open issues (minor bugs, edge cases in detection).
     *   ⚡ **Battery Optimization:** Profile and optimize background scanning intervals to reduce drain by 15%.
 *   **Medium Priority:**
     *   🎨 **UI/UX Polish:** Implement "Toast on Refresh", "Refresh Animation", and complete custom icon set.
@@ -67,7 +68,9 @@ To become the definitive, privacy-focused Android solution for residential prese
 *   **Low Priority:**
     *   🌐 **Internationalization:** Complete translation for ES, FR, DE, PT-BR.
 
-## 4. Feature Spotlight: MQTT Integration (Q2)
+## 4. Feature Details
+
+### MQTT Integration (Q2)
 
 **User Value Proposition:**
 Allows users to trigger real-world actions based on presence. For example, turning on lights when "Smartphone" connects to WiFi, or arming the home security system when "Everyone" leaves. This transforms the app from a passive monitor to an active home automation trigger.
@@ -86,6 +89,42 @@ Allows users to trigger real-world actions based on presence. For example, turni
 *   Reconnection logic handles network switches (WiFi <-> Data) gracefully.
 
 **Estimated Effort:** Medium (2-3 weeks)
+
+### Room Database Migration (Q2)
+
+**User Value Proposition:**
+Improved performance and data integrity for device history and logs, especially with large datasets. Enables complex queries for future analytics features.
+
+**Technical Approach:**
+*   **Framework:** Use Android Room Persistence Library.
+*   **Entities:** Define `Device`, `LogEntry`, `Settings` entities.
+*   **Migration:** Implement `Migration` strategies to import existing SharedPreferences/File data without data loss.
+*   **Async:** Ensure all DB operations use Coroutines/Flow.
+
+**Success Criteria:**
+*   No data loss during migration.
+*   Faster load times for device lists and logs.
+*   Complex queries (e.g., "Show logs for device X in last 7 days") become possible.
+
+**Estimated Effort:** Medium (2 weeks)
+
+### Machine Learning Patterns (Q3)
+
+**User Value Proposition:**
+Reduces false alarms by learning normal arrival/departure patterns. For example, if user usually arrives at 6 PM, a brief signal loss at 5:55 PM might be ignored more aggressively.
+
+**Technical Approach:**
+*   **Model:** Lightweight TensorFlow Lite model or custom heuristic algorithm.
+*   **Input:** Time of day, day of week, signal strength history, other devices present.
+*   **Output:** Probability of presence.
+*   **Privacy:** Training and inference happen 100% on-device.
+
+**Success Criteria:**
+*   False positive rate reduced by 30%.
+*   Model size < 5MB.
+*   Minimal impact on battery life.
+
+**Estimated Effort:** Large (4 weeks)
 
 ## 5. Dependencies & Risks
 
