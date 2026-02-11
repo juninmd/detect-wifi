@@ -5,78 +5,34 @@ import com.example.presencedetector.model.DeviceCategory
 /** Utility to classify devices based on SSID and BSSID patterns. */
 object DeviceClassifier {
 
-  private val SMARTPHONE_HIGH_CONFIDENCE = listOf("iphone", "android", "galaxy", "note", "pixel")
+    fun classify(ssid: String, bssid: String): DeviceCategory {
+        val name = ssid.lowercase()
 
-  private val E_READERS = listOf("kindle", "ebook")
+        return when {
+            // Explicit Smartphones (High Confidence)
+            name.containsAny(DevicePatterns.SMARTPHONE_HIGH_CONFIDENCE) -> DeviceCategory.SMARTPHONE
 
-  private val SMART_HOME_ASSISTANTS = listOf("alexa", "echo", "amazon")
+            // Kindle / E-Readers
+            name.containsAny(DevicePatterns.E_READERS) -> DeviceCategory.KINDLE
 
-  private val SMART_LIGHTS =
-    listOf("light", "bulb", "hue", "tuya", "smart life", "yeelight", "continua", "batcaverna")
+            // Alexa / Echo
+            name.containsAny(DevicePatterns.SMART_HOME_ASSISTANTS) -> DeviceCategory.ALEXA
 
-  private val SMART_TVS =
-    listOf("tv", "samsung", "lg", "sony", "bravia", "firestick", "chromecast", "roku")
+            // Smart Lights
+            name.containsAny(DevicePatterns.SMART_LIGHTS) -> DeviceCategory.SMART_LIGHT
 
-  private val ROUTERS =
-    listOf("2.4g", "5g", "router", "gateway", "tp-link", "d-link", "familia", "adriana")
+            // Smart TV
+            name.containsAny(DevicePatterns.SMART_TVS) -> DeviceCategory.SMART_TV
 
-  private val MOBILE_HOTSPOT_PATTERNS =
-    listOf(
-      "iphone",
-      "android",
-      "samsung",
-      "xiaomi",
-      "redmi",
-      "oneplus",
-      "pixel",
-      "motorola",
-      "huawei",
-      "poco",
-      "nokia",
-      "realme",
-      "vivo",
-      "oppo",
-      "honor",
-      "personal",
-      "hotspot",
-      "moto",
-      "galaxy",
-      "note",
-      "12 pro",
-      "s21",
-      "s22",
-      "note 20",
-      "iphone 13"
-    )
+            // Mobile Hotspots (NEW) - Checked after specific devices to avoid false positives (e.g. Samsung TV)
+            name.containsAny(DevicePatterns.MOBILE_HOTSPOT_PATTERNS) -> DeviceCategory.SMARTPHONE
 
-  fun classify(ssid: String, bssid: String): DeviceCategory {
-    val name = ssid.lowercase()
+            // Routers
+            name.containsAny(DevicePatterns.ROUTERS) -> DeviceCategory.ROUTER
 
-    return when {
-      // Explicit Smartphones (High Confidence)
-      name.containsAny(SMARTPHONE_HIGH_CONFIDENCE) -> DeviceCategory.SMARTPHONE
-
-      // Kindle / E-Readers
-      name.containsAny(E_READERS) -> DeviceCategory.KINDLE
-
-      // Alexa / Echo
-      name.containsAny(SMART_HOME_ASSISTANTS) -> DeviceCategory.ALEXA
-
-      // Smart Lights
-      name.containsAny(SMART_LIGHTS) -> DeviceCategory.SMART_LIGHT
-
-      // Smart TV
-      name.containsAny(SMART_TVS) -> DeviceCategory.SMART_TV
-
-      // Mobile Hotspots (NEW) - Checked after specific devices to avoid false positives (e.g.
-      // Samsung TV)
-      name.containsAny(MOBILE_HOTSPOT_PATTERNS) -> DeviceCategory.SMARTPHONE
-
-      // Routers
-      name.containsAny(ROUTERS) -> DeviceCategory.ROUTER
-
-      // Default
-      else -> DeviceCategory.UNKNOWN
+            // Default
+            else -> DeviceCategory.UNKNOWN
+        }
     }
   }
 
