@@ -80,7 +80,7 @@ Allows users to prioritize and quickly access their most important devices (thos
 
 **Technical Approach:**
 *   **Sorting Logic:** Implement a custom `Comparator` in `WifiAdapter` that prioritizes devices with `nickname != null`.
-*   **UI Control:** Add a "Sort by" menu option (Signal Strength vs. Importance) to toggle this behavior.
+*   **UI Control:** Add an "Importance" option to the "Sort by" dialog to prioritize labeled devices.
 *   **State:** Persist the sort preference in `SharedPreferences`.
 
 **Success Criteria:**
