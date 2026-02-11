@@ -8,142 +8,160 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
-import kotlinx.coroutines.*
 import com.example.presencedetector.model.WiFiDevice
+import kotlinx.coroutines.*
 
-/**
- * WiFi-based presence detection service.
- */
+/** WiFi-based presence detection service. */
 open class WiFiDetectionService(private val context: Context) {
-    companion object {
-        private const val TAG = "WiFiDetector"
-        private const val SCAN_INTERVAL = 15000L // Optimized to 15 seconds for battery
-        private const val SIGNAL_THRESHOLD = -85
-    }
+  companion object {
+    private const val TAG = "WiFiDetector"
+    private const val SCAN_INTERVAL = 15000L // Optimized to 15 seconds for battery
+    private const val SIGNAL_THRESHOLD = -85
+  }
 
-    private val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
-    private val mainHandler = Handler(Looper.getMainLooper())
-    private val scope = CoroutineScope(Dispatchers.Main + Job())
+  private val wifiManager =
+    context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+  private val mainHandler = Handler(Looper.getMainLooper())
+  private val scope = CoroutineScope(Dispatchers.Main + Job())
 
-    private var scanJob: Job? = null
-    private var presenceListener: PresenceListener? = null
-    private var isScanning = false
+  private var scanJob: Job? = null
+  private var presenceListener: PresenceListener? = null
+  private var isScanning = false
 
-    fun interface PresenceListener {
-        fun onPresenceDetected(peopleDetected: Boolean, devices: List<WiFiDevice>, details: String)
-    }
+  fun interface PresenceListener {
+    fun onPresenceDetected(peopleDetected: Boolean, devices: List<WiFiDevice>, details: String)
+  }
 
-    open fun setPresenceListener(listener: PresenceListener) {
-        this.presenceListener = listener
-    }
+  open fun setPresenceListener(listener: PresenceListener) {
+    this.presenceListener = listener
+  }
 
-    open fun startScanning() {
-        if (isScanning) return
-        isScanning = true
-        scanJob = scope.launch {
-            while (isActive) {
-                performScan()
-                delay(SCAN_INTERVAL)
-            }
+  open fun startScanning() {
+    if (isScanning) return
+    isScanning = true
+    scanJob =
+      scope.launch {
+        while (isActive) {
+          performScan()
+          delay(SCAN_INTERVAL)
         }
+      }
+  }
+
+  open fun stopScanning() {
+    scanJob?.cancel()
+    scanJob = null
+    isScanning = false
+  }
+
+  // Removed @RequiresPermission to handle it safely inside
+  private suspend fun performScan() {
+    if (
+      ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) !=
+        PackageManager.PERMISSION_GRANTED
+    ) {
+      Log.w(TAG, "Skipping scan: Location permission not granted")
+      notifyPresence(false, emptyList(), "Permission Denied")
+      return
     }
 
-    open fun stopScanning() {
-        scanJob?.cancel()
-        scanJob = null
-        isScanning = false
-    }
+    try {
+      val scanResults = wifiManager?.scanResults
+      if (scanResults.isNullOrEmpty()) {
+        notifyPresence(false, emptyList(), "No networks")
+        return
+      }
 
-    // Removed @RequiresPermission to handle it safely inside
-    private suspend fun performScan() {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-             Log.w(TAG, "Skipping scan: Location permission not granted")
-             notifyPresence(false, emptyList(), "Permission Denied")
-             return
-        }
+      // Detect both standard networks AND mobile hotspots
+      val devices =
+        scanResults.mapNotNull { result ->
+          val ssid = result.SSID ?: "Unknown"
+          val isHotspot = isLikelyMobileHotspot(ssid)
 
-        try {
-            val scanResults = wifiManager?.scanResults
-            if (scanResults.isNullOrEmpty()) {
-                notifyPresence(false, emptyList(), "No networks")
-                return
-            }
-
-            // Detect both standard networks AND mobile hotspots
-            val devices = scanResults.mapNotNull { result ->
-                val ssid = result.SSID ?: "Unknown"
-                val isHotspot = isLikelyMobileHotspot(ssid)
-
-                // Extract WiFi Standard (API 30+)
-                val standard = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                    result.wifiStandard
-                } else {
-                    0
-                }
-
-                WiFiDevice(
-                    ssid = ssid,
-                    bssid = result.BSSID ?: "00:00:00:00:00:00",
-                    level = result.level,
-                    frequency = result.frequency,
-                    nickname = if (isHotspot) "📱 $ssid (Hotspot)" else ssid,
-                    capabilities = result.capabilities ?: "",
-                    channelWidth = result.channelWidth, // 0 if unknown
-                    standard = standard
-                )
+          // Extract WiFi Standard (API 30+)
+          val standard =
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+              result.wifiStandard
+            } else {
+              0
             }
 
-            val presenceDetected = devices.any { it.level >= -70 }
-
-            // More details including hotspot count
-            val hotspotCount = devices.count { it.nickname?.contains("Hotspot") == true }
-            val details = "Found ${devices.size} networks" +
-                         if (hotspotCount > 0) " ($hotspotCount hotspots)" else ""
-
-            notifyPresence(presenceDetected, devices, details)
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Scan error", e)
+          WiFiDevice(
+            ssid = ssid,
+            bssid = result.BSSID ?: "00:00:00:00:00:00",
+            level = result.level,
+            frequency = result.frequency,
+            nickname = if (isHotspot) "📱 $ssid (Hotspot)" else ssid,
+            capabilities = result.capabilities ?: "",
+            channelWidth = result.channelWidth, // 0 if unknown
+            standard = standard
+          )
         }
+
+      val presenceDetected = devices.any { it.level >= -70 }
+
+      // More details including hotspot count
+      val hotspotCount = devices.count { it.nickname?.contains("Hotspot") == true }
+      val details =
+        "Found ${devices.size} networks" + if (hotspotCount > 0) " ($hotspotCount hotspots)" else ""
+
+      notifyPresence(presenceDetected, devices, details)
+    } catch (e: Exception) {
+      Log.e(TAG, "Scan error", e)
     }
+  }
 
-    /**
-     * Detects if SSID looks like a mobile hotspot.
-     * Mobile hotspots typically have patterns like:
-     * - "iPhone", "Android", "Samsung", etc.
-     * - End with numbers or alphanumerics
-     * - No spaces or special chars (usually)
-     */
-    private fun isLikelyMobileHotspot(ssid: String): Boolean {
-        val lowerSsid = ssid.lowercase()
+  /**
+   * Detects if SSID looks like a mobile hotspot. Mobile hotspots typically have patterns like:
+   * - "iPhone", "Android", "Samsung", etc.
+   * - End with numbers or alphanumerics
+   * - No spaces or special chars (usually)
+   */
+  private fun isLikelyMobileHotspot(ssid: String): Boolean {
+    val lowerSsid = ssid.lowercase()
 
-        // Common mobile hotspot patterns
-        val mobilePatterns = listOf(
-            "iphone", "android", "samsung", "xiaomi", "redmi",
-            "oneplus", "pixel", "motorola", "huawei", "poco",
-            "nokia", "realme", "vivo", "oppo", "honor",
-            "personal", "hotspot", "moto", "galaxy", "note"
-        )
+    // Common mobile hotspot patterns
+    val mobilePatterns =
+      listOf(
+        "iphone",
+        "android",
+        "samsung",
+        "xiaomi",
+        "redmi",
+        "oneplus",
+        "pixel",
+        "motorola",
+        "huawei",
+        "poco",
+        "nokia",
+        "realme",
+        "vivo",
+        "oppo",
+        "honor",
+        "personal",
+        "hotspot",
+        "moto",
+        "galaxy",
+        "note"
+      )
 
-        // Check if contains mobile patterns
-        val containsMobilePattern = mobilePatterns.any { lowerSsid.contains(it) }
+    // Check if contains mobile patterns
+    val containsMobilePattern = mobilePatterns.any { lowerSsid.contains(it) }
 
-        // Check if SSID is very short (typical for hotspots)
-        val isShortName = ssid.length < 15 && !ssid.contains("_") && !ssid.contains("-")
+    // Check if SSID is very short (typical for hotspots)
+    val isShortName = ssid.length < 15 && !ssid.contains("_") && !ssid.contains("-")
 
-        return containsMobilePattern || (isShortName && ssid.matches(Regex("[A-Za-z0-9]+")))
-    }
+    return containsMobilePattern || (isShortName && ssid.matches(Regex("[A-Za-z0-9]+")))
+  }
 
-    private fun notifyPresence(detected: Boolean, devices: List<WiFiDevice>, details: String) {
-        presenceListener?.let {
-            mainHandler.post { it.onPresenceDetected(detected, devices, details) }
-        }
-    }
+  private fun notifyPresence(detected: Boolean, devices: List<WiFiDevice>, details: String) {
+    presenceListener?.let { mainHandler.post { it.onPresenceDetected(detected, devices, details) } }
+  }
 
-    fun isScanning(): Boolean = isScanning
+  fun isScanning(): Boolean = isScanning
 
-    fun destroy() {
-        stopScanning()
-        scope.cancel()
-    }
+  fun destroy() {
+    stopScanning()
+    scope.cancel()
+  }
 }
