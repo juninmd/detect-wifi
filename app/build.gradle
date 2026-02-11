@@ -12,8 +12,8 @@ android {
         applicationId "com.example.presencedetector"
         minSdk 33
         targetSdk 35
-        versionCode 3
-        versionName "1.1"
+        versionCode System.getenv("VERSION_CODE")?.toInteger() ?: 3
+        versionName System.getenv("VERSION_NAME") ?: "1.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
@@ -21,8 +21,23 @@ android {
         }
     }
 
+    signingConfigs {
+        release
+    }
+
+    def keystoreFile = System.getenv("KEYSTORE_FILE")
+    if (keystoreFile) {
+        android.signingConfigs.release.storeFile = file(keystoreFile)
+        android.signingConfigs.release.storePassword = System.getenv("KEYSTORE_PASSWORD")
+        android.signingConfigs.release.keyAlias = System.getenv("KEY_ALIAS")
+        android.signingConfigs.release.keyPassword = System.getenv("KEY_PASSWORD")
+    }
+
     buildTypes {
         release {
+            if (System.getenv("KEYSTORE_FILE")) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
