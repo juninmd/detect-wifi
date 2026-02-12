@@ -9,6 +9,7 @@ import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.presencedetector.model.WiFiDevice
+import com.example.presencedetector.utils.DeviceClassifier
 import kotlinx.coroutines.*
 
 /** WiFi-based presence detection service. */
@@ -76,7 +77,7 @@ open class WiFiDetectionService(private val context: Context) {
       val devices =
         scanResults.mapNotNull { result ->
           val ssid = result.SSID ?: "Unknown"
-          val isHotspot = isLikelyMobileHotspot(ssid)
+          val isHotspot = DeviceClassifier.isMobileHotspot(ssid)
 
           // Extract WiFi Standard (API 30+)
           val standard =
@@ -109,49 +110,6 @@ open class WiFiDetectionService(private val context: Context) {
     } catch (e: Exception) {
       Log.e(TAG, "Scan error", e)
     }
-  }
-
-  /**
-   * Detects if SSID looks like a mobile hotspot. Mobile hotspots typically have patterns like:
-   * - "iPhone", "Android", "Samsung", etc.
-   * - End with numbers or alphanumerics
-   * - No spaces or special chars (usually)
-   */
-  private fun isLikelyMobileHotspot(ssid: String): Boolean {
-    val lowerSsid = ssid.lowercase()
-
-    // Common mobile hotspot patterns
-    val mobilePatterns =
-      listOf(
-        "iphone",
-        "android",
-        "samsung",
-        "xiaomi",
-        "redmi",
-        "oneplus",
-        "pixel",
-        "motorola",
-        "huawei",
-        "poco",
-        "nokia",
-        "realme",
-        "vivo",
-        "oppo",
-        "honor",
-        "personal",
-        "hotspot",
-        "moto",
-        "galaxy",
-        "note"
-      )
-
-    // Check if contains mobile patterns
-    val containsMobilePattern = mobilePatterns.any { lowerSsid.contains(it) }
-
-    // Check if SSID is very short (typical for hotspots)
-    val isShortName = ssid.length < 15 && !ssid.contains("_") && !ssid.contains("-")
-
-    return containsMobilePattern || (isShortName && ssid.matches(Regex("[A-Za-z0-9]+")))
   }
 
   private fun notifyPresence(detected: Boolean, devices: List<WiFiDevice>, details: String) {

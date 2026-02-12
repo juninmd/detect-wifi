@@ -91,7 +91,7 @@ class NotificationUtilTest {
 
   @Test
   fun testCreateForegroundNotification() {
-    val notification = NotificationUtil.createForegroundNotification(context)
+    val notification = NotificationUtil.createForegroundNotification(context, "Title", "Message", NotificationUtil.CHANNEL_ID)
     assertNotNull(notification)
     assertEquals(NotificationUtil.CHANNEL_ID, notification.channelId)
   }

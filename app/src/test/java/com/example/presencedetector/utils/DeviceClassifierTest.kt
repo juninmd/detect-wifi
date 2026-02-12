@@ -2,6 +2,8 @@ package com.example.presencedetector.utils
 
 import com.example.presencedetector.model.DeviceCategory
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DeviceClassifierTest {
@@ -39,5 +41,17 @@ class DeviceClassifierTest {
   fun `classify returns Unknown for generic names`() {
     assertEquals(DeviceCategory.UNKNOWN, DeviceClassifier.classify("MyWifi", "any"))
     assertEquals(DeviceCategory.UNKNOWN, DeviceClassifier.classify("Visitor", "any"))
+  }
+
+  @Test
+  fun `isMobileHotspot detects hotspot patterns`() {
+    assertTrue(DeviceClassifier.isMobileHotspot("iPhone of User"))
+    assertTrue(DeviceClassifier.isMobileHotspot("AndroidAP"))
+    assertTrue(DeviceClassifier.isMobileHotspot("Galaxy S21"))
+    assertTrue(DeviceClassifier.isMobileHotspot("MyHotspot"))
+    assertTrue(DeviceClassifier.isMobileHotspot("Abc12")) // Short alphanumeric
+
+    assertFalse(DeviceClassifier.isMobileHotspot("Home_WiFi_5G"))
+    assertFalse(DeviceClassifier.isMobileHotspot("TP-Link_1234"))
   }
 }

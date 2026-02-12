@@ -13,7 +13,7 @@ open class PreferencesUtil(context: Context) {
         private const val PREF_NAME = "presence_detector_prefs"
         const val KEY_ANTI_THEFT_SENSITIVITY = "anti_theft_sensitivity"
 
-        private object Keys {
+        object Keys {
             const val LAST_DETECTION = "last_detection"
             const val DETECTION_ENABLED = "detection_enabled"
             const val FOREGROUND_SERVICE = "foreground_service"
@@ -43,7 +43,7 @@ open class PreferencesUtil(context: Context) {
             const val SYSTEM_LOGS = "system_logs"
         }
 
-        private object Prefixes {
+        object Prefixes {
             const val HISTORY = "history_"
             const val NICKNAME = "nickname_"
             const val CATEGORY = "category_"
@@ -116,26 +116,38 @@ open class PreferencesUtil(context: Context) {
         return Pair(start, end)
     }
 
-    private const val PREFIX_HISTORY = "history_"
-    private const val PREFIX_NICKNAME = "nickname_"
-    private const val PREFIX_CATEGORY = "category_"
-    private const val PREFIX_NOTIFY_ARRIVAL = "notify_arrival_"
-    private const val PREFIX_NOTIFY_DEPARTURE = "notify_departure_"
-    private const val PREFIX_CRITICAL_ALERT = "critical_alert_"
-    private const val PREFIX_TELEGRAM_ALERT = "telegram_alert_"
-    private const val PREFIX_EVENT_LOGS = "event_logs_"
-    private const val KEY_ALL_BSSIDS = "all_bssids"
-    private const val KEY_TRUSTED_WIFI_SSID = "trusted_wifi_ssid"
-    private const val KEY_SYSTEM_LOGS = "system_logs"
-  }
+    open fun isCurrentTimeInSecuritySchedule(): Boolean {
+        val (startStr, endStr) = getSecuritySchedule()
+        val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val now = Date()
+        val currentStr = dateFormat.format(now)
+
+        return try {
+            val start = dateFormat.parse(startStr)
+            val end = dateFormat.parse(endStr)
+            val current = dateFormat.parse(currentStr)
+
+            if (start != null && end != null && current != null) {
+                if (start.before(end)) {
+                    (current.after(start) || current == start) && (current.before(end) || current == end)
+                } else {
+                    // Spans over midnight (e.g., 22:00 to 06:00)
+                    (current.after(start) || current == start) || (current.before(end) || current == end)
+                }
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
 
     // --- Anti-Theft Settings ---
     fun setAntiTheftArmed(armed: Boolean) = putBoolean(Keys.ANTI_THEFT_ARMED, armed)
     open fun isAntiTheftArmed() = getBoolean(Keys.ANTI_THEFT_ARMED, false)
 
-  // --- Helpers ---
-  private fun putBoolean(key: String, value: Boolean) =
-    preferences.edit().putBoolean(key, value).apply()
+    fun setAntiTheftSensitivity(value: Float) = putFloat(KEY_ANTI_THEFT_SENSITIVITY, value)
+    fun getAntiTheftSensitivity(): Float = getFloat(KEY_ANTI_THEFT_SENSITIVITY, 1.5f)
 
     open fun setBiometricEnabled(enabled: Boolean) = putBoolean(Keys.BIOMETRIC_ENABLED, enabled)
     open fun isBiometricEnabled() = getBoolean(Keys.BIOMETRIC_ENABLED, false)
@@ -168,22 +180,22 @@ open class PreferencesUtil(context: Context) {
     open fun logEvent(bssid: String, eventType: String) {
         val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
         val logEntry = "[$timestamp] $eventType"
-        
+
         val logs = getStringSet(Prefixes.EVENT_LOGS + bssid, mutableSetOf()) ?: mutableSetOf()
         val newLogs = logs.toMutableSet()
         newLogs.add(logEntry)
-        
+
         // Ensure BSSID is in the master list
         val allBssids = getStringSet(Keys.ALL_BSSIDS, mutableSetOf()) ?: mutableSetOf()
         val newAllBssids = allBssids.toMutableSet()
         newAllBssids.add(bssid)
-        
+
         // Use batch edit manually here as we are updating multiple
         preferences.edit()
             .putStringSet(Prefixes.EVENT_LOGS + bssid, newLogs)
             .putStringSet(Keys.ALL_BSSIDS, newAllBssids)
             .apply()
-            
+
         // Also keep the daily history count logic
         trackDetection(bssid)
     }
@@ -214,15 +226,22 @@ open class PreferencesUtil(context: Context) {
     fun setTrustedWifiSsid(ssid: String) = putString(Keys.TRUSTED_WIFI_SSID, ssid)
     fun getTrustedWifiSsid(): String? = getString(Keys.TRUSTED_WIFI_SSID)
 
-  open fun setNotifyArrival(bssid: String, notify: Boolean) =
-    putBoolean(PREFIX_NOTIFY_ARRIVAL + bssid, notify)
+    fun clear() {
+        preferences.edit().clear().apply()
+    }
 
-  open fun shouldNotifyArrival(bssid: String) = getBoolean(PREFIX_NOTIFY_ARRIVAL + bssid, false)
+    fun registerListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        preferences.registerOnSharedPreferenceChangeListener(listener)
+    }
 
-  open fun setNotifyDeparture(bssid: String, notify: Boolean) =
-    putBoolean(PREFIX_NOTIFY_DEPARTURE + bssid, notify)
+    fun unregisterListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        preferences.unregisterOnSharedPreferenceChangeListener(listener)
+    }
 
-  open fun shouldNotifyDeparture(bssid: String) = getBoolean(PREFIX_NOTIFY_DEPARTURE + bssid, false)
+    /** Log general system events (Security, Panic, Errors). */
+    fun logSystemEvent(message: String) {
+        val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+        val logEntry = "[$timestamp] $message"
 
         val logs = getStringSet(Keys.SYSTEM_LOGS, mutableSetOf()) ?: mutableSetOf()
         val newLogs = logs.toMutableSet()
@@ -234,86 +253,4 @@ open class PreferencesUtil(context: Context) {
     fun getSystemLogs(): List<String> {
         return getStringSet(Keys.SYSTEM_LOGS, emptySet())?.toList()?.sortedDescending() ?: emptyList()
     }
-  }
-
-  /** Log precise arrival/departure events with time. */
-  open fun logEvent(bssid: String, eventType: String) {
-    val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-    val logEntry = "[$timestamp] $eventType"
-
-    val logs = getStringSet(PREFIX_EVENT_LOGS + bssid, mutableSetOf()) ?: mutableSetOf()
-    val newLogs = logs.toMutableSet()
-    newLogs.add(logEntry)
-
-    // Ensure BSSID is in the master list
-    val allBssids = getStringSet(KEY_ALL_BSSIDS, mutableSetOf()) ?: mutableSetOf()
-    val newAllBssids = allBssids.toMutableSet()
-    newAllBssids.add(bssid)
-
-    // Use batch edit manually here as we are updating multiple
-    preferences
-      .edit()
-      .putStringSet(PREFIX_EVENT_LOGS + bssid, newLogs)
-      .putStringSet(KEY_ALL_BSSIDS, newAllBssids)
-      .apply()
-
-    // Also keep the daily history count logic
-    trackDetection(bssid)
-  }
-
-  open fun getEventLogs(bssid: String): List<String> {
-    return getStringSet(PREFIX_EVENT_LOGS + bssid, emptySet())?.toList()?.sortedDescending()
-      ?: emptyList()
-  }
-
-  open fun trackDetection(bssid: String) {
-    val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-    val historyKey = PREFIX_HISTORY + bssid
-    val history = getStringSet(historyKey, mutableSetOf()) ?: mutableSetOf()
-    if (!history.contains(today)) {
-      val newHistory = history.toMutableSet()
-      newHistory.add(today)
-      putStringSet(historyKey, newHistory)
-    }
-  }
-
-  open fun getDetectionHistoryCount(bssid: String): Int {
-    return getStringSet(PREFIX_HISTORY + bssid, emptySet())?.size ?: 0
-  }
-
-  fun getAllTrackedBssids(): List<String> {
-    return getStringSet(KEY_ALL_BSSIDS, emptySet())?.toList() ?: emptyList()
-  }
-
-  fun setTrustedWifiSsid(ssid: String) = putString(KEY_TRUSTED_WIFI_SSID, ssid)
-
-  fun getTrustedWifiSsid(): String? = getString(KEY_TRUSTED_WIFI_SSID)
-
-  fun clear() {
-    preferences.edit().clear().apply()
-  }
-
-  fun registerListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
-    preferences.registerOnSharedPreferenceChangeListener(listener)
-  }
-
-  fun unregisterListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
-    preferences.unregisterOnSharedPreferenceChangeListener(listener)
-  }
-
-  /** Log general system events (Security, Panic, Errors). */
-  fun logSystemEvent(message: String) {
-    val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-    val logEntry = "[$timestamp] $message"
-
-    val logs = getStringSet(KEY_SYSTEM_LOGS, mutableSetOf()) ?: mutableSetOf()
-    val newLogs = logs.toMutableSet()
-    newLogs.add(logEntry)
-
-    putStringSet(KEY_SYSTEM_LOGS, newLogs)
-  }
-
-  fun getSystemLogs(): List<String> {
-    return getStringSet(KEY_SYSTEM_LOGS, emptySet())?.toList()?.sortedDescending() ?: emptyList()
-  }
 }
