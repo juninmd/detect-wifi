@@ -49,6 +49,6 @@ Our CI pipeline (GitHub Actions) runs the following checks:
 *   **Lint:** Android Lint and Spotless check.
 *   **Test:** Unit tests and JaCoCo coverage verification.
 *   **Build:** Assembles Debug and Release APKs.
-*   **Security:** Scans for secrets.
+*   **Security:** Scans for secrets (Gitleaks) and dependency vulnerabilities (Trivy).
 
 Upon merging to `main`, a new release is automatically created and deployed (stub).

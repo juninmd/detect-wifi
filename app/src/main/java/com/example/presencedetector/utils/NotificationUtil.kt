@@ -103,7 +103,7 @@ object NotificationUtil {
         }
     }
 
-    private fun buildBaseNotification(
+    fun buildBaseNotification(
         context: Context,
         channelId: String,
         title: String,
@@ -117,6 +117,18 @@ object NotificationUtil {
             .setPriority(priority)
             .setSmallIcon(R.drawable.ic_notification)
             .setAutoCancel(true)
+    }
+
+    fun createForegroundNotification(
+        context: Context,
+        title: String,
+        message: String,
+        channelId: String
+    ): Notification {
+        createNotificationChannels(context)
+        return buildBaseNotification(context, channelId, title, message, NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .build()
     }
 
     /**
@@ -197,51 +209,18 @@ object NotificationUtil {
 
         notify(context, notificationId, builder.build())
     }
-  }
 
-  /** Send a standard notification for presence events. */
-  fun sendPresenceNotification(
-    context: Context,
-    title: String,
-    message: String,
-    isImportantEvent: Boolean,
-    actionTitle: String? = null,
-    actionIntent: PendingIntent? = null,
-    notificationId: Int? = null,
-    secondActionTitle: String? = null,
-    secondActionIntent: PendingIntent? = null,
-    iconResId: Int? = null
-  ) {
-    createNotificationChannels(context)
+    fun sendBatteryAlert(context: Context, level: Int) {
+        createNotificationChannels(context)
 
-    val channelId = if (isImportantEvent) INFO_CHANNEL_ID else SILENT_CHANNEL_ID
-
-    val intent =
-      Intent(context, WifiRadarActivity::class.java).apply {
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        putExtra("from_notification", true)
-      }
-
-    val pendingIntent =
-      PendingIntent.getActivity(
-        context,
-        System.currentTimeMillis().toInt(),
-        intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-      )
-
-    val builder =
-      NotificationCompat.Builder(context, channelId)
-        .setContentTitle(title)
-        .setContentText(message)
-        .setSmallIcon(iconResId ?: R.drawable.ic_notification)
-        .setContentIntent(pendingIntent)
-        .setAutoCancel(true)
-        .setGroup(GROUP_KEY_PRESENCE)
-        .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-        .setPriority(
-          if (isImportantEvent) NotificationCompat.PRIORITY_DEFAULT
-          else NotificationCompat.PRIORITY_LOW
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val builder = buildBaseNotification(context, BATTERY_CHANNEL_ID, context.getString(R.string.notif_battery_warning), context.getString(R.string.notif_battery_desc, level), NotificationCompat.PRIORITY_HIGH)
@@ -315,71 +294,6 @@ object NotificationUtil {
         notify(context, 1000, builder.build())
     }
 
-    actions.forEach { builder.addAction(it) }
-
-    notify(context, notificationId, builder.build())
-  }
-
-  fun sendBatteryAlert(context: Context, level: Int) {
-    createNotificationChannels(context)
-
-    val intent =
-      Intent(context, MainActivity::class.java).apply {
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-      }
-    val pendingIntent =
-      PendingIntent.getActivity(
-        context,
-        0,
-        intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-      )
-
-    val builder =
-      NotificationCompat.Builder(context, BATTERY_CHANNEL_ID)
-        .setContentTitle(context.getString(R.string.notif_battery_warning))
-        .setContentText(context.getString(R.string.notif_battery_desc, level))
-        .setSmallIcon(android.R.drawable.ic_lock_idle_low_battery)
-        .setContentIntent(pendingIntent)
-        .setPriority(NotificationCompat.PRIORITY_HIGH)
-        .setCategory(NotificationCompat.CATEGORY_SYSTEM)
-        .setAutoCancel(true)
-
-    notify(context, 2001, builder.build())
-  }
-
-  fun sendIntruderAlert(context: Context, bitmap: Bitmap) {
-    createNotificationChannels(context)
-
-    val intent =
-      Intent(context, MainActivity::class.java).apply {
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-      }
-    val pendingIntent =
-      PendingIntent.getActivity(
-        context,
-        0,
-        intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-      )
-
-    val builder =
-      NotificationCompat.Builder(context, SECURITY_CHANNEL_ID)
-        .setContentTitle("🚨 INTRUSO DETECTADO!")
-        .setContentText("Uma foto foi capturada durante o alerta de segurança.")
-        .setSmallIcon(R.drawable.ic_notification_alert)
-        .setLargeIcon(bitmap)
-        .setStyle(
-          NotificationCompat.BigPictureStyle().bigPicture(bitmap).bigLargeIcon(null as Bitmap?)
-        )
-
-        return buildBaseNotification(context, channelId, title, subtitle, NotificationCompat.PRIORITY_LOW)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(false)
-            .setOngoing(true)
-            .build()
-    }
-
     fun checkPermission(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
@@ -390,11 +304,10 @@ object NotificationUtil {
             true
         }
     }
-  }
 
-  private fun notify(context: Context, id: Int, notification: Notification) {
-    if (checkPermission(context)) {
-      NotificationManagerCompat.from(context).notify(id, notification)
+    private fun notify(context: Context, id: Int, notification: Notification) {
+        if (checkPermission(context)) {
+            NotificationManagerCompat.from(context).notify(id, notification)
+        }
     }
-  }
 }

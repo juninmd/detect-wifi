@@ -34,9 +34,8 @@ object DeviceClassifier {
             else -> DeviceCategory.UNKNOWN
         }
     }
-  }
 
-  private fun String.containsAny(patterns: List<String>): Boolean {
-    return patterns.any { this.contains(it) }
-  }
+    private fun String.containsAny(patterns: List<String>): Boolean {
+        return patterns.any { this.contains(it) }
+    }
 }

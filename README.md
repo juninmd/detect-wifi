@@ -82,7 +82,7 @@ Ao iniciar pela primeira vez, você deve conceder:
 
 ## 📦 Processo de Release
 
-O projeto utiliza GitHub Actions para automatizar a geração de releases.
+O projeto utiliza GitHub Actions para automatizar a geração de releases e garantir a qualidade do código com testes e verificações de segurança (Gitleaks, Trivy).
 
 ### Criar uma Nova Release
 
