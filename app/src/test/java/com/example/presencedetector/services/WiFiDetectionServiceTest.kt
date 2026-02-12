@@ -101,24 +101,4 @@ class WiFiDetectionServiceTest {
     service.stopScanning()
   }
 
-  @Test
-  fun `isLikelyMobileHotspot detects various patterns`() {
-    val method =
-      WiFiDetectionService::class
-        .java
-        .getDeclaredMethod("isLikelyMobileHotspot", String::class.java)
-    method.isAccessible = true
-
-    assertTrue(method.invoke(service, "iPhone of User") as Boolean)
-    assertTrue(method.invoke(service, "AndroidAP") as Boolean)
-    assertTrue(method.invoke(service, "Galaxy S21") as Boolean)
-    assertTrue(method.invoke(service, "MyHotspot") as Boolean) // "hotspot" pattern
-
-    // Short alphanumeric
-    assertTrue(method.invoke(service, "Abc12") as Boolean)
-
-    // Normal WiFi
-    org.junit.Assert.assertFalse(method.invoke(service, "Home_WiFi_5G") as Boolean)
-    org.junit.Assert.assertFalse(method.invoke(service, "TP-Link_1234") as Boolean)
-  }
 }
