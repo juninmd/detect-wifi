@@ -168,6 +168,7 @@ object NotificationUtil {
       .setAutoCancel(true)
   }
 
+  /** Creates a notification for foreground services. */
   fun createForegroundNotification(
     context: Context,
     title: String,
@@ -186,7 +187,6 @@ object NotificationUtil {
       .build()
   }
 
-  /** Send a standard notification for presence events. */
   fun sendPresenceNotification(
     context: Context,
     title: String,
@@ -243,7 +243,6 @@ object NotificationUtil {
     notify(context, notificationId ?: System.currentTimeMillis().toInt(), builder.build())
   }
 
-  /** Send a Critical Security Alert. */
   fun sendCriticalAlert(
     context: Context,
     title: String,

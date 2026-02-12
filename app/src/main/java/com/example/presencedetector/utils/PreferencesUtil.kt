@@ -154,14 +154,28 @@ open class PreferencesUtil(context: Context) {
   }
 
   fun isCurrentTimeInSecuritySchedule(): Boolean {
-    val (start, end) = getSecuritySchedule()
+    val (startStr, endStr) = getSecuritySchedule()
     val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-    val now = dateFormat.format(Date())
+    val now = Date()
+    val currentStr = dateFormat.format(now)
 
-    return if (start <= end) {
-      now in start..end
-    } else {
-      now >= start || now <= end
+    return try {
+      val start = dateFormat.parse(startStr)
+      val end = dateFormat.parse(endStr)
+      val current = dateFormat.parse(currentStr)
+
+      if (start != null && end != null && current != null) {
+        if (start.before(end)) {
+          (current.after(start) || current == start) && (current.before(end) || current == end)
+        } else {
+          // Spans over midnight (e.g., 22:00 to 06:00)
+          (current.after(start) || current == start) || (current.before(end) || current == end)
+        }
+      } else {
+        false
+      }
+    } catch (e: Exception) {
+      false
     }
   }
 
