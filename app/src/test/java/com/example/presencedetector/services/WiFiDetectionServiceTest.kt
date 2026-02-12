@@ -100,4 +100,5 @@ class WiFiDetectionServiceTest {
 
     service.stopScanning()
   }
+
 }
