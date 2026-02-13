@@ -82,18 +82,23 @@ Ao iniciar pela primeira vez, você deve conceder:
 
 ## 📦 Processo de Release
 
-O projeto utiliza GitHub Actions para automatizar a geração de releases.
+O projeto utiliza GitHub Actions para automatizar a geração de releases e verificação contínua.
 
-### Criar uma Nova Release
+### Tipos de Release
 
-1.  Crie uma tag git seguindo o versionamento semântico (ex: `v1.2.0`).
-2.  Faça o push da tag para o repositório:
-    ```bash
-    git tag v1.2.0
-    git push origin v1.2.0
-    ```
-3.  A pipeline `Android Release` será iniciada automaticamente.
-4.  Após a conclusão, uma nova Release será criada no GitHub com o APK anexado.
+1.  **Release Automática (Staging/Nightly):**
+    *   Gerada automaticamente a cada push na branch `main`.
+    *   A versão segue o número da build do GitHub Actions (ex: `v1.1.42`).
+    *   Inclui APKs de debug e release (não assinado por padrão).
+
+2.  **Release de Produção (Stable):**
+    *   Gerada ao criar uma tag Git (ex: `v1.2.0`).
+    *   Inclui APK assinado (se as chaves estiverem configuradas).
+    *   Para criar:
+        ```bash
+        git tag v1.2.0
+        git push origin v1.2.0
+        ```
 
 ### Configuração de Assinatura (Opcional)
 
