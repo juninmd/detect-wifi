@@ -26,4 +26,5 @@ local.properties
 secrets/
 config/secrets.yml
 google-services.json
+app/google-services.json
 GoogleService-Info.plist
