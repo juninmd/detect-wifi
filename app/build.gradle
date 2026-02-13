@@ -14,7 +14,7 @@ spotless {
 
 android {
     namespace 'com.example.presencedetector'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.example.presencedetector"
@@ -103,7 +103,7 @@ dependencies {
 
     // Firebase
     implementation platform('com.google.firebase:firebase-bom:34.9.0')
-    implementation 'com.google.firebase:firebase-messaging-ktx'
+    implementation 'com.google.firebase:firebase-messaging'
 
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
     implementation 'com.google.code.gson:gson:2.13.2'
