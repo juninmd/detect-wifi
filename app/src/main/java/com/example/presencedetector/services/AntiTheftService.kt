@@ -25,6 +25,7 @@ import androidx.core.app.NotificationCompat
 import com.example.presencedetector.MainActivity
 import com.example.presencedetector.R
 import com.example.presencedetector.receivers.NotificationActionReceiver
+import com.example.presencedetector.utils.LogRepository
 import com.example.presencedetector.utils.MotionDetector
 import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil
@@ -48,6 +49,7 @@ class AntiTheftService :
 
   private lateinit var sensorManager: SensorManager
   internal lateinit var preferences: PreferencesUtil
+  internal lateinit var logRepository: LogRepository
   internal lateinit var telegramService: TelegramService
   private var motionDetector: MotionDetector? = null
   private var accelerometer: Sensor? = null
@@ -137,6 +139,7 @@ class AntiTheftService :
   override fun onCreate() {
     super.onCreate()
     if (!::preferences.isInitialized) preferences = PreferencesUtil(this)
+    if (!::logRepository.isInitialized) logRepository = LogRepository(this)
     if (!::telegramService.isInitialized) telegramService = TelegramService(this)
     sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
     accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -365,7 +368,7 @@ class AntiTheftService :
     isAlarmPlaying = true
 
     Log.w(TAG, "TRIGGERING ALARM: $reason")
-    preferences.logSystemEvent("🚨 Alarm Triggered: $reason")
+    logRepository.logSystemEvent("🚨 Alarm Triggered: $reason")
 
     // 1. Send Telegram Alert
     val time = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())

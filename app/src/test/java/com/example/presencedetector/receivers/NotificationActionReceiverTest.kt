@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import com.example.presencedetector.services.AntiTheftService
+import com.example.presencedetector.utils.LogRepository
 import com.example.presencedetector.utils.PreferencesUtil
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -76,7 +77,8 @@ class NotificationActionReceiverTest {
     assertEquals("Trusted Device", prefs.getNickname(bssid))
 
     // Verify Detection Tracked (history count > 0)
-    assertEquals(1, prefs.getDetectionHistoryCount(bssid))
+    val logRepo = LogRepository(context)
+    assertEquals(1, logRepo.getDetectionHistoryCount(bssid))
 
     // Verify Stop Broadcast sent
     val broadcasts = ShadowApplication.getInstance().broadcastIntents

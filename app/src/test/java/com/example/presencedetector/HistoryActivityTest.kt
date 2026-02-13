@@ -2,6 +2,7 @@ package com.example.presencedetector
 
 import android.widget.EditText
 import androidx.recyclerview.widget.RecyclerView
+import com.example.presencedetector.utils.LogRepository
 import com.example.presencedetector.utils.PreferencesUtil
 import org.junit.Assert.assertNotNull
 import org.junit.Before
@@ -17,21 +18,23 @@ import org.robolectric.shadows.ShadowLooper
 class HistoryActivityTest {
 
   private lateinit var preferences: PreferencesUtil
+  private lateinit var logRepository: LogRepository
 
   @Before
   fun setUp() {
     val context =
       androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
     preferences = PreferencesUtil(context)
+    logRepository = LogRepository(context)
     preferences.clear()
 
     // Populate data
     val bssid = "00:11:22:33:44:55"
     preferences.saveNickname(bssid, "TestDevice")
-    preferences.logEvent(bssid, "Arrived")
-    preferences.logEvent(bssid, "Left")
+    logRepository.logEvent(bssid, "Arrived")
+    logRepository.logEvent(bssid, "Left")
 
-    preferences.logSystemEvent("System Start")
+    logRepository.logSystemEvent("System Start")
   }
 
   @Test

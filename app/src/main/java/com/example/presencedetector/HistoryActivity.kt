@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.presencedetector.databinding.ActivityHistoryBinding
 import com.example.presencedetector.databinding.ItemHistoryEventBinding
+import com.example.presencedetector.utils.LogRepository
 import com.example.presencedetector.utils.PreferencesUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -22,6 +23,7 @@ class HistoryActivity : AppCompatActivity() {
 
   private lateinit var binding: ActivityHistoryBinding
   private lateinit var preferences: PreferencesUtil
+  private lateinit var logRepository: LogRepository
   private val adapter = HistoryAdapter()
   private var loadJob: Job? = null
 
@@ -35,6 +37,7 @@ class HistoryActivity : AppCompatActivity() {
     binding.toolbar.setNavigationOnClickListener { finish() }
 
     preferences = PreferencesUtil(this)
+    logRepository = LogRepository(this)
 
     binding.rvHistory.layoutManager = LinearLayoutManager(this)
     binding.rvHistory.adapter = adapter
@@ -63,12 +66,12 @@ class HistoryActivity : AppCompatActivity() {
     loadJob?.cancel()
     loadJob =
       lifecycleScope.launch(Dispatchers.IO) {
-        val bssids = preferences.getAllTrackedBssids()
+        val bssids = logRepository.getAllTrackedBssids()
         val allLogs = mutableListOf<HistoryItem>()
 
         bssids.forEach { bssid ->
           val nickname = preferences.getNickname(bssid) ?: getString(R.string.text_unknown)
-          val eventLogs = preferences.getEventLogs(bssid)
+          val eventLogs = logRepository.getEventLogs(bssid)
           eventLogs.forEach { logLine ->
             // Parse log line to extract event type and timestamp
             val isArrival = logLine.contains("Arrived")
@@ -78,7 +81,7 @@ class HistoryActivity : AppCompatActivity() {
         }
 
         // Add System Logs
-        val systemLogs = preferences.getSystemLogs()
+        val systemLogs = logRepository.getSystemLogs()
         systemLogs.forEach { logLine ->
           allLogs.add(HistoryItem("SYSTEM", "Security System", logLine))
         }
@@ -96,13 +99,13 @@ class HistoryActivity : AppCompatActivity() {
     loadJob?.cancel()
     loadJob =
       lifecycleScope.launch(Dispatchers.IO) {
-        val bssids = preferences.getAllTrackedBssids()
+        val bssids = logRepository.getAllTrackedBssids()
         val filteredLogs = mutableListOf<HistoryItem>()
 
         bssids.forEach { bssid ->
           val nickname = preferences.getNickname(bssid) ?: ""
           if (bssid.lowercase().contains(query) || nickname.lowercase().contains(query)) {
-            val eventLogs = preferences.getEventLogs(bssid)
+            val eventLogs = logRepository.getEventLogs(bssid)
             eventLogs.forEach { logLine ->
               val isArrival = logLine.contains("Arrived")
               val isDeparture = logLine.contains("Left")

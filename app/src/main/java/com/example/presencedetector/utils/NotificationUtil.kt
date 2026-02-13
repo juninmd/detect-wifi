@@ -36,69 +36,98 @@ object NotificationUtil {
 
     private const val GROUP_KEY_PRESENCE = "com.example.presencedetector.PRESENCE_UPDATES"
 
+    private data class ChannelConfig(
+        val id: String,
+        val name: String,
+        val importance: Int,
+        val description: String?,
+        val configure: (NotificationChannel.() -> Unit)? = null
+    )
+
     fun createNotificationChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = context.getSystemService(NotificationManager::class.java) ?: return
-            val channels = mutableListOf<NotificationChannel>()
 
-            channels.add(createChannel(CHANNEL_ID, context.getString(R.string.channel_service_name), NotificationManager.IMPORTANCE_LOW, context.getString(R.string.channel_service_desc)) {
-                setShowBadge(false)
-            })
+            val configs = listOf(
+                ChannelConfig(
+                    CHANNEL_ID,
+                    context.getString(R.string.channel_service_name),
+                    NotificationManager.IMPORTANCE_LOW,
+                    context.getString(R.string.channel_service_desc)
+                ) { setShowBadge(false) },
 
-            channels.add(createChannel(INFO_CHANNEL_ID, context.getString(R.string.channel_info_name), NotificationManager.IMPORTANCE_DEFAULT, context.getString(R.string.channel_info_desc)) {
-                enableLights(true)
-                lightColor = android.graphics.Color.BLUE
-            })
+                ChannelConfig(
+                    INFO_CHANNEL_ID,
+                    context.getString(R.string.channel_info_name),
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                    context.getString(R.string.channel_info_desc)
+                ) {
+                    enableLights(true)
+                    lightColor = android.graphics.Color.BLUE
+                },
 
-            channels.add(createChannel(SILENT_CHANNEL_ID, "Eventos Silenciosos", NotificationManager.IMPORTANCE_LOW, "Notificações de rotina sem som") {
-                setShowBadge(false)
-            })
+                ChannelConfig(
+                    SILENT_CHANNEL_ID,
+                    "Eventos Silenciosos",
+                    NotificationManager.IMPORTANCE_LOW,
+                    "Notificações de rotina sem som"
+                ) { setShowBadge(false) },
 
-            channels.add(createChannel(SECURITY_CHANNEL_ID, "Alerta de Segurança Crítico", NotificationManager.IMPORTANCE_HIGH, "Alertas de intrusão e roubo. Toca mesmo em modo não perturbe.") {
-                enableVibration(true)
-                vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500, 1000)
-                enableLights(true)
-                lightColor = android.graphics.Color.RED
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-                setBypassDnd(true)
-                setSound(
-                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ALARM)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
-                )
-            })
+                ChannelConfig(
+                    SECURITY_CHANNEL_ID,
+                    "Alerta de Segurança Crítico",
+                    NotificationManager.IMPORTANCE_HIGH,
+                    "Alertas de intrusão e roubo. Toca mesmo em modo não perturbe."
+                ) {
+                    enableVibration(true)
+                    vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500, 1000)
+                    enableLights(true)
+                    lightColor = android.graphics.Color.RED
+                    lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                    setBypassDnd(true)
+                    setSound(
+                        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ALARM)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build()
+                    )
+                },
 
-            channels.add(createChannel(BATTERY_CHANNEL_ID, context.getString(R.string.channel_battery_name), NotificationManager.IMPORTANCE_HIGH, context.getString(R.string.channel_battery_desc)) {
-                enableVibration(true)
-                enableLights(true)
-                lightColor = android.graphics.Color.YELLOW
-            })
+                ChannelConfig(
+                    BATTERY_CHANNEL_ID,
+                    context.getString(R.string.channel_battery_name),
+                    NotificationManager.IMPORTANCE_HIGH,
+                    context.getString(R.string.channel_battery_desc)
+                ) {
+                    enableVibration(true)
+                    enableLights(true)
+                    lightColor = android.graphics.Color.YELLOW
+                },
 
-            channels.add(createChannel(HOME_SECURITY_CHANNEL_ID, "Segurança Residencial", NotificationManager.IMPORTANCE_LOW, "Notificações de monitoramento WiFi e presença em casa") {
-                setShowBadge(false)
-            })
+                ChannelConfig(
+                    HOME_SECURITY_CHANNEL_ID,
+                    "Segurança Residencial",
+                    NotificationManager.IMPORTANCE_LOW,
+                    "Notificações de monitoramento WiFi e presença em casa"
+                ) { setShowBadge(false) },
 
-            channels.add(createChannel(MOBILE_SECURITY_CHANNEL_ID, "Segurança do Celular", NotificationManager.IMPORTANCE_LOW, "Notificações de monitoramento anti-furto (bolso, movimento)") {
-                setShowBadge(true)
-            })
+                ChannelConfig(
+                    MOBILE_SECURITY_CHANNEL_ID,
+                    "Segurança do Celular",
+                    NotificationManager.IMPORTANCE_LOW,
+                    "Notificações de monitoramento anti-furto (bolso, movimento)"
+                ) { setShowBadge(true) }
+            )
+
+            val channels = configs.map { config ->
+                NotificationChannel(config.id, config.name, config.importance).apply {
+                    description = config.description
+                    config.configure?.invoke(this)
+                }
+            }
 
             notificationManager.createNotificationChannels(channels)
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun createChannel(
-        id: String,
-        name: String,
-        importance: Int,
-        desc: String? = null,
-        configure: (NotificationChannel.() -> Unit)? = null
-    ): NotificationChannel {
-        return NotificationChannel(id, name, importance).apply {
-            description = desc
-            configure?.invoke(this)
         }
     }
 

@@ -3,6 +3,7 @@ package com.example.presencedetector.utils
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCaptureSession
@@ -38,31 +39,39 @@ class CameraHelper(private val context: Context) {
             context = context,
             providedSurfaceTexture = surfaceTexture,
             mainHandler = mainHandler,
-            onImageCaptured = { bytes -> saveAndSendImage(bytes) },
+            onImageCaptured = { bytes -> processCapturedImage(bytes) },
             onComplete = onComplete
         )
         session.start()
     }
 
-    private fun saveAndSendImage(bytes: ByteArray) {
+    private fun processCapturedImage(bytes: ByteArray) {
         Thread {
             try {
-                val filename = "EVENT_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg"
-                val file = File(context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES), filename)
-                FileOutputStream(file).use { it.write(bytes) }
-
-                val prefs = PreferencesUtil(context)
-                prefs.logSystemEvent("📸 Photo Captured: $filename")
-
-                telegramService.sendPhoto(file, "📸 Security Event Captured")
-
-                // Show Notification
-                val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                NotificationUtil.sendIntruderAlert(context, bitmap)
+                val file = saveImageToFile(bytes)
+                notifyAndLog(file, bytes)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("CameraHelper", "Error processing image", e)
             }
         }.start()
+    }
+
+    private fun saveImageToFile(bytes: ByteArray): File {
+        val filename = "EVENT_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg"
+        val file = File(context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES), filename)
+        FileOutputStream(file).use { it.write(bytes) }
+        return file
+    }
+
+    private fun notifyAndLog(file: File, bytes: ByteArray) {
+        val logRepo = LogRepository(context)
+        logRepo.logSystemEvent("📸 Photo Captured: ${file.name}")
+
+        telegramService.sendPhoto(file, "📸 Security Event Captured")
+
+        // Show Notification
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        NotificationUtil.sendIntruderAlert(context, bitmap)
     }
 
     private class SelfieCaptureSession(
@@ -112,7 +121,7 @@ class CameraHelper(private val context: Context) {
 
         private fun handleImageAvailable(reader: ImageReader) {
             try {
-                val image = reader.acquireLatestImage()
+                val image = reader.acquireLatestImage() ?: return
                 val buffer = image.planes[0].buffer
                 val bytes = ByteArray(buffer.remaining())
                 buffer.get(bytes)

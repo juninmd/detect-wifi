@@ -8,6 +8,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.presencedetector.model.DeviceCategory
+import com.example.presencedetector.utils.LogRepository
 import com.example.presencedetector.utils.PreferencesUtil
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.checkbox.MaterialCheckBox
@@ -28,6 +29,7 @@ class DeviceDetailActivity : AppCompatActivity() {
   }
 
   private lateinit var preferences: PreferencesUtil
+  private lateinit var logRepository: LogRepository
   private var bssid: String = ""
   private var ssid: String = ""
   private var signal: Int = 0
@@ -59,6 +61,7 @@ class DeviceDetailActivity : AppCompatActivity() {
     setContentView(R.layout.activity_device_detail)
 
     preferences = PreferencesUtil(this)
+    logRepository = LogRepository(this)
 
     // Get Intent Data
     bssid = intent.getStringExtra(EXTRA_BSSID) ?: ""
@@ -152,7 +155,7 @@ class DeviceDetailActivity : AppCompatActivity() {
     tvWifiStandard.text = "$stdStr$widthStr"
 
     // History
-    val historyCount = preferences.getDetectionHistoryCount(bssid)
+    val historyCount = logRepository.getDetectionHistoryCount(bssid)
     tvHistoryCount.text = "Detected on $historyCount different days"
 
     // Initialize Graph

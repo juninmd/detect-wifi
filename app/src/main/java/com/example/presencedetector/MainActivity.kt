@@ -20,6 +20,7 @@ import com.example.presencedetector.services.AntiTheftService
 import com.example.presencedetector.services.DetectionBackgroundService
 import com.example.presencedetector.services.PresenceDetectionManager
 import com.example.presencedetector.utils.BiometricAuthenticator
+import com.example.presencedetector.utils.LogRepository
 import com.example.presencedetector.utils.LoggerUtil
 import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil
@@ -38,6 +39,7 @@ class MainActivity : AppCompatActivity() {
   private var detectionManager: PresenceDetectionManager? = null
   private var isDetecting = false
   private lateinit var preferences: PreferencesUtil
+  private lateinit var logRepository: LogRepository
 
   private val batteryReceiver =
     object : BroadcastReceiver() {
@@ -52,6 +54,7 @@ class MainActivity : AppCompatActivity() {
     setContentView(binding.root)
 
     preferences = PreferencesUtil(this)
+    logRepository = LogRepository(this)
     NotificationUtil.createNotificationChannels(this)
 
     initializeViews()
@@ -280,7 +283,7 @@ class MainActivity : AppCompatActivity() {
     startService(serviceIntent)
     preferences.setAntiTheftArmed(false)
     addLog(getString(R.string.log_mobile_disarmed))
-    preferences.logSystemEvent("Mobile Security Disarmed")
+    logRepository.logSystemEvent("Mobile Security Disarmed")
     updateAntiTheftUI()
   }
 
@@ -294,7 +297,7 @@ class MainActivity : AppCompatActivity() {
     }
     preferences.setAntiTheftArmed(true)
     addLog(getString(R.string.log_mobile_armed))
-    preferences.logSystemEvent("Mobile Security Armed")
+    logRepository.logSystemEvent("Mobile Security Armed")
     updateAntiTheftUI()
   }
 
@@ -355,7 +358,7 @@ class MainActivity : AppCompatActivity() {
   }
 
   private fun loadRecentLogs() {
-    val logs = preferences.getSystemLogs()
+    val logs = logRepository.getSystemLogs()
     if (logs.isNotEmpty()) {
       val recent = logs.take(5).joinToString("\n")
       binding.detectionLog.text = "--- Recent Events ---\n$recent\n---------------------\n"

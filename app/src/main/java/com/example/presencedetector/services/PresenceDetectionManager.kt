@@ -46,6 +46,7 @@ class PresenceDetectionManager(
   internal var bluetoothService = bluetoothServiceParam ?: BluetoothDetectionService(context)
   private val mainHandler = Handler(Looper.getMainLooper())
   internal var preferences = PreferencesUtil(context)
+  private val logRepository = com.example.presencedetector.utils.LogRepository(context)
   internal var telegramService = telegramServiceParam ?: TelegramService(context)
 
   private var currentRingtone: Ringtone? = null
@@ -133,7 +134,7 @@ class PresenceDetectionManager(
     updateAndProcessDevices("Camera", "Detected by $name")
 
     // Also log this event
-    preferences.logEvent("camera_$name", "Detected on Camera")
+    logRepository.logEvent("camera_$name", "Detected on Camera")
 
     // Telegram notification for camera
     if (preferences.isTelegramEnabled()) {
@@ -150,7 +151,7 @@ class PresenceDetectionManager(
 
     // Track history for all devices
     allDevices.forEach {
-      preferences.trackDetection(it.bssid)
+      logRepository.trackDetection(it.bssid)
       deviceTypes[it.bssid] = it.source
 
       // Add to live signal history for graphing
@@ -175,12 +176,12 @@ class PresenceDetectionManager(
 
       // LOG ARRIVAL if device was gone for > 5 minutes (or first time seen)
       if (lastSeen == 0L || (now - lastSeen) > ABSENCE_THRESHOLD) {
-        preferences.logEvent(bssid, "Arrived")
+        logRepository.logEvent(bssid, "Arrived")
 
         if (areNotificationsEnabled) {
           // Security Check for NEW devices (only if not seen before in history AND no nickname)
           val isNewDevice =
-            preferences.getDetectionHistoryCount(bssid) == 0 &&
+            logRepository.getDetectionHistoryCount(bssid) == 0 &&
               preferences.getNickname(bssid) == null
           if (isNewDevice && preferences.isSecurityAlertEnabled()) {
             handleSecurityThreat(device)
@@ -220,7 +221,7 @@ class PresenceDetectionManager(
         // Device has been missing for more than 5 minutes
         if (departureNotifiedMap[bssid] != true) {
           // LOG DEPARTURE
-          preferences.logEvent(bssid, "Left")
+          logRepository.logEvent(bssid, "Left")
           lastDepartureTimeMap[bssid] = now // Record departure time for dynamic debounce
 
           if (areNotificationsEnabled) {

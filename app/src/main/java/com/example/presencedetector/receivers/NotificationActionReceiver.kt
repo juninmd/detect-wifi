@@ -69,10 +69,11 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
         if (!bssid.isNullOrEmpty()) {
           val prefs = PreferencesUtil(context)
+          val logRepo = com.example.presencedetector.utils.LogRepository(context)
           // Mark as trusted by giving it a nickname
           prefs.saveNickname(bssid, "Trusted Device")
           // Also ensure we don't alert again immediately
-          prefs.trackDetection(bssid)
+          logRepo.trackDetection(bssid)
 
           Toast.makeText(context, "Device marked as Safe", Toast.LENGTH_SHORT).show()
         }
