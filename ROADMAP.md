@@ -17,137 +17,104 @@ To become the definitive, privacy-focused Android solution for residential prese
 **Tech Stack:** Kotlin, Android 15 Target, Coroutines, Foreground Services.
 
 **Key Achievements:**
-*   ✅ **Robust Background Service:** Reliable detection even when the app is closed or the screen is off.
-*   ✅ **Modern UI:** Vibrant, responsive interface with Dark Mode support and intuitive controls.
-*   ✅ **Notification Intelligence:** Implemented "Smart Notifications" with debounce to reduce spam and focus on meaningful events (Arrival/Departure).
-*   ✅ **Anti-Theft Features:** Motion, Pocket, and Charger alarms fully implemented.
-*   ✅ **Labeled Badges:** Visual distinction for manually named devices.
-*   ✅ **Dual-Tech Detection:** Simultaneous WiFi and Bluetooth LE scanning for robust presence verification.
-*   ✅ **Hotspot Recognition:** Identifies mobile hotspots based on common SSID naming patterns.
-*   ✅ **Telegram Integration:** Decoupled, independent alerts for arrival/departure events.
+*   ✅ **Robust Background Service:** Reliable detection even when the app is closed.
+*   ✅ **Smart Notifications:** Debounced alerts to prevent spam (Arrival/Departure).
+*   ✅ **Dual-Tech Detection:** WiFi + Bluetooth LE scanning.
+*   ✅ **Anti-Theft Suite:** Motion, Pocket, and Charger alarms.
+*   ✅ **UI Improvements:** Manual refresh, labeled device badges, and dark mode support.
 
 **Metrics:**
-*   **Open Issues:** 8 (Maintenance & Minor Bugs)
-*   **Urgency:** Medium (Feature Development)
+*   **Open Issues:** 0 (Clean Slate)
+*   **Urgency:** Medium (Feature Development & Enhancement)
 
 ## 3. Quarterly Roadmap (2026)
 
-### Q1 2026: Foundation & Refinement
-*Focus: Stability, Bug Fixes, and UI Polish*
-
-*   **High Priority (Immediate):**
-    *   🐛 **Bug Squashing:** Address the 8 open issues (minor bugs, edge cases in detection).
-    *   ⚡ **Battery Optimization:** Profile and optimize background scanning intervals to reduce drain by 15%.
-*   **Medium Priority:**
-    *   🎨 **UI/UX Polish:** Implement "Toast on Refresh", "Refresh Animation", and complete custom icon set.
-    *   gadget **Device Management:** Add "Sort by Labeled Devices" to prioritize known devices in the list.
-*   **Low Priority:**
-    *   Code cleanup and dependency updates (Gradle, Kotlin).
-
-### Q2 2026: Connectivity & Integration
-*Focus: Expanding beyond the device*
+### Q1 2026: Experience & Organization
+*Focus: Refining the user interface and device management.*
 
 *   **High Priority:**
-    *   🔗 **MQTT Integration:** (See Feature Details below) - Enable integration with Home Assistant.
+    *   🎨 **UI/UX Polish:** Implement visual feedback for refresh actions (Toast + Animation) and complete the custom icon set.
+    *   📱 **Device Management:** Implement "Sort by Labeled Devices" to prioritize known devices in the list.
 *   **Medium Priority:**
+    *   ⚡ **Battery Optimization:** Profile and optimize background scanning intervals to reduce drain by 15%.
+*   **Low Priority:**
+    *   Dependency updates and code cleanup.
+
+### Q2 2026: Connectivity & Data
+*Focus: Expanding integration and robust data handling.*
+
+*   **High Priority:**
     *   🔔 **Notification Channels:** Separate "Arrival", "Departure", and "Security Alert" channels for granular user control.
-    *   💾 **Room Database Migration:** Migrate from SharedPreferences/File storage to Room for robust history and device management.
+    *   🔗 **MQTT Integration:** Enable integration with Home Assistant/Mosquitto.
+*   **Medium Priority:**
+    *   💾 **Room Database Migration:** Migrate from SharedPreferences to Room for robust history and device management.
 
 ### Q3 2026: Intelligence & Context
-*Focus: Smarter detection and multi-context support*
+*Focus: Smarter detection and multi-context support.*
 
 *   **High Priority:**
-    *   🧠 **Machine Learning Patterns:** Local ML model to learn user routines and suppress false alarms based on historical data.
+    *   🧠 **Machine Learning Patterns:** Local ML model to learn user routines and suppress false alarms.
 *   **Medium Priority:**
-    *   📍 **Multi-Location Support:** Profiles for "Home", "Office", "Parents' House" with automatic switching.
-    *   🛡️ **Advanced Anti-Theft:** Trigger alarms based on specific BLE device absence (e.g., "Key Fob missing").
+    *   📍 **Multi-Location Support:** Profiles for different locations (Home, Office).
+    *   🛡️ **Advanced Anti-Theft:** Trigger alarms based on specific BLE device absence.
 
 ### Q4 2026: Ecosystem Expansion
-*Focus: New platforms and remote access*
+*Focus: New platforms and remote access.*
 
 *   **Medium Priority:**
-    *   🖥️ **Web Dashboard:** Local HTTP server on the phone to view status from a PC browser.
-    *   ⌚ **Wear OS Companion:** Watch app for quick arm/disarm and status checks.
+    *   🖥️ **Web Dashboard:** Local HTTP server for status viewing.
+    *   ⌚ **Wear OS Companion:** Watch app for quick controls.
 *   **Low Priority:**
-    *   🌐 **Internationalization:** Complete translation for ES, FR, DE, PT-BR.
+    *   🌐 **Internationalization:** Complete translations for ES, FR, DE, PT-BR.
 
 ## 4. Feature Details
 
-### Device Management (Q1)
-
+### UI/UX Polish (Q1)
 **User Value Proposition:**
-Allows users to prioritize and quickly access their most important devices (those with custom labels) by keeping them at the top of the list, especially useful in crowded WiFi environments.
+Provides immediate visual feedback to user actions, making the app feel more responsive and polished.
 
 **Technical Approach:**
-*   **Sorting Logic:** Implement a custom `Comparator` in `WifiAdapter` that prioritizes devices with `nickname != null`.
-*   **UI Control:** Add an "Importance" option to the "Sort by" dialog to prioritize labeled devices.
-*   **State:** Persist the sort preference in `SharedPreferences`.
+*   **Feedback:** Add `Toast` messages upon manual refresh trigger.
+*   **Visuals:** Implement a rotation animation for the refresh icon during scanning.
+*   **Success Criteria:** User receives instant feedback on refresh; scanning animation indicates background activity.
+*   **Estimated Effort:** Small (2-3 days)
 
-**Success Criteria:**
-*   Labeled devices appear at the top of the list when enabled.
-*   Sorting is applied instantly upon labeling a device.
-*   Default sort order remains by Signal Strength until changed.
+### Device Management (Q1)
+**User Value Proposition:**
+Helps users quickly find important devices in crowded networks by keeping labeled devices at the top.
 
-**Estimated Effort:** Small (3-5 days)
+**Technical Approach:**
+*   **Sorting Logic:** Implement a custom `Comparator` in `WifiAdapter` prioritizing `nickname != null`.
+*   **Persistence:** Store sort preference in SharedPreferences.
+*   **Success Criteria:** Labeled devices appear at the top of the list when sorting is enabled.
+*   **Estimated Effort:** Small (3-5 days)
+
+### Notification Channels (Q2)
+**User Value Proposition:**
+Gives users control over which events trigger sounds/vibrations. E.g., Silent for "Arrival", Loud for "Security Alert".
+
+**Technical Approach:**
+*   **Channels:** Define specific Notification Channels in `NotificationManager`.
+*   **Migration:** Update notification builder logic to use new channel IDs.
+*   **Success Criteria:** Users can customize notification settings per category in Android Settings.
+*   **Estimated Effort:** Medium (1-2 weeks)
 
 ### MQTT Integration (Q2)
-
 **User Value Proposition:**
-Allows users to trigger real-world actions based on presence. For example, turning on lights when "Smartphone" connects to WiFi, or arming the home security system when "Everyone" leaves. This transforms the app from a passive monitor to an active home automation trigger.
+Enables powerful home automation scenarios (lights, locks) based on presence.
 
 **Technical Approach:**
-*   **Library:** Integrate Paho MQTT Android Client or similar lightweight Kotlin MQTT library.
-*   **Configuration:** Add "Integrations" screen in Settings for Broker URL, Port, Username, Password, and Topic Prefix.
-*   **Logic:**
-    *   Publish JSON payloads to `detect_wifi/status` (Global) and `detect_wifi/device/{mac}` (Individual).
-    *   Implement "Last Will and Testament" to signal if the service dies unexpectedly.
-    *   Ensure MQTT connection is managed within the existing `DetectionBackgroundService` to maintain uptime.
-
-**Success Criteria:**
-*   User can successfully connect to a local Mosquitto/Home Assistant broker.
-*   Latency between detection event and MQTT publish is < 2 seconds.
-*   Reconnection logic handles network switches (WiFi <-> Data) gracefully.
-
-**Estimated Effort:** Medium (2-3 weeks)
-
-### Room Database Migration (Q2)
-
-**User Value Proposition:**
-Improved performance and data integrity for device history and logs, especially with large datasets. Enables complex queries for future analytics features.
-
-**Technical Approach:**
-*   **Framework:** Use Android Room Persistence Library.
-*   **Entities:** Define `Device`, `LogEntry`, `Settings` entities.
-*   **Migration:** Implement `Migration` strategies to import existing SharedPreferences/File data without data loss.
-*   **Async:** Ensure all DB operations use Coroutines/Flow.
-
-**Success Criteria:**
-*   No data loss during migration.
-*   Faster load times for device lists and logs.
-*   Complex queries (e.g., "Show logs for device X in last 7 days") become possible.
-
-**Estimated Effort:** Medium (2 weeks)
-
-### Machine Learning Patterns (Q3)
-
-**User Value Proposition:**
-Reduces false alarms by learning normal arrival/departure patterns. For example, if user usually arrives at 6 PM, a brief signal loss at 5:55 PM might be ignored more aggressively.
-
-**Technical Approach:**
-*   **Model:** Lightweight TensorFlow Lite model or custom heuristic algorithm.
-*   **Input:** Time of day, day of week, signal strength history, other devices present.
-*   **Output:** Probability of presence.
-*   **Privacy:** Training and inference happen 100% on-device.
-
-**Success Criteria:**
-*   False positive rate reduced by 30%.
-*   Model size < 5MB.
-*   Minimal impact on battery life.
-
-**Estimated Effort:** Large (4 weeks)
+*   **Library:** Integrate Paho MQTT Android Client.
+*   **Configuration:** Create settings UI for Broker URL, Port, Auth.
+*   **Logic:** Publish JSON payloads on presence change events.
+*   **Success Criteria:** Successful connection to local broker; reliable message publishing.
+*   **Estimated Effort:** Medium (2-3 weeks)
 
 ## 5. Dependencies & Risks
 
-*   **Android Background Restrictions:** Future Android versions (Android 16+) may further restrict background processes. Mitigation: Continuously monitor Google I/O updates and adapt `ForegroundServiceType`.
-*   **Battery Impact:** Continuous MQTT connection and ML processing can drain battery. Mitigation: Implement "Eco Mode" and configurable update intervals.
-*   **Hardware Variability:** Bluetooth/WiFi chipsets vary wildly across manufacturers. Mitigation: Maintain a device compatibility list and community-sourced bug reports.
+*   **Android Background Restrictions:** Future Android versions may restrict background processes further.
+    *   *Mitigation:* Continuously monitor Android APIs and adapt Foreground Service types.
+*   **Battery Impact:** Continuous scanning and MQTT can drain battery.
+    *   *Mitigation:* Implement "Eco Mode" and user-configurable update intervals.
+*   **Hardware Variability:** Bluetooth/WiFi performance varies across devices.
+    *   *Mitigation:* Maintain a device compatibility list and allow sensitivity adjustments.
