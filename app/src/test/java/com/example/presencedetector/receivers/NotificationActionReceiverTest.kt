@@ -35,7 +35,7 @@ class NotificationActionReceiverTest {
   }
 
   @Test
-  fun `ACTION_STOP_ALARM should send stop broadcast and cancel notification`() {
+  fun `ACTION_STOP_ALARM should start service with stop action and cancel notification`() {
     val intent =
       Intent(NotificationActionReceiver.ACTION_STOP_ALARM).apply {
         putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, 123)
@@ -43,21 +43,11 @@ class NotificationActionReceiverTest {
 
     receiver.onReceive(context, intent)
 
-    // Verify Stop Broadcast sent
-    val broadcasts = ShadowApplication.getInstance().broadcastIntents
-    val stopIntent = broadcasts.find { it.action == NotificationActionReceiver.ACTION_STOP_ALARM }
-    assertNotNull("Stop broadcast should be sent", stopIntent)
-
-    // Verify Notification Cancelled (Robolectric ShadowNotificationManager tracks cancelled IDs but
-    // simple check might be tricky directly,
-    // usually we check if it's NOT in active notifications, but we didn't show one first.
-    // We can verify no crashes and logic execution via side effects or use Spy if needed.
-    // For simple receiver logic, ensuring the code path runs is key.)
-
-    // Actually, ShadowNotificationManager doesn't easily expose "cancelled history" without a
-    // custom shadow or verifying against active.
-    // But we can check if the broadcast count increased.
-    assertEquals(1, broadcasts.size)
+    // Verify Service Started with STOP action
+    val nextStartedService = ShadowApplication.getInstance().nextStartedService
+    assertNotNull("Service should be started", nextStartedService)
+    assertEquals(AntiTheftService::class.java.name, nextStartedService.component?.className)
+    assertEquals(AntiTheftService.ACTION_STOP, nextStartedService.action)
   }
 
   @Test
@@ -78,10 +68,11 @@ class NotificationActionReceiverTest {
     // Verify Detection Tracked (history count > 0)
     assertEquals(1, prefs.getDetectionHistoryCount(bssid))
 
-    // Verify Stop Broadcast sent
-    val broadcasts = ShadowApplication.getInstance().broadcastIntents
-    val stopIntent = broadcasts.find { it.action == NotificationActionReceiver.ACTION_STOP_ALARM }
-    assertNotNull("Stop broadcast should be sent", stopIntent)
+    // Verify Service Started with STOP action
+    val nextStartedService = ShadowApplication.getInstance().nextStartedService
+    assertNotNull("Service should be started to stop alarm", nextStartedService)
+    assertEquals(AntiTheftService::class.java.name, nextStartedService.component?.className)
+    assertEquals(AntiTheftService.ACTION_STOP, nextStartedService.action)
   }
 
   @Test
@@ -136,9 +127,10 @@ class NotificationActionReceiverTest {
 
     receiver.onReceive(context, intent)
 
-    // The logic ensures we send a Stop Alarm broadcast even if BSSID is missing (fail-safe)
-    val broadcasts = ShadowApplication.getInstance().broadcastIntents
-    val stopIntent = broadcasts.find { it.action == NotificationActionReceiver.ACTION_STOP_ALARM }
-    assertNotNull("Stop broadcast should be sent even if BSSID missing", stopIntent)
+    // Verify Service Started with STOP action (fail-safe)
+    val nextStartedService = ShadowApplication.getInstance().nextStartedService
+    assertNotNull("Service should be started to stop alarm", nextStartedService)
+    assertEquals(AntiTheftService::class.java.name, nextStartedService.component?.className)
+    assertEquals(AntiTheftService.ACTION_STOP, nextStartedService.action)
   }
 }

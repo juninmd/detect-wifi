@@ -77,6 +77,29 @@ class NotificationUtilTest {
     val notification = shadows.getNotification(123)
     assertNotNull(notification)
     assertEquals(NotificationUtil.SECURITY_CHANNEL_ID, notification.channelId)
+
+    // Verify Mark as Safe action
+    val actions = notification.actions
+    assertTrue(
+      "Should have Mark as Safe action",
+      actions.any { it.title.toString().contains("Mark") || it.title.toString().contains("Seguro") }
+    )
+  }
+
+  @Test
+  fun testSendPanicAlert() {
+    NotificationUtil.sendPanicAlert(context)
+
+    val shadows = Shadows.shadowOf(notificationManager)
+    // Panic alert uses ID 1000 in Util
+    val notification = shadows.getNotification(1000)
+    assertNotNull(notification)
+
+    val actions = notification.actions
+    assertTrue(
+      "Should have Mark as Safe action",
+      actions.any { it.title.toString().contains("Seguro") }
+    )
   }
 
   @Test

@@ -134,12 +134,7 @@ task jacocoTestReport(type: JacocoReport, dependsOn: 'testDebugUnitTest') {
     def fileFilter = [
             '**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*',
             '**/Lambda$*.class', '**/Lambda.class', '**/*Lambda.class', '**/*$Lambda$*',
-            '**/*Binding*', '**/*BindingImpl*', '**/*View*',
-            '**/CameraMonitoringService*', '**/PersonDetectionAnalyzer*', '**/security/**',
-            '**/utils/CameraHelper*', '**/utils/BiometricAuthenticator*',
-            '**/PresenceDetectorApp*',
-            '**/*Activity*', '**/*Fragment*',
-            '**/services/SignalHistoryManager*'
+            '**/*Binding*', '**/*BindingImpl*', '**/*View*'
     ]
     def debugTree = fileTree(dir: "${project.buildDir}/tmp/kotlin-classes/debug", excludes: fileFilter)
     def javaTree = fileTree(dir: "${project.buildDir}/intermediates/javac/debug/classes", excludes: fileFilter)
@@ -178,7 +173,7 @@ task jacocoTestCoverageVerification(type: JacocoCoverageVerification, dependsOn:
     violationRules {
         rule {
             limit {
-                minimum = 0.80 // Enforce 80% coverage
+                minimum = 1.00 // Enforce 100% coverage
             }
         }
     }

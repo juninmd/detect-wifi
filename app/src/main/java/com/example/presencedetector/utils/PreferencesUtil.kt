@@ -37,6 +37,7 @@ open class PreferencesUtil(context: Context) {
       const val POCKET_MODE_ENABLED = "pocket_mode_enabled"
       const val CHARGER_MODE_ENABLED = "charger_mode_enabled"
       const val SMART_MODE_ENABLED = "smart_mode_enabled"
+      const val SILENT_MODE_ENABLED = "silent_mode_enabled"
 
       const val ALL_BSSIDS = "all_bssids"
       const val TRUSTED_WIFI_SSID = "trusted_wifi_ssid"
@@ -207,6 +208,10 @@ open class PreferencesUtil(context: Context) {
   open fun setSmartModeEnabled(enabled: Boolean) = putBoolean(Keys.SMART_MODE_ENABLED, enabled)
 
   open fun isSmartModeEnabled() = getBoolean(Keys.SMART_MODE_ENABLED, false)
+
+  open fun setSilentModeEnabled(enabled: Boolean) = putBoolean(Keys.SILENT_MODE_ENABLED, enabled)
+
+  open fun isSilentModeEnabled() = getBoolean(Keys.SILENT_MODE_ENABLED, false)
 
   // --- Device Info ---
   open fun saveNickname(bssid: String, nickname: String) =

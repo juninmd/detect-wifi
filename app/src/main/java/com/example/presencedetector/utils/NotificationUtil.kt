@@ -254,6 +254,21 @@ object NotificationUtil {
 
     actions.forEach { builder.addAction(it) }
 
+    // Add "Mark as Safe" action
+    val safeIntent =
+      Intent(context, NotificationActionReceiver::class.java).apply {
+        action = NotificationActionReceiver.ACTION_MARK_SAFE
+        putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+      }
+    val pendingSafeIntent =
+      PendingIntent.getBroadcast(
+        context,
+        notificationId + 99,
+        safeIntent,
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+      )
+    builder.addAction(android.R.drawable.ic_menu_save, "Marcar Seguro", pendingSafeIntent)
+
     notify(context, notificationId, builder.build())
   }
 
@@ -320,6 +335,21 @@ object NotificationUtil {
         .setAutoCancel(false)
         .setOngoing(true)
 
+    // Add Mark as Safe
+    val safeIntent =
+      Intent(context, NotificationActionReceiver::class.java).apply {
+        action = NotificationActionReceiver.ACTION_MARK_SAFE
+        putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, 3001)
+      }
+    val pendingSafeIntent =
+      PendingIntent.getBroadcast(
+        context,
+        3001 + 99,
+        safeIntent,
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+      )
+    builder.addAction(android.R.drawable.ic_menu_save, "Marcar Seguro", pendingSafeIntent)
+
     notify(context, 3001, builder.build())
   }
 
@@ -343,6 +373,20 @@ object NotificationUtil {
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
       )
 
+    // Mark as Safe
+    val safeIntent =
+      Intent(context, NotificationActionReceiver::class.java).apply {
+        action = NotificationActionReceiver.ACTION_MARK_SAFE
+        putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, 1000)
+      }
+    val pendingSafeIntent =
+      PendingIntent.getBroadcast(
+        context,
+        1000 + 99,
+        safeIntent,
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+      )
+
     val builder =
       buildBaseNotification(
           context,
@@ -357,6 +401,7 @@ object NotificationUtil {
         .setVibrate(longArrayOf(0, 1000, 1000, 1000, 1000))
         .addAction(android.R.drawable.ic_menu_call, "LIGAR 190", pendingEmergencyIntent)
         .addAction(android.R.drawable.ic_media_pause, "PARAR ALARME", pendingStopIntent)
+        .addAction(android.R.drawable.ic_menu_save, "Estou Seguro", pendingSafeIntent)
         .setOngoing(true)
         .setAutoCancel(false)
 

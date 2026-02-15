@@ -237,6 +237,21 @@ class MainActivityTest {
   }
 
   @Test
+  fun `Silent Mode switch updates preference`() {
+    val controller = Robolectric.buildActivity(MainActivity::class.java)
+    val activity = controller.create().start().resume().get()
+    val switchSilentMode =
+      activity.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(
+        R.id.switchSilentMode
+      )
+
+    switchSilentMode.performClick()
+
+    val util = PreferencesUtil(context)
+    assertTrue("Silent Mode should be enabled after click", util.isSilentModeEnabled())
+  }
+
+  @Test
   fun `Security Settings button opens Camera Dashboard`() {
     val controller = Robolectric.buildActivity(MainActivity::class.java)
     val activity = controller.create().start().resume().get()

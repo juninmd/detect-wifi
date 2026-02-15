@@ -29,9 +29,11 @@ class NotificationActionReceiver : BroadcastReceiver() {
       ACTION_STOP_ALARM -> {
         Log.d(TAG, "Received Stop Alarm request")
 
-        // 1. Send broadcast to stop all alarms (PresenceManager, AntiTheft, etc.)
-        val stopIntent = Intent(ACTION_STOP_ALARM)
-        context.sendBroadcast(stopIntent)
+        // Stop AntiTheftService directly
+        val serviceIntent =
+          Intent(context, com.example.presencedetector.services.AntiTheftService::class.java)
+            .apply { action = com.example.presencedetector.services.AntiTheftService.ACTION_STOP }
+        context.startService(serviceIntent)
 
         // 2. Dismiss the notification
         if (notificationId != -1) {
@@ -65,7 +67,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
       }
       ACTION_MARK_SAFE -> {
         val bssid = intent.getStringExtra(EXTRA_BSSID)
-        Log.d(TAG, "Received Mark Safe request for BSSID: $bssid")
+        Log.d(TAG, "Received Mark Safe request. BSSID: $bssid")
 
         if (!bssid.isNullOrEmpty()) {
           val prefs = PreferencesUtil(context)
@@ -75,11 +77,18 @@ class NotificationActionReceiver : BroadcastReceiver() {
           prefs.trackDetection(bssid)
 
           Toast.makeText(context, "Device marked as Safe", Toast.LENGTH_SHORT).show()
+        } else {
+            // No BSSID means it's a device security alarm (AntiTheft)
+            // Log that it was a false alarm / safe
+            PreferencesUtil(context).logSystemEvent("Marked as Safe by User")
+            Toast.makeText(context, "Alarme cancelado (Seguro)", Toast.LENGTH_SHORT).show()
         }
 
         // Stop alarm just in case it's ringing
-        val stopIntent = Intent(ACTION_STOP_ALARM)
-        context.sendBroadcast(stopIntent)
+        val serviceIntent =
+          Intent(context, com.example.presencedetector.services.AntiTheftService::class.java)
+            .apply { action = com.example.presencedetector.services.AntiTheftService.ACTION_STOP }
+        context.startService(serviceIntent)
 
         if (notificationId != -1) {
           notificationManager.cancel(notificationId)
