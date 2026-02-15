@@ -183,6 +183,13 @@ class MainActivity : AppCompatActivity() {
       preferences.setSmartModeEnabled(isChecked)
     }
 
+    binding.switchSilentMode.isChecked = preferences.isSilentModeEnabled()
+    binding.switchSilentMode.setOnCheckedChangeListener { _, isChecked ->
+      preferences.setSilentModeEnabled(isChecked)
+      val msg = if (isChecked) "Alarme Silencioso Ativado" else "Alarme Sonoro Ativado"
+      Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+    }
+
     // Make Status Card clickable to arm/disarm
     binding.statusCard.setOnClickListener {
       if (preferences.isAntiTheftArmed()) {

@@ -389,20 +389,25 @@ class AntiTheftService :
     // Start Reporting
     reportHandler.post(reportRunnable)
 
-    // 4. Play Sound
-    try {
-      val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-      alarmRingtone = RingtoneManager.getRingtone(applicationContext, alarmUri)
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-        alarmRingtone?.audioAttributes =
-          AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ALARM)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .build()
+    // 4. Play Sound (if not Silent Mode)
+    if (!preferences.isSilentModeEnabled()) {
+      try {
+        val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+        alarmRingtone = RingtoneManager.getRingtone(applicationContext, alarmUri)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+          alarmRingtone?.audioAttributes =
+            AudioAttributes.Builder()
+              .setUsage(AudioAttributes.USAGE_ALARM)
+              .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+              .build()
+        }
+        alarmRingtone?.play()
+      } catch (e: Exception) {
+        Log.e(TAG, "Error playing alarm", e)
       }
-      alarmRingtone?.play()
-    } catch (e: Exception) {
-      Log.e(TAG, "Error playing alarm", e)
+    } else {
+      Log.i(TAG, "Silent Mode Enabled - Alarm sound suppressed")
+      preferences.logSystemEvent("Silent Alarm Triggered (Sound Suppressed)")
     }
 
     // 5. Show Alert Notification with Action to Stop
@@ -541,6 +546,20 @@ class AntiTheftService :
         PendingIntent.FLAG_IMMUTABLE
       )
 
+    // Action 4: Mark as Safe
+    val safeIntent =
+      Intent(this, NotificationActionReceiver::class.java).apply {
+        action = NotificationActionReceiver.ACTION_MARK_SAFE
+        putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, ALARM_NOTIFICATION_ID)
+      }
+    val pendingSafeIntent =
+      PendingIntent.getBroadcast(
+        this,
+        ALARM_NOTIFICATION_ID + 99,
+        safeIntent,
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+      )
+
     // Select icon based on reason
     val icon =
       when {
@@ -569,6 +588,7 @@ class AntiTheftService :
           getString(R.string.action_emergency_call),
           pendingEmergencyIntent
         )
+        .addAction(android.R.drawable.ic_menu_save, "Seguro", pendingSafeIntent)
         .setDeleteIntent(
           pendingDisarmIntent
         ) // If dismissed, try to open app to ensure user sees it? Or just let it be.
