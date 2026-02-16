@@ -78,10 +78,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
           Toast.makeText(context, "Device marked as Safe", Toast.LENGTH_SHORT).show()
         } else {
-            // No BSSID means it's a device security alarm (AntiTheft)
-            // Log that it was a false alarm / safe
-            PreferencesUtil(context).logSystemEvent("Marked as Safe by User")
-            Toast.makeText(context, "Alarme cancelado (Seguro)", Toast.LENGTH_SHORT).show()
+          // No BSSID means it's a device security alarm (AntiTheft)
+          // Log that it was a false alarm / safe
+          PreferencesUtil(context).logSystemEvent("Marked as Safe by User")
+          Toast.makeText(context, "Alarme cancelado (Seguro)", Toast.LENGTH_SHORT).show()
         }
 
         // Stop alarm just in case it's ringing

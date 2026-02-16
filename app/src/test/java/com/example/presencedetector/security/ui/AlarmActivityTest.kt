@@ -1,11 +1,9 @@
 package com.example.presencedetector.security.ui
 
-import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
-import com.example.presencedetector.MainActivity
 import com.example.presencedetector.R
 import com.example.presencedetector.services.AntiTheftService
 import org.junit.Assert.assertEquals
@@ -29,12 +27,15 @@ class AlarmActivityTest {
     context = ApplicationProvider.getApplicationContext()
   }
 
-  @org.junit.Ignore("Temporarily disabled due to Robolectric/Environment NPE in buildActivity. Needs layout inflation fix.")
+  @org.junit.Ignore(
+    "Temporarily disabled due to Robolectric/Environment NPE in buildActivity. Needs layout inflation fix."
+  )
   @Test
   fun `activity displays reason from intent`() {
-    val intent = Intent(context, AlarmActivity::class.java).apply {
-      putExtra(AlarmActivity.EXTRA_REASON, "TEST REASON")
-    }
+    val intent =
+      Intent(context, AlarmActivity::class.java).apply {
+        putExtra(AlarmActivity.EXTRA_REASON, "TEST REASON")
+      }
 
     val controller = Robolectric.buildActivity(AlarmActivity::class.java, intent)
     val activity = controller.create().start().resume().get()
@@ -47,7 +48,9 @@ class AlarmActivityTest {
     assertEquals("TEST REASON", tvReason.text)
   }
 
-  @org.junit.Ignore("Temporarily disabled due to Robolectric/Environment NPE in buildActivity. Needs layout inflation fix.")
+  @org.junit.Ignore(
+    "Temporarily disabled due to Robolectric/Environment NPE in buildActivity. Needs layout inflation fix."
+  )
   @Test
   fun `stop button logic execution`() {
     val controller = Robolectric.buildActivity(AlarmActivity::class.java)
