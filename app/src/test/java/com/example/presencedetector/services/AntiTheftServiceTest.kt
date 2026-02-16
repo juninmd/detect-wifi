@@ -127,16 +127,6 @@ class AntiTheftServiceTest {
     service.onStartCommand(intent, 0, 0)
 
     // Mark Safe (via direct service call as per NotificationActionReceiver update)
-    // Wait, NotificationActionReceiver calls ACTION_STOP.
-    // But the requirement was "Handle ACTION_MARK_SAFE intent to stop the alarm".
-    // Let's check NotificationActionReceiver again.
-    // It calls ACTION_STOP on the service.
-    // So testing ACTION_STOP is enough? No, I should test that the Receiver *sends* ACTION_STOP.
-    // But here I'm testing the Service.
-    // So if I send ACTION_STOP, it stops. That's already covered by `stopMonitoring`.
-    // Let's rely on `stopMonitoring` test and NotificationActionReceiver test.
-    // But I can test `ACTION_STOP` explicitly stops alarm (sound).
-
     // Trigger first
     SystemClock.sleep(6000)
     val event = createSensorEvent(floatArrayOf(5f, 5f, 5f), Sensor.TYPE_ACCELEROMETER)
