@@ -102,12 +102,17 @@ class AntiTheftServiceTest {
     service.onStartCommand(intent, 0, 0)
     SystemClock.sleep(6000)
 
-    val event = createSensorEvent(floatArrayOf(5f, 5f, 5f), Sensor.TYPE_ACCELEROMETER)
-    service.onSensorChanged(event)
+    // First event to initialize reference
+    val event1 = createSensorEvent(floatArrayOf(0f, 0f, 9.8f), Sensor.TYPE_ACCELEROMETER)
+    service.onSensorChanged(event1)
+
+    // Second event to trigger motion
+    val event2 = createSensorEvent(floatArrayOf(5f, 5f, 5f), Sensor.TYPE_ACCELEROMETER)
+    service.onSensorChanged(event2)
 
     // Verify log system event was called with suppressed message
-    verify(mockPreferences, atLeastOnce()).logSystemEvent(org.mockito.kotlin.argThat {
-        it.contains("Silent Alarm") || it.contains("Suppressed")
+    verify(mockPreferences, atLeastOnce()).logSystemEvent(org.mockito.kotlin.argThat { msg ->
+        msg.contains("Silent Alarm") || msg.contains("Suppressed")
     })
   }
 
