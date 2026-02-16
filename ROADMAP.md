@@ -14,7 +14,7 @@ To become the definitive, privacy-focused Android solution for residential prese
 
 ## 2. Current Status
 
-**Version:** 2.1 (Production Ready)
+**Version:** 2.1 (Stable Release)
 **Tech Stack:** Kotlin, Android 15 Target, Coroutines, Foreground Services.
 
 **Key Achievements:**
