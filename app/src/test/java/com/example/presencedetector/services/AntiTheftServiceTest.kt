@@ -102,45 +102,56 @@ class AntiTheftServiceTest {
     service.onStartCommand(intent, 0, 0)
     SystemClock.sleep(6000)
 
-    val event = createSensorEvent(floatArrayOf(5f, 5f, 5f), Sensor.TYPE_ACCELEROMETER)
-    service.onSensorChanged(event)
+    // First event to initialize reference
+    val event1 = createSensorEvent(floatArrayOf(0f, 0f, 9.8f), Sensor.TYPE_ACCELEROMETER)
+    service.onSensorChanged(event1)
+
+    // Second event to trigger motion
+    val event2 = createSensorEvent(floatArrayOf(5f, 5f, 5f), Sensor.TYPE_ACCELEROMETER)
+    service.onSensorChanged(event2)
 
     // Verify log system event was called with suppressed message
-    verify(mockPreferences, atLeastOnce()).logSystemEvent(org.mockito.kotlin.argThat {
-        it.contains("Silent Alarm") || it.contains("Suppressed")
-    })
+    verify(mockPreferences, atLeastOnce())
+      .logSystemEvent(
+        org.mockito.kotlin.argThat { msg ->
+          msg.contains("Silent Alarm") || msg.contains("Suppressed")
+        }
+      )
   }
 
   @Test
   fun `ACTION_MARK_SAFE should stop alarm and log safe`() {
-      // Start
-      val intent = Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_START }
-      service.onStartCommand(intent, 0, 0)
+    // Start
+    val intent =
+      Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_START }
+    service.onStartCommand(intent, 0, 0)
 
-      // Mark Safe (via direct service call as per NotificationActionReceiver update)
-      // Wait, NotificationActionReceiver calls ACTION_STOP.
-      // But the requirement was "Handle ACTION_MARK_SAFE intent to stop the alarm".
-      // Let's check NotificationActionReceiver again.
-      // It calls ACTION_STOP on the service.
-      // So testing ACTION_STOP is enough? No, I should test that the Receiver *sends* ACTION_STOP.
-      // But here I'm testing the Service.
-      // So if I send ACTION_STOP, it stops. That's already covered by `stopMonitoring`.
-      // Let's rely on `stopMonitoring` test and NotificationActionReceiver test.
-      // But I can test `ACTION_STOP` explicitly stops alarm (sound).
+    // Mark Safe (via direct service call as per NotificationActionReceiver update)
+    // Wait, NotificationActionReceiver calls ACTION_STOP.
+    // But the requirement was "Handle ACTION_MARK_SAFE intent to stop the alarm".
+    // Let's check NotificationActionReceiver again.
+    // It calls ACTION_STOP on the service.
+    // So testing ACTION_STOP is enough? No, I should test that the Receiver *sends* ACTION_STOP.
+    // But here I'm testing the Service.
+    // So if I send ACTION_STOP, it stops. That's already covered by `stopMonitoring`.
+    // Let's rely on `stopMonitoring` test and NotificationActionReceiver test.
+    // But I can test `ACTION_STOP` explicitly stops alarm (sound).
 
-      // Trigger first
-      SystemClock.sleep(6000)
-      val event = createSensorEvent(floatArrayOf(5f, 5f, 5f), Sensor.TYPE_ACCELEROMETER)
-      service.onSensorChanged(event)
+    // Trigger first
+    SystemClock.sleep(6000)
+    val event = createSensorEvent(floatArrayOf(5f, 5f, 5f), Sensor.TYPE_ACCELEROMETER)
+    service.onSensorChanged(event)
 
-      // Send Stop
-      val stopIntent = Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_STOP }
-      service.onStartCommand(stopIntent, 0, 0)
+    // Send Stop
+    val stopIntent =
+      Intent(context, AntiTheftService::class.java).apply { action = AntiTheftService.ACTION_STOP }
+    service.onStartCommand(stopIntent, 0, 0)
 
-      // Verify alarm stopped (e.g. notification cancelled)
-      val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-      val shadows = Shadows.shadowOf(notificationManager)
-      assertNull(shadows.getNotification(1000))
+    // Verify alarm stopped (e.g. notification cancelled)
+    val notificationManager =
+      context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+    val shadows = Shadows.shadowOf(notificationManager)
+    assertNull(shadows.getNotification(1000))
   }
 
   private fun createSensorEvent(values: FloatArray, type: Int): SensorEvent {
