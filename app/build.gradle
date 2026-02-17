@@ -110,7 +110,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:5.3.2'
 
     // Security Monitoring
-    implementation 'org.videolan.android:libvlc-all:3.6.0-eap13' // Updated
+    implementation 'org.videolan.android:libvlc-all:4.0.0-eap23' // Updated
     implementation 'com.google.mlkit:object-detection:17.0.2'
     implementation 'androidx.biometric:biometric:1.1.0'
 
