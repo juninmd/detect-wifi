@@ -37,7 +37,7 @@ class WiFiDetectionServiceTest {
   @Test
   fun `performScan handles permissions correctly`() {
     // No permissions by default
-    ShadowApplication.getInstance().denyPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
+    Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>()).denyPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
 
     var callbackCalled = false
     service.setPresenceListener { _, _, details ->
@@ -55,7 +55,7 @@ class WiFiDetectionServiceTest {
 
   @Test
   fun `performScan parses scan results and detects hotspots`() {
-    ShadowApplication.getInstance().grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
+    Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>()).grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
 
     // Mock ScanResult (API is tricky, need to create via reflection or empty constr if available)
     // ScanResult() is accessible in recent Android versions/Robolectric

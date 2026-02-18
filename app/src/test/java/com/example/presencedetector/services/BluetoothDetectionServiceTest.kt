@@ -29,7 +29,7 @@ class BluetoothDetectionServiceTest {
 
   @Test
   fun `startScanning checks permissions`() {
-    ShadowApplication.getInstance().denyPermissions(Manifest.permission.BLUETOOTH_SCAN)
+    Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>()).denyPermissions(Manifest.permission.BLUETOOTH_SCAN)
 
     service.startScanning()
     assertFalse(service.isScanning())
@@ -37,7 +37,7 @@ class BluetoothDetectionServiceTest {
 
   @Test
   fun `startScanning starts scan when permitted`() {
-    ShadowApplication.getInstance()
+    Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
       .grantPermissions(
         Manifest.permission.BLUETOOTH_SCAN,
         Manifest.permission.ACCESS_FINE_LOCATION,
@@ -57,7 +57,7 @@ class BluetoothDetectionServiceTest {
 
   @Test
   fun `scan logic processes results`() {
-    ShadowApplication.getInstance().grantPermissions(Manifest.permission.BLUETOOTH_SCAN)
+    Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>()).grantPermissions(Manifest.permission.BLUETOOTH_SCAN)
     val adapter = BluetoothAdapter.getDefaultAdapter()
     adapter.enable()
 
@@ -68,7 +68,7 @@ class BluetoothDetectionServiceTest {
 
   @Test
   fun `ScanCallback handles results`() {
-    ShadowApplication.getInstance()
+    Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
       .grantPermissions(
         Manifest.permission.BLUETOOTH_SCAN,
         Manifest.permission.ACCESS_FINE_LOCATION,

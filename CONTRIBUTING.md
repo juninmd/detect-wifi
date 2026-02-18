@@ -51,4 +51,14 @@ Our CI pipeline (GitHub Actions) runs the following checks:
 *   **Build:** Assembles Debug and Release APKs.
 *   **Security:** Scans for secrets (Gitleaks) and dependency vulnerabilities (Trivy).
 
+## Environment Variables
+
+The CI pipeline uses the following secrets for signing releases and reporting:
+
+*   `RELEASE_KEYSTORE_BASE64`: Base64 encoded keystore file.
+*   `KEYSTORE_PASSWORD`: Password for the keystore.
+*   `KEY_ALIAS`: Key alias.
+*   `KEY_PASSWORD`: Key password.
+*   `CODECOV_TOKEN`: Token for uploading coverage reports to Codecov.
+
 Upon merging to `main`, a new release is automatically created and deployed.

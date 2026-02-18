@@ -7,6 +7,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowApplication
 
@@ -16,7 +17,7 @@ class DetectionBackgroundServiceTest {
 
   @Test
   fun `service should start and return START_STICKY`() {
-    val app = ShadowApplication.getInstance()
+    val app = Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
     app.grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
 
     val controller = Robolectric.buildService(DetectionBackgroundService::class.java)
@@ -34,7 +35,7 @@ class DetectionBackgroundServiceTest {
 
   @Test
   fun `service should startForeground with notification`() {
-    val app = ShadowApplication.getInstance()
+    val app = Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
     app.grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
 
     val controller = Robolectric.buildService(DetectionBackgroundService::class.java)
