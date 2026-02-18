@@ -37,7 +37,8 @@ class WifiRadarActivityTest {
     preferences = PreferencesUtil(context)
     preferences.clear()
 
-    ShadowApplication.getInstance().grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
+    Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
+      .grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
 
     val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
     shadowWifiManager = Shadows.shadowOf(wifiManager)
