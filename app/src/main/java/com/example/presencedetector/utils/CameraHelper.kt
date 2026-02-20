@@ -16,6 +16,7 @@ import android.os.Looper
 import android.util.Log
 import android.view.Surface
 import androidx.core.app.ActivityCompat
+import com.example.presencedetector.security.repository.LogRepository
 import com.example.presencedetector.services.TelegramService
 import java.io.File
 import java.io.FileOutputStream
@@ -57,8 +58,7 @@ class CameraHelper(private val context: Context) {
             File(context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES), filename)
           FileOutputStream(file).use { it.write(bytes) }
 
-          val prefs = PreferencesUtil(context)
-          prefs.logSystemEvent("📸 Photo Captured: $filename")
+          LogRepository.logSystemEvent(context, "📸 Photo Captured: $filename")
 
           telegramService.sendPhoto(file, "📸 Security Event Captured")
 

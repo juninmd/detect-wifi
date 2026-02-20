@@ -5,6 +5,7 @@ import android.content.Intent
 import com.example.presencedetector.model.DeviceSource
 import com.example.presencedetector.model.WiFiDevice
 import com.example.presencedetector.receivers.NotificationActionReceiver
+import com.example.presencedetector.security.repository.LogRepository
 import com.example.presencedetector.utils.PreferencesUtil
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -96,7 +97,7 @@ class PresenceDetectionManagerTest {
 
     assertTrue(manager.getDetectionStatus().contains("Present: YES"))
 
-    val logs = preferences.getEventLogs("00:11:22:33:44:55")
+    val logs = LogRepository.getDetectionLogs(context, "00:11:22:33:44:55")
     assertTrue("Should have log entries", logs.isNotEmpty())
     assertTrue("Should contain Arrived", logs[0].contains("Arrived"))
   }

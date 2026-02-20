@@ -4,8 +4,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.telephony.TelephonyManager
+import com.example.presencedetector.security.repository.LogRepository
 import com.example.presencedetector.services.AntiTheftService
-import com.example.presencedetector.utils.LoggerUtil
 import com.example.presencedetector.utils.PreferencesUtil
 
 class SimStateReceiver : BroadcastReceiver() {
@@ -17,7 +17,7 @@ class SimStateReceiver : BroadcastReceiver() {
     // Handle standard intent action
     if (intent.action == "android.intent.action.SIM_STATE_CHANGED") {
       val stateExtra = intent.getStringExtra("ss")
-      LoggerUtil.logEvent(context, "SIM State Broadcast Received. State: $stateExtra")
+      LogRepository.logSystemEvent(context, "SIM State Broadcast Received. State: $stateExtra")
 
       // reliable check via TelephonyManager
       val telephonyManager =
@@ -25,7 +25,7 @@ class SimStateReceiver : BroadcastReceiver() {
       val simState = telephonyManager?.simState ?: TelephonyManager.SIM_STATE_UNKNOWN
 
       if (simState == TelephonyManager.SIM_STATE_ABSENT) {
-        LoggerUtil.logEvent(
+        LogRepository.logSystemEvent(
           context,
           "SIM Card detected as ABSENT (Removed). Checking security status."
         )
@@ -38,7 +38,7 @@ class SimStateReceiver : BroadcastReceiver() {
     try {
       val prefs = PreferencesUtil(context)
       if (prefs.isAntiTheftArmed()) {
-        LoggerUtil.logEvent(context, "System Armed! Triggering Panic due to SIM removal.")
+        LogRepository.logSystemEvent(context, "System Armed! Triggering Panic due to SIM removal.")
 
         val serviceIntent =
           Intent(context, AntiTheftService::class.java).apply {
@@ -52,10 +52,13 @@ class SimStateReceiver : BroadcastReceiver() {
           context.startService(serviceIntent)
         }
       } else {
-        LoggerUtil.logEvent(context, "System not armed. Ignoring SIM removal.")
+        LogRepository.logSystemEvent(context, "System not armed. Ignoring SIM removal.")
       }
     } catch (e: Exception) {
-      LoggerUtil.logEvent(context, "Error checking preferences or starting service: ${e.message}")
+      LogRepository.logSystemEvent(
+        context,
+        "Error checking preferences or starting service: ${e.message}"
+      )
     }
   }
 }

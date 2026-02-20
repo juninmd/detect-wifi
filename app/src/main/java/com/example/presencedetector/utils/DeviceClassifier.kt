@@ -95,8 +95,4 @@ object DeviceClassifier {
 
     return containsMobilePattern || (isShortName && ssid.matches(Regex("[A-Za-z0-9]+")))
   }
-
-  private fun String.containsAny(patterns: List<String>): Boolean {
-    return patterns.any { this.contains(it) }
-  }
 }

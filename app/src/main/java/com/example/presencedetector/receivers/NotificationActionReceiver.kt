@@ -6,6 +6,7 @@ import android.content.Intent
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationManagerCompat
+import com.example.presencedetector.security.repository.LogRepository
 import com.example.presencedetector.utils.PreferencesUtil
 
 class NotificationActionReceiver : BroadcastReceiver() {
@@ -80,7 +81,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
         } else {
           // No BSSID means it's a device security alarm (AntiTheft)
           // Log that it was a false alarm / safe
-          PreferencesUtil(context).logSystemEvent("Marked as Safe by User")
+          LogRepository.logSystemEvent(context, "Marked as Safe by User")
           Toast.makeText(context, "Alarme cancelado (Seguro)", Toast.LENGTH_SHORT).show()
         }
 
