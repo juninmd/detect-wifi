@@ -3,11 +3,13 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [ "main", "develop" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
 
 jobs:
   lint:
+    name: Lint & Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,8 +19,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: gradle
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+
       - name: Create Dummy google-services.json
         run: |
           mkdir -p app
@@ -51,14 +55,17 @@ jobs:
             ],
             "configuration_version": "1"
           }' > app/google-services.json
+
       - name: Run Android Lint
         run: ./gradlew lintDebug
-      - name: Run Code Formatting Check (Spotless)
+
+      - name: Run Spotless Check
         run: ./gradlew spotlessCheck
 
   test:
-    runs-on: ubuntu-latest
+    name: Unit Tests & Coverage
     needs: lint
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 21
@@ -67,8 +74,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: gradle
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+
       - name: Create Dummy google-services.json
         run: |
           mkdir -p app
@@ -101,22 +110,30 @@ jobs:
             ],
             "configuration_version": "1"
           }' > app/google-services.json
+
       - name: Run Unit Tests
         run: ./gradlew testDebugUnitTest
+
       - name: Generate Coverage Report
         run: ./gradlew jacocoTestReport
+
       - name: Verify Coverage (Min 80%)
         run: ./gradlew jacocoTestCoverageVerification
+
       - name: Upload Test Results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: app/build/test-results/testDebugUnitTest/
+
       - name: Upload Coverage Report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: app/build/reports/jacoco/jacocoTestReport/html/
+
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -125,17 +142,20 @@ jobs:
           fail_ci_if_error: false
 
   security:
+    name: Security Scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Secret Scanning (Gitleaks)
+
+      - name: Gitleaks Secret Scan
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
-      - name: Dependency Vulnerability Scan (Trivy)
+
+      - name: Trivy Vulnerability Scan
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
@@ -145,8 +165,9 @@ jobs:
           severity: 'CRITICAL'
 
   build:
+    name: Build APKs
+    needs: [test, security]
     runs-on: ubuntu-latest
-    needs: test
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 21
@@ -155,8 +176,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: gradle
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+
       - name: Create Dummy google-services.json
         run: |
           mkdir -p app
@@ -189,11 +212,14 @@ jobs:
             ],
             "configuration_version": "1"
           }' > app/google-services.json
+
       - name: Build Debug APK
         run: ./gradlew assembleDebug
+
       - name: Decode Keystore
         if: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
-        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > app/release.jks
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > app/release.jks
 
       - name: Build Release APK
         env:
@@ -222,33 +248,49 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
 
   deploy:
+    name: Deploy
+    needs: build
     runs-on: ubuntu-latest
-    needs: [build, security]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+
       - name: Download Debug APK
         uses: actions/download-artifact@v4
         with:
           name: app-debug
           path: .
+
       - name: Download Release APK
         uses: actions/download-artifact@v4
         with:
           name: app-release
           path: .
-      - name: Create Release
+
+      - name: Create Staging Release (Main)
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.1.${{ github.run_number }}
-          name: Release v1.1.${{ github.run_number }}
+          name: Staging Release v1.1.${{ github.run_number }}
           files: |
             app-debug.apk
             *.apk
-          draft: false
+          prerelease: true
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Production Release (Tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Production Release ${{ github.ref_name }}
+          files: |
+            app-debug.apk
+            *.apk
           prerelease: false
           generate_release_notes: true
         env:
