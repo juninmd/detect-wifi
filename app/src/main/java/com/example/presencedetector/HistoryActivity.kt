@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.presencedetector.databinding.ActivityHistoryBinding
 import com.example.presencedetector.databinding.ItemHistoryEventBinding
+import com.example.presencedetector.security.repository.LogRepository
 import com.example.presencedetector.utils.PreferencesUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -68,7 +69,7 @@ class HistoryActivity : AppCompatActivity() {
 
         bssids.forEach { bssid ->
           val nickname = preferences.getNickname(bssid) ?: getString(R.string.text_unknown)
-          val eventLogs = preferences.getEventLogs(bssid)
+          val eventLogs = LogRepository.getDetectionLogs(this@HistoryActivity, bssid)
           eventLogs.forEach { logLine ->
             // Parse log line to extract event type and timestamp
             val isArrival = logLine.contains("Arrived")
@@ -78,7 +79,7 @@ class HistoryActivity : AppCompatActivity() {
         }
 
         // Add System Logs
-        val systemLogs = preferences.getSystemLogs()
+        val systemLogs = LogRepository.getSystemLogs(this@HistoryActivity)
         systemLogs.forEach { logLine ->
           allLogs.add(HistoryItem("SYSTEM", "Security System", logLine))
         }
@@ -102,7 +103,7 @@ class HistoryActivity : AppCompatActivity() {
         bssids.forEach { bssid ->
           val nickname = preferences.getNickname(bssid) ?: ""
           if (bssid.lowercase().contains(query) || nickname.lowercase().contains(query)) {
-            val eventLogs = preferences.getEventLogs(bssid)
+            val eventLogs = LogRepository.getDetectionLogs(this@HistoryActivity, bssid)
             eventLogs.forEach { logLine ->
               val isArrival = logLine.contains("Arrived")
               val isDeparture = logLine.contains("Left")

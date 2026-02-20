@@ -161,26 +161,6 @@ class PreferencesUtilTest {
   }
 
   @Test
-  fun `test log event`() {
-    val bssid = "11:22:33:44:55:66"
-    preferencesUtil.logEvent(bssid, "Arrived")
-
-    val logs = preferencesUtil.getEventLogs(bssid)
-    assertEquals(1, logs.size)
-    assertTrue(logs[0].contains("Arrived"))
-
-    // Verify BSSID is tracked
-    val allBssids = preferencesUtil.getAllTrackedBssids()
-    assertTrue(allBssids.contains(bssid))
-
-    // Test system logs
-    preferencesUtil.logSystemEvent("System Start")
-    val sysLogs = preferencesUtil.getSystemLogs()
-    assertEquals(1, sysLogs.size)
-    assertTrue(sysLogs[0].contains("System Start"))
-  }
-
-  @Test
   fun `test detection history count`() {
     val bssid = "HISTORY:BSSID"
     assertEquals(0, preferencesUtil.getDetectionHistoryCount(bssid))

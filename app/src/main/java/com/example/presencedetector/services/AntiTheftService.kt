@@ -25,6 +25,7 @@ import androidx.core.app.NotificationCompat
 import com.example.presencedetector.MainActivity
 import com.example.presencedetector.R
 import com.example.presencedetector.receivers.NotificationActionReceiver
+import com.example.presencedetector.security.repository.LogRepository
 import com.example.presencedetector.utils.MotionDetector
 import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil
@@ -365,7 +366,7 @@ class AntiTheftService :
     isAlarmPlaying = true
 
     Log.w(TAG, "TRIGGERING ALARM: $reason")
-    preferences.logSystemEvent("🚨 Alarm Triggered: $reason")
+    LogRepository.logSystemEvent(this, "🚨 Alarm Triggered: $reason")
 
     // 1. Send Telegram Alert
     val time = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
@@ -407,7 +408,7 @@ class AntiTheftService :
       }
     } else {
       Log.i(TAG, "Silent Mode Enabled - Alarm sound suppressed")
-      preferences.logSystemEvent("Silent Alarm Triggered (Sound Suppressed)")
+      LogRepository.logSystemEvent(this, "Silent Alarm Triggered (Sound Suppressed)")
     }
 
     // 5. Show Alert Notification with Action to Stop

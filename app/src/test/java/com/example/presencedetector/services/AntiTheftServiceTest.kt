@@ -10,6 +10,7 @@ import android.os.SystemClock
 import androidx.test.core.app.ApplicationProvider
 import com.example.presencedetector.MainActivity
 import com.example.presencedetector.receivers.NotificationActionReceiver
+import com.example.presencedetector.security.repository.LogRepository
 import com.example.presencedetector.utils.PreferencesUtil
 import org.junit.Assert.*
 import org.junit.Before
@@ -111,12 +112,8 @@ class AntiTheftServiceTest {
     service.onSensorChanged(event2)
 
     // Verify log system event was called with suppressed message
-    verify(mockPreferences, atLeastOnce())
-      .logSystemEvent(
-        org.mockito.kotlin.argThat { msg ->
-          msg.contains("Silent Alarm") || msg.contains("Suppressed")
-        }
-      )
+    val logs = LogRepository.getSystemLogs(context)
+    assertTrue(logs.any { it.contains("Silent Alarm") || it.contains("Suppressed") })
   }
 
   @Test

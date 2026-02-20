@@ -156,28 +156,7 @@ open class PreferencesUtil(context: Context) {
 
   open fun isCurrentTimeInSecuritySchedule(): Boolean {
     val (startStr, endStr) = getSecuritySchedule()
-    val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-    val now = Date()
-    val currentStr = dateFormat.format(now)
-
-    return try {
-      val start = dateFormat.parse(startStr)
-      val end = dateFormat.parse(endStr)
-      val current = dateFormat.parse(currentStr)
-
-      if (start != null && end != null && current != null) {
-        if (start.before(end)) {
-          (current.after(start) || current == start) && (current.before(end) || current == end)
-        } else {
-          // Spans over midnight (e.g., 22:00 to 06:00)
-          (current.after(start) || current == start) || (current.before(end) || current == end)
-        }
-      } else {
-        false
-      }
-    } catch (e: Exception) {
-      false
-    }
+    return TimeUtil.isCurrentTimeInSchedule(startStr, endStr)
   }
 
   // --- Anti-Theft Settings ---
@@ -231,37 +210,15 @@ open class PreferencesUtil(context: Context) {
     }
   }
 
-  /** Log precise arrival/departure events with time. */
-  open fun logEvent(bssid: String, eventType: String) {
-    val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-    val logEntry = "[$timestamp] $eventType"
-
-    val logs = getStringSet(Prefixes.EVENT_LOGS + bssid, mutableSetOf()) ?: mutableSetOf()
-    val newLogs = logs.toMutableSet()
-    newLogs.add(logEntry)
-
+  open fun trackDetection(bssid: String) {
     // Ensure BSSID is in the master list
     val allBssids = getStringSet(Keys.ALL_BSSIDS, mutableSetOf()) ?: mutableSetOf()
-    val newAllBssids = allBssids.toMutableSet()
-    newAllBssids.add(bssid)
+    if (!allBssids.contains(bssid)) {
+      val newAllBssids = allBssids.toMutableSet()
+      newAllBssids.add(bssid)
+      putStringSet(Keys.ALL_BSSIDS, newAllBssids)
+    }
 
-    // Use batch edit manually here as we are updating multiple
-    preferences
-      .edit()
-      .putStringSet(Prefixes.EVENT_LOGS + bssid, newLogs)
-      .putStringSet(Keys.ALL_BSSIDS, newAllBssids)
-      .apply()
-
-    // Also keep the daily history count logic
-    trackDetection(bssid)
-  }
-
-  open fun getEventLogs(bssid: String): List<String> {
-    return getStringSet(Prefixes.EVENT_LOGS + bssid, emptySet())?.toList()?.sortedDescending()
-      ?: emptyList()
-  }
-
-  open fun trackDetection(bssid: String) {
     val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
     val historyKey = Prefixes.HISTORY + bssid
     val history = getStringSet(historyKey, mutableSetOf()) ?: mutableSetOf()
@@ -294,21 +251,5 @@ open class PreferencesUtil(context: Context) {
 
   fun unregisterListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
     preferences.unregisterOnSharedPreferenceChangeListener(listener)
-  }
-
-  /** Log general system events (Security, Panic, Errors). */
-  fun logSystemEvent(message: String) {
-    val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-    val logEntry = "[$timestamp] $message"
-
-    val logs = getStringSet(Keys.SYSTEM_LOGS, mutableSetOf()) ?: mutableSetOf()
-    val newLogs = logs.toMutableSet()
-    newLogs.add(logEntry)
-
-    putStringSet(Keys.SYSTEM_LOGS, newLogs)
-  }
-
-  fun getSystemLogs(): List<String> {
-    return getStringSet(Keys.SYSTEM_LOGS, emptySet())?.toList()?.sortedDescending() ?: emptyList()
   }
 }

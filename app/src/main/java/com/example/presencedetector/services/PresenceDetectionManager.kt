@@ -14,6 +14,7 @@ import android.util.Log
 import com.example.presencedetector.R
 import com.example.presencedetector.model.WiFiDevice
 import com.example.presencedetector.receivers.NotificationActionReceiver
+import com.example.presencedetector.security.repository.LogRepository
 import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil
 import java.text.SimpleDateFormat
@@ -133,7 +134,8 @@ class PresenceDetectionManager(
     updateAndProcessDevices("Camera", "Detected by $name")
 
     // Also log this event
-    preferences.logEvent("camera_$name", "Detected on Camera")
+    LogRepository.logDetectionEvent(context, "camera_$name", "Detected on Camera")
+    preferences.trackDetection("camera_$name")
 
     // Telegram notification for camera
     if (preferences.isTelegramEnabled()) {
@@ -175,7 +177,7 @@ class PresenceDetectionManager(
 
       // LOG ARRIVAL if device was gone for > 5 minutes (or first time seen)
       if (lastSeen == 0L || (now - lastSeen) > ABSENCE_THRESHOLD) {
-        preferences.logEvent(bssid, "Arrived")
+        LogRepository.logDetectionEvent(context, bssid, "Arrived")
 
         if (areNotificationsEnabled) {
           // Security Check for NEW devices (only if not seen before in history AND no nickname)
@@ -220,7 +222,7 @@ class PresenceDetectionManager(
         // Device has been missing for more than 5 minutes
         if (departureNotifiedMap[bssid] != true) {
           // LOG DEPARTURE
-          preferences.logEvent(bssid, "Left")
+          LogRepository.logDetectionEvent(context, bssid, "Left")
           lastDepartureTimeMap[bssid] = now // Record departure time for dynamic debounce
 
           if (areNotificationsEnabled) {

@@ -20,7 +20,7 @@ import com.example.presencedetector.services.AntiTheftService
 import com.example.presencedetector.services.DetectionBackgroundService
 import com.example.presencedetector.services.PresenceDetectionManager
 import com.example.presencedetector.utils.BiometricAuthenticator
-import com.example.presencedetector.utils.LoggerUtil
+import com.example.presencedetector.security.repository.LogRepository
 import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil
 import java.text.SimpleDateFormat
@@ -287,7 +287,7 @@ class MainActivity : AppCompatActivity() {
     startService(serviceIntent)
     preferences.setAntiTheftArmed(false)
     addLog(getString(R.string.log_mobile_disarmed))
-    preferences.logSystemEvent("Mobile Security Disarmed")
+    LogRepository.logSystemEvent(this, "Mobile Security Disarmed")
     updateAntiTheftUI()
   }
 
@@ -301,7 +301,7 @@ class MainActivity : AppCompatActivity() {
     }
     preferences.setAntiTheftArmed(true)
     addLog(getString(R.string.log_mobile_armed))
-    preferences.logSystemEvent("Mobile Security Armed")
+    LogRepository.logSystemEvent(this, "Mobile Security Armed")
     updateAntiTheftUI()
   }
 
@@ -362,7 +362,7 @@ class MainActivity : AppCompatActivity() {
   }
 
   private fun loadRecentLogs() {
-    val logs = preferences.getSystemLogs()
+    val logs = LogRepository.getSystemLogs(this)
     if (logs.isNotEmpty()) {
       val recent = logs.take(5).joinToString("\n")
       binding.detectionLog.text = "--- Recent Events ---\n$recent\n---------------------\n"
@@ -503,7 +503,7 @@ class MainActivity : AppCompatActivity() {
     binding.detectionLog.text = newText.take(1000)
 
     // Log to file as well
-    LoggerUtil.logEvent(this, message)
+    LogRepository.logSystemEvent(this, message)
   }
 
   private fun hasRequiredPermissions(): Boolean {
