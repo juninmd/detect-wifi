@@ -1,6 +1,7 @@
 package com.example.presencedetector.utils
 
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -15,28 +16,31 @@ object TimeUtil {
    * @return True if current time is within the schedule, false otherwise.
    */
   fun isCurrentTimeInSchedule(startStr: String, endStr: String): Boolean {
-    val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-    val now = Date()
-    val currentStr = dateFormat.format(now)
-
     return try {
-      val start = dateFormat.parse(startStr)
-      val end = dateFormat.parse(endStr)
-      val current = dateFormat.parse(currentStr)
+      val calendar = Calendar.getInstance()
+      val currentMinutes =
+        calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
 
-      if (start != null && end != null && current != null) {
-        if (start.before(end)) {
-          (current.after(start) || current == start) && (current.before(end) || current == end)
-        } else {
-          // Spans over midnight (e.g., 22:00 to 06:00)
-          (current.after(start) || current == start) || (current.before(end) || current == end)
-        }
+      val (startHour, startMinute) = parseTime(startStr)
+      val (endHour, endMinute) = parseTime(endStr)
+
+      val startMinutes = startHour * 60 + startMinute
+      val endMinutes = endHour * 60 + endMinute
+
+      if (startMinutes <= endMinutes) {
+        currentMinutes in startMinutes..endMinutes
       } else {
-        false
+        // Spans midnight (e.g., 22:00 to 06:00)
+        currentMinutes >= startMinutes || currentMinutes <= endMinutes
       }
     } catch (e: Exception) {
       false
     }
+  }
+
+  private fun parseTime(timeStr: String): Pair<Int, Int> {
+    val parts = timeStr.split(":")
+    return Pair(parts[0].toInt(), parts[1].toInt())
   }
 
   fun getCurrentTimestamp(): String {

@@ -21,6 +21,18 @@ import com.example.presencedetector.R
 import com.example.presencedetector.WifiRadarActivity
 import com.example.presencedetector.receivers.NotificationActionReceiver
 
+data class NotificationData(
+  val title: String,
+  val message: String,
+  val isImportantEvent: Boolean,
+  val actionTitle: String? = null,
+  val actionIntent: PendingIntent? = null,
+  val notificationId: Int? = null,
+  val secondActionTitle: String? = null,
+  val secondActionIntent: PendingIntent? = null,
+  val iconResId: Int? = null
+)
+
 /** Utility for managing notifications. */
 object NotificationUtil {
   private const val TAG = "NotificationUtil"
@@ -36,24 +48,27 @@ object NotificationUtil {
 
   private const val GROUP_KEY_PRESENCE = "com.example.presencedetector.PRESENCE_UPDATES"
 
+  private data class ChannelDefinition(
+    val id: String,
+    val name: String,
+    val importance: Int,
+    val description: String? = null,
+    val configure: (NotificationChannel.() -> Unit)? = null
+  )
+
   fun createNotificationChannels(context: Context) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val notificationManager = context.getSystemService(NotificationManager::class.java) ?: return
-      val channels = mutableListOf<NotificationChannel>()
 
-      channels.add(
-        createChannel(
+      val definitions = listOf(
+        ChannelDefinition(
           CHANNEL_ID,
           context.getString(R.string.channel_service_name),
           NotificationManager.IMPORTANCE_LOW,
           context.getString(R.string.channel_service_desc)
-        ) {
-          setShowBadge(false)
-        }
-      )
+        ) { setShowBadge(false) },
 
-      channels.add(
-        createChannel(
+        ChannelDefinition(
           INFO_CHANNEL_ID,
           context.getString(R.string.channel_info_name),
           NotificationManager.IMPORTANCE_DEFAULT,
@@ -61,22 +76,16 @@ object NotificationUtil {
         ) {
           enableLights(true)
           lightColor = android.graphics.Color.BLUE
-        }
-      )
+        },
 
-      channels.add(
-        createChannel(
+        ChannelDefinition(
           SILENT_CHANNEL_ID,
           "Eventos Silenciosos",
           NotificationManager.IMPORTANCE_LOW,
           "Notificações de rotina sem som"
-        ) {
-          setShowBadge(false)
-        }
-      )
+        ) { setShowBadge(false) },
 
-      channels.add(
-        createChannel(
+        ChannelDefinition(
           SECURITY_CHANNEL_ID,
           "Alerta de Segurança Crítico",
           NotificationManager.IMPORTANCE_HIGH,
@@ -95,11 +104,9 @@ object NotificationUtil {
               .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
               .build()
           )
-        }
-      )
+        },
 
-      channels.add(
-        createChannel(
+        ChannelDefinition(
           BATTERY_CHANNEL_ID,
           context.getString(R.string.channel_battery_name),
           NotificationManager.IMPORTANCE_HIGH,
@@ -108,46 +115,31 @@ object NotificationUtil {
           enableVibration(true)
           enableLights(true)
           lightColor = android.graphics.Color.YELLOW
-        }
-      )
+        },
 
-      channels.add(
-        createChannel(
+        ChannelDefinition(
           HOME_SECURITY_CHANNEL_ID,
           "Segurança Residencial",
           NotificationManager.IMPORTANCE_LOW,
           "Notificações de monitoramento WiFi e presença em casa"
-        ) {
-          setShowBadge(false)
-        }
-      )
+        ) { setShowBadge(false) },
 
-      channels.add(
-        createChannel(
+        ChannelDefinition(
           MOBILE_SECURITY_CHANNEL_ID,
           "Segurança do Celular",
           NotificationManager.IMPORTANCE_LOW,
           "Notificações de monitoramento anti-furto (bolso, movimento)"
-        ) {
-          setShowBadge(true)
-        }
+        ) { setShowBadge(true) }
       )
 
-      notificationManager.createNotificationChannels(channels)
-    }
-  }
+      val channels = definitions.map { def ->
+        NotificationChannel(def.id, def.name, def.importance).apply {
+          description = def.description
+          def.configure?.invoke(this)
+        }
+      }
 
-  @RequiresApi(Build.VERSION_CODES.O)
-  private fun createChannel(
-    id: String,
-    name: String,
-    importance: Int,
-    desc: String? = null,
-    configure: (NotificationChannel.() -> Unit)? = null
-  ): NotificationChannel {
-    return NotificationChannel(id, name, importance).apply {
-      description = desc
-      configure?.invoke(this)
+      notificationManager.createNotificationChannels(channels)
     }
   }
 
@@ -167,21 +159,10 @@ object NotificationUtil {
       .setAutoCancel(true)
   }
 
-  fun sendPresenceNotification(
-    context: Context,
-    title: String,
-    message: String,
-    isImportantEvent: Boolean,
-    actionTitle: String? = null,
-    actionIntent: PendingIntent? = null,
-    notificationId: Int? = null,
-    secondActionTitle: String? = null,
-    secondActionIntent: PendingIntent? = null,
-    iconResId: Int? = null
-  ) {
+  fun sendPresenceNotification(context: Context, data: NotificationData) {
     createNotificationChannels(context)
 
-    val channelId = if (isImportantEvent) INFO_CHANNEL_ID else SILENT_CHANNEL_ID
+    val channelId = if (data.isImportantEvent) INFO_CHANNEL_ID else SILENT_CHANNEL_ID
 
     val intent =
       Intent(context, WifiRadarActivity::class.java).apply {
@@ -201,26 +182,54 @@ object NotificationUtil {
       buildBaseNotification(
           context,
           channelId,
-          title,
-          message,
-          if (isImportantEvent) NotificationCompat.PRIORITY_DEFAULT
+          data.title,
+          data.message,
+          if (data.isImportantEvent) NotificationCompat.PRIORITY_DEFAULT
           else NotificationCompat.PRIORITY_LOW
         )
         .setContentIntent(pendingIntent)
         .setGroup(GROUP_KEY_PRESENCE)
 
-    if (iconResId != null) {
-      builder.setSmallIcon(iconResId)
+    if (data.iconResId != null) {
+      builder.setSmallIcon(data.iconResId)
     }
 
-    if (actionTitle != null && actionIntent != null) {
-      builder.addAction(R.drawable.ic_status_inactive, actionTitle, actionIntent)
+    if (data.actionTitle != null && data.actionIntent != null) {
+      builder.addAction(R.drawable.ic_status_inactive, data.actionTitle, data.actionIntent)
     }
-    if (secondActionTitle != null && secondActionIntent != null) {
-      builder.addAction(R.drawable.ic_status_active, secondActionTitle, secondActionIntent)
+    if (data.secondActionTitle != null && data.secondActionIntent != null) {
+      builder.addAction(R.drawable.ic_status_active, data.secondActionTitle, data.secondActionIntent)
     }
 
-    notify(context, notificationId ?: System.currentTimeMillis().toInt(), builder.build())
+    notify(context, data.notificationId ?: System.currentTimeMillis().toInt(), builder.build())
+  }
+
+  fun sendPresenceNotification(
+    context: Context,
+    title: String,
+    message: String,
+    isImportantEvent: Boolean,
+    actionTitle: String? = null,
+    actionIntent: PendingIntent? = null,
+    notificationId: Int? = null,
+    secondActionTitle: String? = null,
+    secondActionIntent: PendingIntent? = null,
+    iconResId: Int? = null
+  ) {
+    sendPresenceNotification(
+      context,
+      NotificationData(
+        title,
+        message,
+        isImportantEvent,
+        actionTitle,
+        actionIntent,
+        notificationId,
+        secondActionTitle,
+        secondActionIntent,
+        iconResId
+      )
+    )
   }
 
   fun sendCriticalAlert(
