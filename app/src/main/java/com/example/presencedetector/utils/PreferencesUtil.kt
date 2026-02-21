@@ -2,10 +2,11 @@ package com.example.presencedetector.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.presencedetector.data.preferences.DetectionPreferences
+import com.example.presencedetector.data.preferences.DeviceInfoPreferences
+import com.example.presencedetector.data.preferences.SecurityPreferences
+import com.example.presencedetector.data.preferences.TelegramPreferences
 import com.example.presencedetector.model.DeviceCategory
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /** Utility class for managing application preferences and history logs. */
 open class PreferencesUtil(context: Context) {
@@ -59,187 +60,134 @@ open class PreferencesUtil(context: Context) {
   private val preferences: SharedPreferences =
     context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
-  // --- Helpers ---
-  private fun putBoolean(key: String, value: Boolean) =
-    preferences.edit().putBoolean(key, value).apply()
-
-  private fun getBoolean(key: String, default: Boolean) = preferences.getBoolean(key, default)
-
-  private fun putString(key: String, value: String?) =
-    preferences.edit().putString(key, value).apply()
-
-  private fun getString(key: String, default: String? = null) = preferences.getString(key, default)
-
-  private fun putFloat(key: String, value: Float) = preferences.edit().putFloat(key, value).apply()
-
-  private fun getFloat(key: String, default: Float) = preferences.getFloat(key, default)
-
-  private fun putStringSet(key: String, value: Set<String>) =
-    preferences.edit().putStringSet(key, value).apply()
-
-  private fun getStringSet(key: String, default: Set<String>? = null) =
-    preferences.getStringSet(key, default)
+  private val detectionPreferences = DetectionPreferences(context)
+  private val securityPreferences = SecurityPreferences(context)
+  private val telegramPreferences = TelegramPreferences(context)
+  private val deviceInfoPreferences = DeviceInfoPreferences(context)
 
   // --- Detection Settings ---
-  open fun setDetectionEnabled(enabled: Boolean) = putBoolean(Keys.DETECTION_ENABLED, enabled)
+  open fun setDetectionEnabled(enabled: Boolean) = detectionPreferences.setDetectionEnabled(enabled)
 
-  open fun isDetectionEnabled() = getBoolean(Keys.DETECTION_ENABLED, false)
+  open fun isDetectionEnabled() = detectionPreferences.isDetectionEnabled()
 
-  open fun setNotifyOnPresence(enabled: Boolean) = putBoolean(Keys.NOTIFY_ON_PRESENCE, enabled)
+  open fun setNotifyOnPresence(enabled: Boolean) = detectionPreferences.setNotifyOnPresence(enabled)
 
-  fun shouldNotifyOnPresence() = getBoolean(Keys.NOTIFY_ON_PRESENCE, true)
+  fun shouldNotifyOnPresence() = detectionPreferences.shouldNotifyOnPresence()
 
-  open fun setNotifyWifiArrival(enabled: Boolean) = putBoolean(Keys.NOTIFY_WIFI_ARRIVAL, enabled)
+  open fun setNotifyWifiArrival(enabled: Boolean) = detectionPreferences.setNotifyWifiArrival(enabled)
 
-  open fun shouldNotifyWifiArrival() = getBoolean(Keys.NOTIFY_WIFI_ARRIVAL, false)
+  open fun shouldNotifyWifiArrival() = detectionPreferences.shouldNotifyWifiArrival()
 
   open fun setNotifyArrival(bssid: String, notify: Boolean) =
-    putBoolean(Prefixes.NOTIFY_ARRIVAL + bssid, notify)
+    detectionPreferences.setNotifyArrival(bssid, notify)
 
-  open fun shouldNotifyArrival(bssid: String) = getBoolean(Prefixes.NOTIFY_ARRIVAL + bssid, false)
+  open fun shouldNotifyArrival(bssid: String) = detectionPreferences.shouldNotifyArrival(bssid)
 
   open fun setNotifyDeparture(bssid: String, notify: Boolean) =
-    putBoolean(Prefixes.NOTIFY_DEPARTURE + bssid, notify)
+    detectionPreferences.setNotifyDeparture(bssid, notify)
 
   open fun shouldNotifyDeparture(bssid: String) =
-    getBoolean(Prefixes.NOTIFY_DEPARTURE + bssid, false)
+    detectionPreferences.shouldNotifyDeparture(bssid)
 
   open fun setCriticalAlertEnabled(bssid: String, enabled: Boolean) =
-    putBoolean(Prefixes.CRITICAL_ALERT + bssid, enabled)
+    detectionPreferences.setCriticalAlertEnabled(bssid, enabled)
 
   open fun isCriticalAlertEnabled(bssid: String) =
-    getBoolean(Prefixes.CRITICAL_ALERT + bssid, false)
+    detectionPreferences.isCriticalAlertEnabled(bssid)
 
   open fun setTelegramAlertEnabled(bssid: String, enabled: Boolean) =
-    putBoolean(Prefixes.TELEGRAM_ALERT + bssid, enabled)
+    detectionPreferences.setTelegramAlertEnabled(bssid, enabled)
 
   open fun isTelegramAlertEnabled(bssid: String) =
-    getBoolean(Prefixes.TELEGRAM_ALERT + bssid, false)
+    detectionPreferences.isTelegramAlertEnabled(bssid)
 
   // --- Telegram Settings ---
-  open fun setTelegramEnabled(enabled: Boolean) = putBoolean(Keys.TELEGRAM_ENABLED, enabled)
+  open fun setTelegramEnabled(enabled: Boolean) = telegramPreferences.setTelegramEnabled(enabled)
 
-  open fun isTelegramEnabled() = getBoolean(Keys.TELEGRAM_ENABLED, false)
+  open fun isTelegramEnabled() = telegramPreferences.isTelegramEnabled()
 
-  open fun setTelegramToken(token: String) = putString(Keys.TELEGRAM_TOKEN, token)
+  open fun setTelegramToken(token: String) = telegramPreferences.setTelegramToken(token)
 
-  open fun getTelegramToken(): String? = getString(Keys.TELEGRAM_TOKEN)
+  open fun getTelegramToken(): String? = telegramPreferences.getTelegramToken()
 
-  open fun setTelegramChatId(chatId: String) = putString(Keys.TELEGRAM_CHAT_ID, chatId)
+  open fun setTelegramChatId(chatId: String) = telegramPreferences.setTelegramChatId(chatId)
 
-  open fun getTelegramChatId(): String? = getString(Keys.TELEGRAM_CHAT_ID)
+  open fun getTelegramChatId(): String? = telegramPreferences.getTelegramChatId()
 
   // --- Security Settings ---
   open fun setSecurityAlertEnabled(enabled: Boolean) =
-    putBoolean(Keys.SECURITY_ALERT_ENABLED, enabled)
+    securityPreferences.setSecurityAlertEnabled(enabled)
 
-  open fun isSecurityAlertEnabled() = getBoolean(Keys.SECURITY_ALERT_ENABLED, false)
+  open fun isSecurityAlertEnabled() = securityPreferences.isSecurityAlertEnabled()
 
   open fun setSecuritySoundEnabled(enabled: Boolean) =
-    putBoolean(Keys.SECURITY_SOUND_ENABLED, enabled)
+    securityPreferences.setSecuritySoundEnabled(enabled)
 
-  open fun isSecuritySoundEnabled() = getBoolean(Keys.SECURITY_SOUND_ENABLED, false)
+  open fun isSecuritySoundEnabled() = securityPreferences.isSecuritySoundEnabled()
 
-  fun setSecuritySchedule(start: String, end: String) {
-    preferences
-      .edit()
-      .putString(Keys.SECURITY_START_TIME, start)
-      .putString(Keys.SECURITY_END_TIME, end)
-      .apply()
-  }
+  fun setSecuritySchedule(start: String, end: String) =
+    securityPreferences.setSecuritySchedule(start, end)
 
-  fun getSecuritySchedule(): Pair<String, String> {
-    val start = getString(Keys.SECURITY_START_TIME, "22:00") ?: "22:00"
-    val end = getString(Keys.SECURITY_END_TIME, "06:00") ?: "06:00"
-    return Pair(start, end)
-  }
+  fun getSecuritySchedule(): Pair<String, String> = securityPreferences.getSecuritySchedule()
 
-  open fun isCurrentTimeInSecuritySchedule(): Boolean {
-    val (startStr, endStr) = getSecuritySchedule()
-    return TimeUtil.isCurrentTimeInSchedule(startStr, endStr)
-  }
+  open fun isCurrentTimeInSecuritySchedule(): Boolean =
+    securityPreferences.isCurrentTimeInSecuritySchedule()
 
   // --- Anti-Theft Settings ---
-  fun setAntiTheftArmed(armed: Boolean) = putBoolean(Keys.ANTI_THEFT_ARMED, armed)
+  fun setAntiTheftArmed(armed: Boolean) = securityPreferences.setAntiTheftArmed(armed)
 
-  open fun isAntiTheftArmed() = getBoolean(Keys.ANTI_THEFT_ARMED, false)
+  open fun isAntiTheftArmed() = securityPreferences.isAntiTheftArmed()
 
-  fun setAntiTheftSensitivity(value: Float) = putFloat(KEY_ANTI_THEFT_SENSITIVITY, value)
+  fun setAntiTheftSensitivity(value: Float) = securityPreferences.setAntiTheftSensitivity(value)
 
-  fun getAntiTheftSensitivity(): Float = getFloat(KEY_ANTI_THEFT_SENSITIVITY, 1.5f)
+  fun getAntiTheftSensitivity(): Float = securityPreferences.getAntiTheftSensitivity()
 
-  open fun setBiometricEnabled(enabled: Boolean) = putBoolean(Keys.BIOMETRIC_ENABLED, enabled)
+  open fun setBiometricEnabled(enabled: Boolean) = securityPreferences.setBiometricEnabled(enabled)
 
-  open fun isBiometricEnabled() = getBoolean(Keys.BIOMETRIC_ENABLED, false)
+  open fun isBiometricEnabled() = securityPreferences.isBiometricEnabled()
 
-  fun setAppLockEnabled(enabled: Boolean) = putBoolean(Keys.APP_LOCK_ENABLED, enabled)
+  fun setAppLockEnabled(enabled: Boolean) = securityPreferences.setAppLockEnabled(enabled)
 
-  fun isAppLockEnabled() = getBoolean(Keys.APP_LOCK_ENABLED, false)
+  fun isAppLockEnabled() = securityPreferences.isAppLockEnabled()
 
-  open fun setPocketModeEnabled(enabled: Boolean) = putBoolean(Keys.POCKET_MODE_ENABLED, enabled)
+  open fun setPocketModeEnabled(enabled: Boolean) = securityPreferences.setPocketModeEnabled(enabled)
 
-  open fun isPocketModeEnabled() = getBoolean(Keys.POCKET_MODE_ENABLED, false)
+  open fun isPocketModeEnabled() = securityPreferences.isPocketModeEnabled()
 
-  open fun setChargerModeEnabled(enabled: Boolean) = putBoolean(Keys.CHARGER_MODE_ENABLED, enabled)
+  open fun setChargerModeEnabled(enabled: Boolean) = securityPreferences.setChargerModeEnabled(enabled)
 
-  open fun isChargerModeEnabled() = getBoolean(Keys.CHARGER_MODE_ENABLED, false)
+  open fun isChargerModeEnabled() = securityPreferences.isChargerModeEnabled()
 
-  open fun setSmartModeEnabled(enabled: Boolean) = putBoolean(Keys.SMART_MODE_ENABLED, enabled)
+  open fun setSmartModeEnabled(enabled: Boolean) = securityPreferences.setSmartModeEnabled(enabled)
 
-  open fun isSmartModeEnabled() = getBoolean(Keys.SMART_MODE_ENABLED, false)
+  open fun isSmartModeEnabled() = securityPreferences.isSmartModeEnabled()
 
-  open fun setSilentModeEnabled(enabled: Boolean) = putBoolean(Keys.SILENT_MODE_ENABLED, enabled)
+  open fun setSilentModeEnabled(enabled: Boolean) = securityPreferences.setSilentModeEnabled(enabled)
 
-  open fun isSilentModeEnabled() = getBoolean(Keys.SILENT_MODE_ENABLED, false)
+  open fun isSilentModeEnabled() = securityPreferences.isSilentModeEnabled()
 
   // --- Device Info ---
   open fun saveNickname(bssid: String, nickname: String) =
-    putString(Prefixes.NICKNAME + bssid, nickname)
+    deviceInfoPreferences.saveNickname(bssid, nickname)
 
-  open fun getNickname(bssid: String) = getString(Prefixes.NICKNAME + bssid)
+  open fun getNickname(bssid: String) = deviceInfoPreferences.getNickname(bssid)
 
   open fun saveManualCategory(bssid: String, category: DeviceCategory) =
-    putString(Prefixes.CATEGORY + bssid, category.name)
+    deviceInfoPreferences.saveManualCategory(bssid, category)
 
-  open fun getManualCategory(bssid: String): DeviceCategory? {
-    val name = getString(Prefixes.CATEGORY + bssid) ?: return null
-    return try {
-      DeviceCategory.valueOf(name)
-    } catch (e: Exception) {
-      null
-    }
-  }
+  open fun getManualCategory(bssid: String): DeviceCategory? =
+    deviceInfoPreferences.getManualCategory(bssid)
 
-  open fun trackDetection(bssid: String) {
-    // Ensure BSSID is in the master list
-    val allBssids = getStringSet(Keys.ALL_BSSIDS, mutableSetOf()) ?: mutableSetOf()
-    if (!allBssids.contains(bssid)) {
-      val newAllBssids = allBssids.toMutableSet()
-      newAllBssids.add(bssid)
-      putStringSet(Keys.ALL_BSSIDS, newAllBssids)
-    }
+  open fun trackDetection(bssid: String) = deviceInfoPreferences.trackDetection(bssid)
 
-    val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-    val historyKey = Prefixes.HISTORY + bssid
-    val history = getStringSet(historyKey, mutableSetOf()) ?: mutableSetOf()
-    if (!history.contains(today)) {
-      val newHistory = history.toMutableSet()
-      newHistory.add(today)
-      putStringSet(historyKey, newHistory)
-    }
-  }
+  open fun getDetectionHistoryCount(bssid: String): Int =
+    deviceInfoPreferences.getDetectionHistoryCount(bssid)
 
-  open fun getDetectionHistoryCount(bssid: String): Int {
-    return getStringSet(Prefixes.HISTORY + bssid, emptySet())?.size ?: 0
-  }
+  fun getAllTrackedBssids(): List<String> = deviceInfoPreferences.getAllTrackedBssids()
 
-  fun getAllTrackedBssids(): List<String> {
-    return getStringSet(Keys.ALL_BSSIDS, emptySet())?.toList() ?: emptyList()
-  }
+  fun setTrustedWifiSsid(ssid: String) = securityPreferences.setTrustedWifiSsid(ssid)
 
-  fun setTrustedWifiSsid(ssid: String) = putString(Keys.TRUSTED_WIFI_SSID, ssid)
-
-  fun getTrustedWifiSsid(): String? = getString(Keys.TRUSTED_WIFI_SSID)
+  fun getTrustedWifiSsid(): String? = securityPreferences.getTrustedWifiSsid()
 
   fun clear() {
     preferences.edit().clear().apply()
