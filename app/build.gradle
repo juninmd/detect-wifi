@@ -46,7 +46,8 @@ android {
             if (System.getenv("KEYSTORE_FILE")) {
                 signingConfig signingConfigs.release
             }
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
@@ -153,11 +154,10 @@ task jacocoTestCoverageVerification(type: JacocoCoverageVerification, dependsOn:
             '**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*',
             '**/Lambda$*.class', '**/Lambda.class', '**/*Lambda.class', '**/*$Lambda$*',
             '**/*Binding*', '**/*BindingImpl*', '**/*View*',
-            '**/CameraMonitoringService*', '**/PersonDetectionAnalyzer*', '**/security/**',
+            '**/CameraMonitoringService*', '**/PersonDetectionAnalyzer*',
             '**/utils/CameraHelper*', '**/utils/BiometricAuthenticator*',
             '**/PresenceDetectorApp*',
-            '**/*Activity*', '**/*Fragment*',
-            '**/services/SignalHistoryManager*'
+            '**/*Activity*', '**/*Fragment*'
     ]
     def debugTree = fileTree(dir: "${project.buildDir}/tmp/kotlin-classes/debug", excludes: fileFilter)
     def javaTree = fileTree(dir: "${project.buildDir}/intermediates/javac/debug/classes", excludes: fileFilter)

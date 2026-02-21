@@ -295,3 +295,17 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    name: Notify on Failure
+    needs: [lint, test, security, build, deploy]
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Send Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_COLOR: '#ff0000'
+          SLACK_TITLE: 'CI/CD Pipeline Failed'
+          SLACK_MESSAGE: 'The build or tests failed on branch ${{ github.ref_name }}. Please check the logs.'
