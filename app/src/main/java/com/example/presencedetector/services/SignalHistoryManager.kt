@@ -1,6 +1,6 @@
 package com.example.presencedetector.services
 
-import java.util.LinkedList
+import java.util.ArrayDeque
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -9,13 +9,14 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object SignalHistoryManager {
   // Map<BSSID, List<Pair<Timestamp, SignalLevel>>>
-  private val history = ConcurrentHashMap<String, LinkedList<Pair<Long, Int>>>()
+  // Using ArrayDeque for better memory efficiency and cache locality compared to LinkedList
+  private val history = ConcurrentHashMap<String, ArrayDeque<Pair<Long, Int>>>()
 
   private const val MAX_HISTORY_POINTS =
     60 // Keep last 60 points (approx 3-5 mins depending on scan rate)
 
   fun addPoint(bssid: String, level: Int) {
-    val list = history.getOrPut(bssid) { LinkedList() }
+    val list = history.getOrPut(bssid) { ArrayDeque() }
     synchronized(list) {
       list.add(System.currentTimeMillis() to level)
       if (list.size > MAX_HISTORY_POINTS) {

@@ -54,6 +54,15 @@ open class PreferencesUtil(context: Context) {
       const val TELEGRAM_ALERT = "telegram_alert_"
       const val EVENT_LOGS = "event_logs_"
     }
+
+    // In-memory cache for performance optimization
+    private val cacheLock = Any()
+
+    @Volatile
+    private var trackedBssidsCache: MutableSet<String>? = null
+
+    // Limit history cache to 500 recently detected devices to prevent OOM
+    private val historyCache = android.util.LruCache<String, MutableSet<String>>(500)
   }
 
   private val preferences: SharedPreferences =
@@ -210,31 +219,62 @@ open class PreferencesUtil(context: Context) {
     }
   }
 
+  private fun getOrLoadTrackedBssids(): MutableSet<String> {
+    var cache = trackedBssidsCache
+    if (cache == null) {
+      synchronized(cacheLock) {
+        cache = trackedBssidsCache
+        if (cache == null) {
+          val loaded = getStringSet(Keys.ALL_BSSIDS, mutableSetOf()) ?: mutableSetOf()
+          cache = java.util.Collections.synchronizedSet(loaded.toMutableSet())
+          trackedBssidsCache = cache
+        }
+      }
+    }
+    return cache!!
+  }
+
   open fun trackDetection(bssid: String) {
-    // Ensure BSSID is in the master list
-    val allBssids = getStringSet(Keys.ALL_BSSIDS, mutableSetOf()) ?: mutableSetOf()
+    // 1. Get or Load BSSID Cache (Thread-safe initialization)
+    val allBssids = getOrLoadTrackedBssids()
+
+    // 2. Add to BSSID Cache
     if (!allBssids.contains(bssid)) {
-      val newAllBssids = allBssids.toMutableSet()
-      newAllBssids.add(bssid)
-      putStringSet(Keys.ALL_BSSIDS, newAllBssids)
+      allBssids.add(bssid)
+      // Persist asynchronously
+      putStringSet(Keys.ALL_BSSIDS, allBssids.toMutableSet())
     }
 
+    // 3. Initialize History Cache for this BSSID if needed
     val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
     val historyKey = Prefixes.HISTORY + bssid
-    val history = getStringSet(historyKey, mutableSetOf()) ?: mutableSetOf()
+
+    var history = historyCache.get(bssid)
+    if (history == null) {
+      val loaded = getStringSet(historyKey, mutableSetOf()) ?: mutableSetOf()
+      history = java.util.Collections.synchronizedSet(loaded.toMutableSet())
+      historyCache.put(bssid, history)
+    }
+
+    // 4. Add to History Cache
     if (!history.contains(today)) {
-      val newHistory = history.toMutableSet()
-      newHistory.add(today)
-      putStringSet(historyKey, newHistory)
+      history.add(today)
+      putStringSet(historyKey, history.toMutableSet())
     }
   }
 
   open fun getDetectionHistoryCount(bssid: String): Int {
+    // Check cache first
+    val history = historyCache.get(bssid)
+    if (history != null) {
+      return history.size
+    }
     return getStringSet(Prefixes.HISTORY + bssid, emptySet())?.size ?: 0
   }
 
   fun getAllTrackedBssids(): List<String> {
-    return getStringSet(Keys.ALL_BSSIDS, emptySet())?.toList() ?: emptyList()
+    // Use the helper to ensure cache is populated if accessed for the first time
+    return getOrLoadTrackedBssids().toList()
   }
 
   fun setTrustedWifiSsid(ssid: String) = putString(Keys.TRUSTED_WIFI_SSID, ssid)
