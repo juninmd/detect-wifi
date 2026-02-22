@@ -16,6 +16,7 @@ import com.example.presencedetector.model.DeviceCategory
 import com.example.presencedetector.model.DeviceSource
 import com.example.presencedetector.model.WiFiDevice
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.*
 
 /** Bluetooth-based presence detection service. Scans for Bluetooth LE devices. */
@@ -29,16 +30,26 @@ open class BluetoothDetectionService(private val context: Context) {
   }
 
   private val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-  private val mainHandler = Handler(Looper.getMainLooper())
-  private val scope = CoroutineScope(Dispatchers.Main + Job())
+
+  // Use Default dispatcher for background tasks
+  private val scope = CoroutineScope(Dispatchers.Default + Job())
 
   private var scanJob: Job? = null
   private var cleanupJob: Job? = null
   private var presenceListener: PresenceListener? = null
-  private var isScanning = false
+  private val isScanning = AtomicBoolean(false)
 
   // Map to store unique devices by MAC address
   private val detectedDevices = ConcurrentHashMap<String, WiFiDevice>()
+
+  // Cache scan settings
+  private val scanSettings: ScanSettings? by lazy {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+          ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+      } else {
+          null
+      }
+  }
 
   fun interface PresenceListener {
     fun onPresenceDetected(peopleDetected: Boolean, devices: List<WiFiDevice>, details: String)
@@ -49,7 +60,7 @@ open class BluetoothDetectionService(private val context: Context) {
   }
 
   open fun startScanning() {
-    if (isScanning) {
+    if (isScanning.get()) {
       Log.w(TAG, "Bluetooth scanning already started")
       return
     }
@@ -64,7 +75,7 @@ open class BluetoothDetectionService(private val context: Context) {
       return
     }
 
-    isScanning = true
+    isScanning.set(true)
     Log.i(TAG, "Starting Bluetooth scanning")
 
     scanJob =
@@ -104,7 +115,7 @@ open class BluetoothDetectionService(private val context: Context) {
   }
 
   open fun stopScanning() {
-    if (isScanning && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+    if (isScanning.get() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       try {
         if (hasBluetoothPermissions()) {
           bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallback)
@@ -118,7 +129,7 @@ open class BluetoothDetectionService(private val context: Context) {
     cleanupJob?.cancel()
     scanJob = null
     cleanupJob = null
-    isScanning = false
+    isScanning.set(false)
     detectedDevices.clear()
     Log.i(TAG, "Bluetooth scanning stopped")
   }
@@ -131,15 +142,15 @@ open class BluetoothDetectionService(private val context: Context) {
     try {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
         if (hasBluetoothPermissions()) {
-          val settings =
-            ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
-
-          bluetoothAdapter.bluetoothLeScanner?.startScan(null, settings, scanCallback)
+          // Use cached scan settings
+          scanSettings?.let { settings ->
+             bluetoothAdapter.bluetoothLeScanner?.startScan(null, settings, scanCallback)
+          }
 
           // Stop scan after SCAN_DURATION
           scope.launch {
             delay(SCAN_DURATION)
-            if (isScanning && hasBluetoothPermissions()) {
+            if (isScanning.get() && hasBluetoothPermissions()) {
               try {
                 bluetoothAdapter.bluetoothLeScanner?.stopScan(scanCallback)
                 notifyPresence() // Notify listeners after scan cycle
@@ -228,14 +239,12 @@ open class BluetoothDetectionService(private val context: Context) {
     val devicesList = detectedDevices.values.toList()
     val hasDevices = devicesList.isNotEmpty()
 
-    presenceListener?.let { listener ->
-      mainHandler.post {
-        listener.onPresenceDetected(hasDevices, devicesList, "Bluetooth scan complete")
-      }
-    }
+    // Notify listener on the current (background) thread.
+    // The consumer (PresenceDetectionManager) is responsible for handling threading if needed.
+    presenceListener?.onPresenceDetected(hasDevices, devicesList, "Bluetooth scan complete")
   }
 
-  fun isScanning(): Boolean = isScanning
+  fun isScanning(): Boolean = isScanning.get()
 
   fun destroy() {
     stopScanning()
