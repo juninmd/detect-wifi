@@ -26,9 +26,9 @@ import com.example.presencedetector.MainActivity
 import com.example.presencedetector.R
 import com.example.presencedetector.receivers.NotificationActionReceiver
 import com.example.presencedetector.security.repository.LogRepository
-import com.example.presencedetector.utils.MotionDetector
 import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil
+import kotlin.math.sqrt
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -695,5 +695,25 @@ class AntiTheftService :
   private fun getBatteryLevel(): Int {
     val bm = getSystemService(Context.BATTERY_SERVICE) as android.os.BatteryManager
     return bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
+  }
+}
+
+class MotionDetector(private val threshold: Float) {
+
+  fun isMotionDetected(
+    x: Float,
+    y: Float,
+    z: Float,
+    lastX: Float,
+    lastY: Float,
+    lastZ: Float
+  ): Boolean {
+    val deltaX = kotlin.math.abs(x - lastX)
+    val deltaY = kotlin.math.abs(y - lastY)
+    val deltaZ = kotlin.math.abs(z - lastZ)
+
+    val totalDelta = sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ)
+
+    return totalDelta > threshold
   }
 }

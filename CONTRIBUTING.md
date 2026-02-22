@@ -60,5 +60,6 @@ The CI pipeline uses the following secrets for signing releases and reporting:
 *   `KEY_ALIAS`: Key alias.
 *   `KEY_PASSWORD`: Key password.
 *   `CODECOV_TOKEN`: Token for uploading coverage reports to Codecov.
+*   `SLACK_WEBHOOK`: Webhook URL for Slack notifications on pipeline failure.
 
 Upon merging to `main`, a new release is automatically created and deployed.

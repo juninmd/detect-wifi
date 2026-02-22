@@ -16,7 +16,7 @@ object SignalHistoryManager {
     60 // Keep last 60 points (approx 3-5 mins depending on scan rate)
 
   fun addPoint(bssid: String, level: Int) {
-    val list = history.getOrPut(bssid) { ArrayDeque() }
+    val list = history.getOrPut(bssid) { ArrayDeque(MAX_HISTORY_POINTS + 5) }
     synchronized(list) {
       list.add(System.currentTimeMillis() to level)
       if (list.size > MAX_HISTORY_POINTS) {
@@ -26,7 +26,11 @@ object SignalHistoryManager {
   }
 
   fun getHistory(bssid: String): List<Pair<Long, Int>> {
-    return history[bssid]?.toList() ?: emptyList()
+    // ArrayDeque is not a List, but toList() creates a copy which is safe for external consumption
+    val list = history[bssid] ?: return emptyList()
+    synchronized(list) {
+        return list.toList()
+    }
   }
 
   fun clear() {

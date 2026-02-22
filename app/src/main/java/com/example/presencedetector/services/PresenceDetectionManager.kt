@@ -20,6 +20,7 @@ import com.example.presencedetector.utils.PreferencesUtil
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 /** Enhanced presence detection service with smart debouncing. */
 class PresenceDetectionManager(
@@ -60,30 +61,32 @@ class PresenceDetectionManager(
     }
 
   private var presenceListener: PresenceListener? = null
-  private var wifiPresenceDetected = false
-  private var bluetoothPresenceDetected = false
-  private var externalPresenceDetected = false
-  private var lastWifiDetection = 0L
-  private var lastBluetoothDetection = 0L
-  private var lastExternalDetection = 0L
-  private var lastExternalDetectionName = ""
-  private var lastPresenceState = false
 
-  // Track timestamps for individual devices
-  private val lastSeenMap = mutableMapOf<String, Long>()
-  private val departureNotifiedMap = mutableMapOf<String, Boolean>()
-  private val lastNotificationTimeMap = mutableMapOf<String, Long>() // Debounce notifications
+  @Volatile private var wifiPresenceDetected = false
+  @Volatile private var bluetoothPresenceDetected = false
+  @Volatile private var externalPresenceDetected = false
+
+  @Volatile private var lastWifiDetection = 0L
+  @Volatile private var lastBluetoothDetection = 0L
+  @Volatile private var lastExternalDetection = 0L
+  @Volatile private var lastExternalDetectionName = ""
+  @Volatile private var lastPresenceState = false
+
+  // Track timestamps for individual devices - Use ConcurrentHashMap for thread safety
+  private val lastSeenMap = ConcurrentHashMap<String, Long>()
+  private val departureNotifiedMap = ConcurrentHashMap<String, Boolean>()
+  private val lastNotificationTimeMap = ConcurrentHashMap<String, Long>() // Debounce notifications
   private val hasNotifiedArrivalMap =
-    mutableMapOf<String, Boolean>() // Track if already notified arrival
-  private val lastDepartureTimeMap = mutableMapOf<String, Long>() // Track when device last left
+    ConcurrentHashMap<String, Boolean>() // Track if already notified arrival
+  private val lastDepartureTimeMap = ConcurrentHashMap<String, Long>() // Track when device last left
   private val deviceTypes =
-    mutableMapOf<
+    ConcurrentHashMap<
       String, com.example.presencedetector.model.DeviceSource
     >() // Track device source (WiFi/Bluetooth)
 
-  private var lastTimeSomeoneWasPresent = System.currentTimeMillis()
-  private var currentWifiDevices: List<WiFiDevice> = emptyList()
-  private var currentBluetoothDevices: List<WiFiDevice> = emptyList()
+  @Volatile private var lastTimeSomeoneWasPresent = System.currentTimeMillis()
+  @Volatile private var currentWifiDevices: List<WiFiDevice> = emptyList()
+  @Volatile private var currentBluetoothDevices: List<WiFiDevice> = emptyList()
 
   fun interface PresenceListener {
     fun onPresenceChanged(
@@ -144,6 +147,7 @@ class PresenceDetectionManager(
     }
   }
 
+  @Synchronized // Ensure atomic processing of device updates
   private fun updateAndProcessDevices(method: String, details: String) {
     val allDevices = currentWifiDevices + currentBluetoothDevices
 
