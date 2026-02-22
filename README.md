@@ -48,12 +48,22 @@ Um aplicativo Android abrangente que combina detecção de presença residencial
     *(No Windows: `C:\\Users\\<Usuario>\\AppData\\Local\\Android\\Sdk`)*
     *(No Mac/Linux: `/Users/<Usuario>/Library/Android/sdk` ou `/usr/lib/android-sdk`)*
 
-2.  **Compilar o APK:**
+2.  **Rodar Testes:**
+    ```bash
+    ./gradlew testDebugUnitTest
+    ```
+
+3.  **Verificar Cobertura:**
+    ```bash
+    ./gradlew jacocoTestReport jacocoTestCoverageVerification
+    ```
+
+4.  **Compilar o APK:**
     ```bash
     ./gradlew assembleDebug
     ```
 
-3.  **Instalar:**
+5.  **Instalar:**
     ```bash
     ./gradlew installDebug
     ```
@@ -80,9 +90,16 @@ Ao iniciar pela primeira vez, você deve conceder:
     *   `AndroidX Biometric` para autenticação.
     *   `Coroutines` para tarefas assíncronas.
 
-## 📦 Processo de Release
+## 🔄 Pipeline CI/CD e Processo de Release
 
-O projeto utiliza GitHub Actions para automatizar a geração de releases e garantir a qualidade do código com testes automatizados e verificações de segurança (Gitleaks, Trivy).
+O projeto utiliza um pipeline robusto no GitHub Actions para garantir a qualidade do código e automatizar entregas.
+
+### Estágios do Pipeline
+1.  **Lint & Format:** Verifica a qualidade do código com Android Lint e formatação com Spotless.
+2.  **Testes:** Executa testes unitários e valida a cobertura de código (mínimo 80%) via JaCoCo.
+3.  **Segurança:** Escaneia o código em busca de segredos expostos (Gitleaks) e vulnerabilidades em dependências (Trivy).
+4.  **Build:** Compila os artefatos (APKs) para Debug e Release.
+5.  **Deploy:** Automatiza a publicação no GitHub Releases.
 
 ### Tipos de Release
 
