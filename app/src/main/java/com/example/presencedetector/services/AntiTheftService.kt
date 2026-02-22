@@ -685,7 +685,32 @@ class AntiTheftService :
       val sensitivity = preferences.getAntiTheftSensitivity()
       Log.d(TAG, "Sensitivity updated to: $sensitivity")
       motionDetector = MotionDetector(sensitivity)
+    } else if (key == com.example.presencedetector.utils.PreferencesUtil.Companion.Keys.POCKET_MODE_ENABLED) {
+      isPocketModeArmed = preferences.isPocketModeEnabled()
+      Log.d(TAG, "Pocket Mode updated to: $isPocketModeArmed")
+      // Start/Stop listening to Proximity sensor dynamically
+      if (isPocketModeArmed) {
+        proximitySensor?.let {
+          sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+      } else {
+        // Only unregister if we are sure we don't need it (simplified: unregister specific listener for this sensor)
+        proximitySensor?.let {
+          sensorManager.unregisterListener(this, it)
+        }
+      }
+      updateForegroundNotification()
+    } else if (key == com.example.presencedetector.utils.PreferencesUtil.Companion.Keys.CHARGER_MODE_ENABLED) {
+      isChargerModeArmed = preferences.isChargerModeEnabled()
+      Log.d(TAG, "Charger Mode updated to: $isChargerModeArmed")
+      updateForegroundNotification()
     }
+  }
+
+  private fun updateForegroundNotification() {
+    val notification = createForegroundNotification()
+    val notificationManager = getSystemService(android.app.NotificationManager::class.java)
+    notificationManager?.notify(NOTIFICATION_ID, notification)
   }
 
   override fun onBind(intent: Intent?): IBinder? {

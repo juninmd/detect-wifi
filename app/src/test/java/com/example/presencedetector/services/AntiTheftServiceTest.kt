@@ -95,6 +95,24 @@ class AntiTheftServiceTest {
   }
 
   @Test
+  fun `onSharedPreferenceChanged should update Pocket Mode`() {
+    // Enable Pocket Mode in Prefs
+    whenever(mockPreferences.isPocketModeEnabled()).thenReturn(true)
+
+    // Trigger change
+    service.onSharedPreferenceChanged(mock(android.content.SharedPreferences::class.java), com.example.presencedetector.utils.PreferencesUtil.Companion.Keys.POCKET_MODE_ENABLED)
+
+    // Verify sensor listener registered
+    // We can't easily verify internal state `isPocketModeArmed` without reflection or side effect.
+    // Side effect: `updateForegroundNotification` called.
+    // `getSystemService(NotificationManager)` called.
+    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+    val shadows = Shadows.shadowOf(notificationManager)
+    // notification ID 999
+    assertNotNull(shadows.getNotification(999))
+  }
+
+  @Test
   fun `triggerAlarm in Silent Mode should NOT play sound but log event`() {
     whenever(mockPreferences.isSilentModeEnabled()).thenReturn(true)
 

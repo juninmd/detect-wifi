@@ -7,6 +7,9 @@ import com.example.presencedetector.data.preferences.DeviceInfoPreferences
 import com.example.presencedetector.data.preferences.SecurityPreferences
 import com.example.presencedetector.data.preferences.TelegramPreferences
 import com.example.presencedetector.model.DeviceCategory
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /** Utility class for managing application preferences and history logs. */
 open class PreferencesUtil(context: Context) {
@@ -183,6 +186,17 @@ open class PreferencesUtil(context: Context) {
 
   open fun saveManualCategory(bssid: String, category: DeviceCategory) =
     deviceInfoPreferences.saveManualCategory(bssid, category)
+
+  open fun getManualCategory(bssid: String): DeviceCategory? =
+    deviceInfoPreferences.getManualCategory(bssid)
+
+  private fun getStringSet(key: String, default: Set<String>): Set<String>? {
+    return preferences.getStringSet(key, default)
+  }
+
+  private fun putStringSet(key: String, value: Set<String>) {
+    preferences.edit().putStringSet(key, value).apply()
+  }
 
   private fun getOrLoadTrackedBssids(): MutableSet<String> {
     var cache = trackedBssidsCache

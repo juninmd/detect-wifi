@@ -135,7 +135,8 @@ task jacocoTestReport(type: JacocoReport, dependsOn: 'testDebugUnitTest') {
     def fileFilter = [
             '**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*',
             '**/Lambda$*.class', '**/Lambda.class', '**/*Lambda.class', '**/*$Lambda$*',
-            '**/*Binding*', '**/*BindingImpl*', '**/*View*'
+            '**/*Binding*', '**/*BindingImpl*', '**/*View*',
+            '**/*Activity*', '**/*Fragment*', '**/*BottomSheet*'
     ]
     def debugTree = fileTree(dir: "${project.buildDir}/tmp/kotlin-classes/debug", excludes: fileFilter)
     def javaTree = fileTree(dir: "${project.buildDir}/intermediates/javac/debug/classes", excludes: fileFilter)
@@ -153,11 +154,7 @@ task jacocoTestCoverageVerification(type: JacocoCoverageVerification, dependsOn:
     def fileFilter = [
             '**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*',
             '**/Lambda$*.class', '**/Lambda.class', '**/*Lambda.class', '**/*$Lambda$*',
-            '**/*Binding*', '**/*BindingImpl*', '**/*View*',
-            '**/CameraMonitoringService*', '**/PersonDetectionAnalyzer*',
-            '**/utils/CameraHelper*', '**/utils/BiometricAuthenticator*',
-            '**/PresenceDetectorApp*',
-            '**/*Activity*', '**/*Fragment*'
+            '**/*Binding*', '**/*BindingImpl*', '**/*View*'
     ]
     def debugTree = fileTree(dir: "${project.buildDir}/tmp/kotlin-classes/debug", excludes: fileFilter)
     def javaTree = fileTree(dir: "${project.buildDir}/intermediates/javac/debug/classes", excludes: fileFilter)
@@ -173,7 +170,7 @@ task jacocoTestCoverageVerification(type: JacocoCoverageVerification, dependsOn:
     violationRules {
         rule {
             limit {
-                minimum = 0.80 // Enforce 80% coverage
+                minimum = 0.99 // Enforce 99% coverage (Allow 1% for generated/unreachable code)
             }
         }
     }
