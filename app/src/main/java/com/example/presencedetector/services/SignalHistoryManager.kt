@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object SignalHistoryManager {
   // Map<BSSID, List<Pair<Timestamp, SignalLevel>>>
-  // Using ArrayDeque for better performance and memory locality compared to LinkedList
+  // Using ArrayDeque for better memory efficiency and cache locality compared to LinkedList
   private val history = ConcurrentHashMap<String, ArrayDeque<Pair<Long, Int>>>()
 
   private const val MAX_HISTORY_POINTS =

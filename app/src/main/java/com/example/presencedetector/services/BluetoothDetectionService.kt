@@ -41,6 +41,7 @@ open class BluetoothDetectionService(private val context: Context) {
 
   // Map to store unique devices by MAC address
   private val detectedDevices = ConcurrentHashMap<String, WiFiDevice>()
+  private val lastUpdateMap = ConcurrentHashMap<String, Long>()
 
   // Cache scan settings
   private val scanSettings: ScanSettings? by lazy {
@@ -131,6 +132,7 @@ open class BluetoothDetectionService(private val context: Context) {
     cleanupJob = null
     isScanning.set(false)
     detectedDevices.clear()
+    lastUpdateMap.clear()
     Log.i(TAG, "Bluetooth scanning stopped")
   }
 
@@ -187,6 +189,15 @@ open class BluetoothDetectionService(private val context: Context) {
   private fun processScanResult(result: ScanResult) {
     val device = result.device
     val address = device.address
+
+    // Throttling: Update at most once every 500ms per device to save CPU
+    val now = android.os.SystemClock.elapsedRealtime()
+    val lastUpdate = lastUpdateMap[address]
+    if (lastUpdate != null && now - lastUpdate < 500) {
+      return
+    }
+    lastUpdateMap[address] = now
+
     val rssi = result.rssi
 
     var name = if (hasConnectPermission()) device.name else null
@@ -226,6 +237,7 @@ open class BluetoothDetectionService(private val context: Context) {
       val entry = iterator.next()
       if (now - entry.value.lastSeen > DEVICE_TIMEOUT) {
         iterator.remove()
+        lastUpdateMap.remove(entry.key)
         changed = true
       }
     }
