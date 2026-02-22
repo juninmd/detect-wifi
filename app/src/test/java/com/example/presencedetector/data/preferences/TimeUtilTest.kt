@@ -1,4 +1,4 @@
-package com.example.presencedetector.utils
+package com.example.presencedetector.data.preferences
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

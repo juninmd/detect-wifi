@@ -12,7 +12,6 @@ import android.graphics.Bitmap
 import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -59,8 +58,20 @@ object NotificationUtil {
   fun createNotificationChannels(context: Context) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val notificationManager = context.getSystemService(NotificationManager::class.java) ?: return
+      val channels = getChannelDefinitions(context).map { def ->
+        NotificationChannel(def.id, def.name, def.importance).apply {
+          description = def.description
+          def.configure?.invoke(this)
+        }
+      }
+      notificationManager.createNotificationChannels(channels)
+    }
+  }
 
-      val definitions = listOf(
+  private fun getChannelDefinitions(context: Context): List<ChannelDefinition> {
+     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return emptyList()
+
+     return listOf(
         ChannelDefinition(
           CHANNEL_ID,
           context.getString(R.string.channel_service_name),
@@ -85,26 +96,7 @@ object NotificationUtil {
           "Notificações de rotina sem som"
         ) { setShowBadge(false) },
 
-        ChannelDefinition(
-          SECURITY_CHANNEL_ID,
-          "Alerta de Segurança Crítico",
-          NotificationManager.IMPORTANCE_HIGH,
-          "Alertas de intrusão e roubo. Toca mesmo em modo não perturbe."
-        ) {
-          enableVibration(true)
-          vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500, 1000)
-          enableLights(true)
-          lightColor = android.graphics.Color.RED
-          lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-          setBypassDnd(true)
-          setSound(
-            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
-            AudioAttributes.Builder()
-              .setUsage(AudioAttributes.USAGE_ALARM)
-              .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-              .build()
-          )
-        },
+        createSecurityChannelDefinition(),
 
         ChannelDefinition(
           BATTERY_CHANNEL_ID,
@@ -131,16 +123,31 @@ object NotificationUtil {
           "Notificações de monitoramento anti-furto (bolso, movimento)"
         ) { setShowBadge(true) }
       )
+  }
 
-      val channels = definitions.map { def ->
-        NotificationChannel(def.id, def.name, def.importance).apply {
-          description = def.description
-          def.configure?.invoke(this)
-        }
+  private fun createSecurityChannelDefinition(): ChannelDefinition {
+      return ChannelDefinition(
+          SECURITY_CHANNEL_ID,
+          "Alerta de Segurança Crítico",
+          NotificationManager.IMPORTANCE_HIGH,
+          "Alertas de intrusão e roubo. Toca mesmo em modo não perturbe."
+      ) {
+          enableVibration(true)
+          vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500, 1000)
+          enableLights(true)
+          lightColor = android.graphics.Color.RED
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+              lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+              setBypassDnd(true)
+              setSound(
+                  RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+                  AudioAttributes.Builder()
+                      .setUsage(AudioAttributes.USAGE_ALARM)
+                      .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                      .build()
+              )
+          }
       }
-
-      notificationManager.createNotificationChannels(channels)
-    }
   }
 
   private fun buildBaseNotification(

@@ -1,5 +1,6 @@
 package com.example.presencedetector.utils
 
+import com.example.presencedetector.services.MotionDetector
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
