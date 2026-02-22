@@ -1,7 +1,7 @@
 package com.example.presencedetector.data.preferences
 
 import android.content.Context
-import com.example.presencedetector.utils.TimeUtil
+import java.util.Calendar
 
 class SecurityPreferences(context: Context) : BasePreferences(context, PREF_NAME) {
 
@@ -85,4 +85,34 @@ class SecurityPreferences(context: Context) : BasePreferences(context, PREF_NAME
     fun setTrustedWifiSsid(ssid: String) = putString(KEY_TRUSTED_WIFI_SSID, ssid)
 
     fun getTrustedWifiSsid(): String? = getString(KEY_TRUSTED_WIFI_SSID)
+}
+
+internal object TimeUtil {
+    fun isCurrentTimeInSchedule(startStr: String, endStr: String): Boolean {
+        return try {
+            val calendar = Calendar.getInstance()
+            val currentMinutes =
+                calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
+
+            val (startHour, startMinute) = parseTime(startStr)
+            val (endHour, endMinute) = parseTime(endStr)
+
+            val startMinutes = startHour * 60 + startMinute
+            val endMinutes = endHour * 60 + endMinute
+
+            if (startMinutes <= endMinutes) {
+                currentMinutes in startMinutes..endMinutes
+            } else {
+                // Spans midnight (e.g., 22:00 to 06:00)
+                currentMinutes >= startMinutes || currentMinutes <= endMinutes
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun parseTime(timeStr: String): Pair<Int, Int> {
+        val parts = timeStr.split(":")
+        return Pair(parts[0].toInt(), parts[1].toInt())
+    }
 }
