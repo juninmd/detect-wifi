@@ -327,16 +327,25 @@ class PresenceDetectionManager(
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
       )
 
-    NotificationUtil.sendPresenceNotification(
+    // Use Critical Alert (High Priority Channel)
+    NotificationUtil.sendCriticalAlert(
       context,
       context.getString(R.string.notif_security_threat),
       msg,
-      true,
-      context.getString(R.string.action_stop_alarm),
-      pendingStopIntent,
       notificationId,
-      context.getString(R.string.action_mark_safe),
-      pendingMarkSafeIntent
+      null, // No full screen intent for generic threat, just high priority
+      listOf(
+        androidx.core.app.NotificationCompat.Action(
+          R.drawable.ic_status_inactive,
+          context.getString(R.string.action_stop_alarm),
+          pendingStopIntent
+        ),
+        androidx.core.app.NotificationCompat.Action(
+          android.R.drawable.ic_menu_save,
+          context.getString(R.string.action_mark_safe),
+          pendingMarkSafeIntent
+        )
+      )
     )
     telegramService.sendMessage(msg)
     if (preferences.isSecuritySoundEnabled() && preferences.isCurrentTimeInSecuritySchedule()) {

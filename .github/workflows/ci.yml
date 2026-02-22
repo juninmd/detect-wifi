@@ -122,7 +122,7 @@ jobs:
       - name: Generate Coverage Report
         run: ./gradlew jacocoTestReport
 
-      - name: Verify Coverage (Min 80%)
+      - name: Verify Coverage (Min 99%)
         run: ./gradlew jacocoTestCoverageVerification
 
       - name: Upload Test Results

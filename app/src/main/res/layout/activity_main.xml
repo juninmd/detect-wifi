@@ -107,12 +107,16 @@
                 android:textStyle="bold" />
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardHomeSecurity"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="4dp"
-                app:cardBackgroundColor="@color/card_background_elevated">
+                app:cardBackgroundColor="@color/card_background_elevated"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -166,6 +170,16 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
                     </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvHomeSecurityConfig"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Toque para configurar alertas e zona segura"
+                        android:textSize="12sp"
+                        android:textColor="@color/primary_color"
+                        android:layout_gravity="end"
+                        android:layout_marginTop="8dp"/>
 
                     <!-- Safe Zone Indicator -->
                     <com.google.android.material.card.MaterialCardView
@@ -359,6 +373,16 @@
                              android:src="@android:drawable/ic_media_play"
                              app:tint="@color/light_text"/>
                     </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvDeviceSecurityConfig"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Configurar Modo Bolso, Carregador e mais..."
+                        android:textSize="12sp"
+                        android:textColor="@color/primary_color"
+                        android:layout_gravity="end"
+                        android:layout_marginTop="8dp"/>
 
                     <!-- Smart Mode Toggle -->
                     <LinearLayout

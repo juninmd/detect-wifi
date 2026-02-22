@@ -201,9 +201,20 @@ class MainActivity : AppCompatActivity() {
 
     binding.btnUnlockApp.setOnClickListener { checkAppLock() }
 
+    // AntiTheft Card: Click to Toggle, Long Click to Configure
     binding.btnAntiTheft.setOnClickListener { toggleAntiTheft() }
+    binding.btnAntiTheft.setOnLongClickListener {
+        com.example.presencedetector.ui.DeviceSecurityBottomSheet()
+            .show(supportFragmentManager, com.example.presencedetector.ui.DeviceSecurityBottomSheet.TAG)
+        true
+    }
+    // Also allow clicking the config text
+    binding.tvDeviceSecurityConfig.setOnClickListener {
+        com.example.presencedetector.ui.DeviceSecurityBottomSheet()
+            .show(supportFragmentManager, com.example.presencedetector.ui.DeviceSecurityBottomSheet.TAG)
+    }
 
-    // Long click to test alarm
+    // Long click on icon to test alarm
     binding.ivAntiTheftIcon.setOnLongClickListener {
       com.google.android.material.dialog
         .MaterialAlertDialogBuilder(this)
@@ -222,6 +233,13 @@ class MainActivity : AppCompatActivity() {
       preferences.setNotifyOnPresence(isChecked)
     }
 
+    // Home Security Card: Click to Configure
+    binding.cardHomeSecurity.setOnClickListener {
+        com.example.presencedetector.ui.HomeSecurityBottomSheet()
+            .show(supportFragmentManager, com.example.presencedetector.ui.HomeSecurityBottomSheet.TAG)
+    }
+
+    // Switch listener
     binding.switchHomeMonitor.setOnCheckedChangeListener { _, isChecked ->
       if (isChecked) startDetection() else stopDetection()
     }
