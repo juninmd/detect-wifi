@@ -14,8 +14,9 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
-import org.robolectric.shadows.ShadowApplication
 import org.robolectric.shadows.ShadowWifiManager
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
@@ -37,49 +38,51 @@ class WiFiDetectionServiceTest {
   @Test
   fun `performScan handles permissions correctly`() {
     // No permissions by default
-    Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>()).denyPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
+    val shadowApp = Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
+    shadowApp.denyPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
 
-    var callbackCalled = false
+    val latch = CountDownLatch(1)
+    var detailsReceived = ""
+
     service.setPresenceListener { _, _, details ->
-      if (details == "Permission Denied") callbackCalled = true
+      detailsReceived = details
+      latch.countDown()
     }
 
     service.startScanning()
-    // Wait for coroutine loop? `launch` is used.
-    // We can force run main loop.
-    org.robolectric.shadows.ShadowLooper.idleMainLooper(100)
 
-    assertTrue("Should report permission denied", callbackCalled)
+    // Wait for background execution
+    latch.await(2, TimeUnit.SECONDS)
+
+    assertTrue("Should report permission denied", detailsReceived.contains("Permission Denied"))
     service.stopScanning()
   }
 
   @Test
   fun `performScan parses scan results and detects hotspots`() {
-    Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>()).grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
+    val shadowApp = Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
+    shadowApp.grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
 
-    // Mock ScanResult (API is tricky, need to create via reflection or empty constr if available)
-    // ScanResult() is accessible in recent Android versions/Robolectric
-    val result1 =
-      ScanResult().apply {
+    // Mock ScanResult
+    val result1 = ScanResult().apply {
         SSID = "MyWiFi"
         BSSID = "00:11:22:33:44:55"
         level = -50
         frequency = 2400
         capabilities = "[WPA2]"
-      }
+    }
 
-    val result2 =
-      ScanResult().apply {
+    val result2 = ScanResult().apply {
         SSID = "iPhone 13" // Hotspot pattern
         BSSID = "AA:BB:CC:DD:EE:FF"
         level = -60
         frequency = 5000
-      }
+    }
 
     shadowWifiManager.setScanResults(listOf(result1, result2))
 
     var devicesFound: List<WiFiDevice> = emptyList()
-    val latch = java.util.concurrent.CountDownLatch(1)
+    val latch = CountDownLatch(1)
 
     service.setPresenceListener { _, devices, _ ->
       devicesFound = devices
@@ -87,7 +90,10 @@ class WiFiDetectionServiceTest {
     }
 
     service.startScanning()
-    org.robolectric.shadows.ShadowLooper.idleMainLooper(100)
+
+    // Wait for background execution
+    val success = latch.await(2, TimeUnit.SECONDS)
+    assertTrue("Timed out waiting for scan results", success)
 
     assertEquals(2, devicesFound.size)
 
@@ -96,7 +102,11 @@ class WiFiDetectionServiceTest {
 
     assertEquals("MyWiFi", wifi?.ssid)
     // Check hotspot detection logic (nickname should contain Hotspot)
-    assertTrue(hotspot?.nickname?.contains("Hotspot") == true)
+    // DeviceClassifier might need context or initialization?
+    // Assuming DeviceClassifier is pure logic or initialized.
+    // If logic in DeviceClassifier changed or relies on patterns not available in test env...
+    // But nickname assignment is in WiFiDetectionService.
+    assertTrue("Hotspot should be detected", hotspot?.nickname?.contains("Hotspot") == true)
 
     service.stopScanning()
   }

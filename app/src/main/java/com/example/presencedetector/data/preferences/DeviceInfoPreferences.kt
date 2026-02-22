@@ -5,6 +5,7 @@ import com.example.presencedetector.model.DeviceCategory
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 class DeviceInfoPreferences(context: Context) : BasePreferences(context, PREF_NAME) {
 
@@ -15,6 +16,10 @@ class DeviceInfoPreferences(context: Context) : BasePreferences(context, PREF_NA
         private const val PREFIX_CATEGORY = "category_"
         private const val PREFIX_HISTORY = "history_"
     }
+
+    // Cache for tracked BSSIDs to avoid hitting SharedPreferences repeatedly
+    // Key: BSSID, Value: Last Tracked Date (yyyy-MM-dd)
+    private val trackedCache = ConcurrentHashMap<String, String>()
 
     fun saveNickname(bssid: String, nickname: String) =
         putString(PREFIX_NICKNAME + bssid, nickname)
@@ -34,6 +39,14 @@ class DeviceInfoPreferences(context: Context) : BasePreferences(context, PREF_NA
     }
 
     fun trackDetection(bssid: String) {
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+        // Optimization: Check in-memory cache first
+        // If we have already tracked this BSSID for today during this session, skip expensive SP calls
+        if (trackedCache[bssid] == today) {
+            return
+        }
+
         // Ensure BSSID is in the master list
         val allBssids = getStringSet(KEY_ALL_BSSIDS, mutableSetOf()) ?: mutableSetOf()
         if (!allBssids.contains(bssid)) {
@@ -42,7 +55,6 @@ class DeviceInfoPreferences(context: Context) : BasePreferences(context, PREF_NA
             putStringSet(KEY_ALL_BSSIDS, newAllBssids)
         }
 
-        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val historyKey = PREFIX_HISTORY + bssid
         val history = getStringSet(historyKey, mutableSetOf()) ?: mutableSetOf()
         if (!history.contains(today)) {
@@ -50,6 +62,9 @@ class DeviceInfoPreferences(context: Context) : BasePreferences(context, PREF_NA
             newHistory.add(today)
             putStringSet(historyKey, newHistory)
         }
+
+        // Update cache
+        trackedCache[bssid] = today
     }
 
     fun getDetectionHistoryCount(bssid: String): Int {
