@@ -20,21 +20,21 @@ import com.example.presencedetector.R
 import com.example.presencedetector.WifiRadarActivity
 import com.example.presencedetector.receivers.NotificationActionReceiver
 
-data class NotificationData(
-  val title: String,
-  val message: String,
-  val isImportantEvent: Boolean,
-  val actionTitle: String? = null,
-  val actionIntent: PendingIntent? = null,
-  val notificationId: Int? = null,
-  val secondActionTitle: String? = null,
-  val secondActionIntent: PendingIntent? = null,
-  val iconResId: Int? = null
-)
-
 /** Utility for managing notifications. */
 object NotificationUtil {
   private const val TAG = "NotificationUtil"
+
+  private data class NotificationData(
+    val title: String,
+    val message: String,
+    val isImportantEvent: Boolean,
+    val actionTitle: String? = null,
+    val actionIntent: PendingIntent? = null,
+    val notificationId: Int? = null,
+    val secondActionTitle: String? = null,
+    val secondActionIntent: PendingIntent? = null,
+    val iconResId: Int? = null
+  )
 
   // Channel IDs
   const val CHANNEL_ID = "presence_detection_channel"
@@ -166,7 +166,7 @@ object NotificationUtil {
       .setAutoCancel(true)
   }
 
-  fun sendPresenceNotification(context: Context, data: NotificationData) {
+  private fun sendPresenceNotification(context: Context, data: NotificationData) {
     createNotificationChannels(context)
 
     val channelId = if (data.isImportantEvent) INFO_CHANNEL_ID else SILENT_CHANNEL_ID

