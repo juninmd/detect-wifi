@@ -6,10 +6,8 @@ import com.example.presencedetector.data.preferences.DetectionPreferences
 import com.example.presencedetector.data.preferences.DeviceInfoPreferences
 import com.example.presencedetector.data.preferences.SecurityPreferences
 import com.example.presencedetector.data.preferences.TelegramPreferences
+import com.example.presencedetector.data.repository.DetectionHistoryRepository
 import com.example.presencedetector.model.DeviceCategory
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /** Utility class for managing application preferences and history logs. */
 open class PreferencesUtil(context: Context) {
@@ -58,15 +56,6 @@ open class PreferencesUtil(context: Context) {
       const val TELEGRAM_ALERT = "telegram_alert_"
       const val EVENT_LOGS = "event_logs_"
     }
-
-    // In-memory cache for performance optimization
-    private val cacheLock = Any()
-
-    @Volatile
-    private var trackedBssidsCache: MutableSet<String>? = null
-
-    // Limit history cache to 500 recently detected devices to prevent OOM
-    private val historyCache = android.util.LruCache<String, MutableSet<String>>(500)
   }
 
   private val preferences: SharedPreferences =
@@ -76,6 +65,7 @@ open class PreferencesUtil(context: Context) {
   private val securityPreferences = SecurityPreferences(context)
   private val telegramPreferences = TelegramPreferences(context)
   private val deviceInfoPreferences = DeviceInfoPreferences(context)
+  private val detectionHistoryRepository = DetectionHistoryRepository(context)
 
   // --- Detection Settings ---
   open fun setDetectionEnabled(enabled: Boolean) = detectionPreferences.setDetectionEnabled(enabled)
@@ -190,70 +180,16 @@ open class PreferencesUtil(context: Context) {
   open fun getManualCategory(bssid: String): DeviceCategory? =
     deviceInfoPreferences.getManualCategory(bssid)
 
-  private fun getStringSet(key: String, default: Set<String>): Set<String>? {
-    return preferences.getStringSet(key, default)
-  }
-
-  private fun putStringSet(key: String, value: Set<String>) {
-    preferences.edit().putStringSet(key, value).apply()
-  }
-
-  private fun getOrLoadTrackedBssids(): MutableSet<String> {
-    var cache = trackedBssidsCache
-    if (cache == null) {
-      synchronized(cacheLock) {
-        cache = trackedBssidsCache
-        if (cache == null) {
-          val loaded = getStringSet(Keys.ALL_BSSIDS, mutableSetOf()) ?: mutableSetOf()
-          cache = java.util.Collections.synchronizedSet(loaded.toMutableSet())
-          trackedBssidsCache = cache
-        }
-      }
-    }
-    return cache!!
-  }
-
   open fun trackDetection(bssid: String) {
-    // 1. Get or Load BSSID Cache (Thread-safe initialization)
-    val allBssids = getOrLoadTrackedBssids()
-
-    // 2. Add to BSSID Cache
-    if (!allBssids.contains(bssid)) {
-      allBssids.add(bssid)
-      // Persist asynchronously
-      putStringSet(Keys.ALL_BSSIDS, allBssids.toMutableSet())
-    }
-
-    // 3. Initialize History Cache for this BSSID if needed
-    val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-    val historyKey = Prefixes.HISTORY + bssid
-
-    var history = historyCache.get(bssid)
-    if (history == null) {
-      val loaded = getStringSet(historyKey, mutableSetOf()) ?: mutableSetOf()
-      history = java.util.Collections.synchronizedSet(loaded.toMutableSet())
-      historyCache.put(bssid, history)
-    }
-
-    // 4. Add to History Cache
-    if (!history.contains(today)) {
-      history.add(today)
-      putStringSet(historyKey, history.toMutableSet())
-    }
+    detectionHistoryRepository.trackDetection(bssid)
   }
 
   open fun getDetectionHistoryCount(bssid: String): Int {
-    // Check cache first
-    val history = historyCache.get(bssid)
-    if (history != null) {
-      return history.size
-    }
-    return getStringSet(Prefixes.HISTORY + bssid, emptySet())?.size ?: 0
+    return detectionHistoryRepository.getDetectionHistoryCount(bssid)
   }
 
   fun getAllTrackedBssids(): List<String> {
-    // Use the helper to ensure cache is populated if accessed for the first time
-    return getOrLoadTrackedBssids().toList()
+    return detectionHistoryRepository.getAllTrackedBssids()
   }
 
   fun setTrustedWifiSsid(ssid: String) = securityPreferences.setTrustedWifiSsid(ssid)
