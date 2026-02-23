@@ -17,9 +17,13 @@ data class WiFiDevice(
   val channelWidth: Int = 0, // MHz
   val standard: Int = 0 // ScanResult.WIFI_STANDARD_... (API 30+)
 ) {
+  // Compute classification once per device instance to improve performance
+  private val classifiedCategory: DeviceCategory by lazy {
+    com.example.presencedetector.utils.DeviceClassifier.classify(ssid, bssid, isHotspot)
+  }
+
   val category: DeviceCategory
-    get() =
-      manualCategory ?: com.example.presencedetector.utils.DeviceClassifier.classify(ssid, bssid)
+    get() = manualCategory ?: classifiedCategory
 
   val isHidden: Boolean
     get() = ssid.isEmpty() || ssid == "<unknown ssid>"
