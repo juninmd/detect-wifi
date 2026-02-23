@@ -97,9 +97,10 @@ O projeto utiliza um pipeline robusto no GitHub Actions para garantir a qualidad
 ### Estágios do Pipeline
 1.  **Lint & Format:** Verifica a qualidade do código com Android Lint e formatação com Spotless.
 2.  **Testes:** Executa testes unitários e valida a cobertura de código (mínimo 80%) via JaCoCo.
-3.  **Segurança:** Escaneia o código em busca de segredos expostos (Gitleaks) e vulnerabilidades em dependências (Trivy).
-4.  **Build:** Compila os artefatos (APKs) para Debug e Release.
-5.  **Deploy:** Automatiza a publicação no GitHub Releases.
+3.  **Testes Android:** Executa testes de interface (E2E) em um emulador Android.
+4.  **Segurança:** Escaneia o código em busca de segredos expostos (Gitleaks) e vulnerabilidades em dependências (Trivy).
+5.  **Build:** Compila os artefatos (APKs) para Debug e Release.
+6.  **Deploy:** Automatiza a publicação no GitHub Releases.
 
 ### Tipos de Release
 

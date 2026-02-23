@@ -19,6 +19,10 @@ We welcome contributions to Presence Detector! Please follow these guidelines to
     ```bash
     ./gradlew testDebugUnitTest
     ```
+    *To run UI tests (requires connected emulator/device):*
+    ```bash
+    ./gradlew connectedDebugAndroidTest
+    ```
 4.  **Format your code** using Spotless (Google Style):
     ```bash
     ./gradlew spotlessApply
@@ -48,6 +52,7 @@ Our CI pipeline (GitHub Actions) runs the following checks:
 
 *   **Lint:** Android Lint and Spotless check.
 *   **Test:** Unit tests, Integration tests (Robolectric), and JaCoCo coverage verification (min 80%).
+*   **Android Test:** Instrumented E2E tests running on an Android Emulator.
 *   **Build:** Assembles Debug and Release APKs.
 *   **Security:** Scans for secrets (Gitleaks) and dependency vulnerabilities (Trivy).
 
