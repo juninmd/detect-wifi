@@ -6,10 +6,8 @@ import com.example.presencedetector.data.preferences.DetectionPreferences
 import com.example.presencedetector.data.preferences.DeviceInfoPreferences
 import com.example.presencedetector.data.preferences.SecurityPreferences
 import com.example.presencedetector.data.preferences.TelegramPreferences
+import com.example.presencedetector.data.repository.DetectionHistoryRepository
 import com.example.presencedetector.model.DeviceCategory
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /** Utility class for managing application preferences and history logs. */
 open class PreferencesUtil(context: Context) {
@@ -67,6 +65,7 @@ open class PreferencesUtil(context: Context) {
   private val securityPreferences = SecurityPreferences(context)
   private val telegramPreferences = TelegramPreferences(context)
   private val deviceInfoPreferences = DeviceInfoPreferences(context)
+  private val detectionHistoryRepository = DetectionHistoryRepository(context)
 
   // --- Detection Settings ---
   open fun setDetectionEnabled(enabled: Boolean) = detectionPreferences.setDetectionEnabled(enabled)

@@ -5,16 +5,10 @@ import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
-import android.hardware.camera2.*
-import android.media.ImageReader
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
-import android.view.Surface
 import android.view.TextureView
 import android.view.WindowManager
 import android.widget.TextView
@@ -90,13 +84,14 @@ class AlarmActivity : AppCompatActivity() {
   }
 
   private fun startCamera() {
+    val helper = com.example.presencedetector.utils.CameraHelper(this)
     if (textureView.isAvailable) {
-      setupCamera(textureView.surfaceTexture!!)
+      helper.captureSelfie(textureView.surfaceTexture!!, { bytes -> saveAndSendPhoto(bytes) })
     } else {
       textureView.surfaceTextureListener =
         object : TextureView.SurfaceTextureListener {
           override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
-            setupCamera(surface)
+            helper.captureSelfie(surface, { bytes -> saveAndSendPhoto(bytes) })
           }
 
           override fun onSurfaceTextureSizeChanged(
@@ -109,105 +104,6 @@ class AlarmActivity : AppCompatActivity() {
 
           override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
         }
-    }
-  }
-
-  private fun setupCamera(surfaceTexture: SurfaceTexture) {
-    val manager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
-    try {
-      val cameraId =
-        manager.cameraIdList.firstOrNull {
-          manager.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) ==
-            CameraCharacteristics.LENS_FACING_FRONT
-        } ?: manager.cameraIdList.firstOrNull() ?: return
-
-      if (
-        ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
-          PackageManager.PERMISSION_GRANTED
-      )
-        return
-
-      val imageReader = ImageReader.newInstance(640, 480, ImageFormat.JPEG, 1)
-      imageReader.setOnImageAvailableListener(
-        { reader ->
-          try {
-            val image = reader.acquireLatestImage()
-            if (image != null) {
-              val buffer = image.planes[0].buffer
-              val bytes = ByteArray(buffer.remaining())
-              buffer.get(bytes)
-              image.close()
-              saveAndSendPhoto(bytes)
-            }
-          } catch (e: Exception) {
-            Log.e(TAG, "Image processing error", e)
-          }
-        },
-        Handler(Looper.getMainLooper())
-      )
-
-      manager.openCamera(
-        cameraId,
-        object : CameraDevice.StateCallback() {
-          override fun onOpened(camera: CameraDevice) {
-            val textureSurface = Surface(surfaceTexture)
-            val captureSurface = imageReader.surface
-
-            try {
-              camera.createCaptureSession(
-                listOf(textureSurface, captureSurface),
-                object : CameraCaptureSession.StateCallback() {
-                  override fun onConfigured(session: CameraCaptureSession) {
-                    try {
-                      // Preview needed to warm up?
-                      val previewReq = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
-                      previewReq.addTarget(textureSurface)
-                      session.setRepeatingRequest(previewReq.build(), null, null)
-
-                      // Capture
-                      Handler(Looper.getMainLooper())
-                        .postDelayed(
-                          {
-                            try {
-                              val captureReq =
-                                camera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
-                              captureReq.addTarget(captureSurface)
-                              // Orientation adjustment logic is complex, skipping for MVP
-                              // "Surprise"
-                              // Front camera usually needs mirroring or 270 deg rotation.
-                              session.capture(captureReq.build(), null, null)
-                            } catch (e: Exception) {
-                              e.printStackTrace()
-                            }
-                          },
-                          1000
-                        ) // 1s delay to ensure light/focus (even if blind)
-                    } catch (e: Exception) {
-                      e.printStackTrace()
-                    }
-                  }
-
-                  override fun onConfigureFailed(session: CameraCaptureSession) {}
-                },
-                null
-              )
-            } catch (e: Exception) {
-              e.printStackTrace()
-            }
-          }
-
-          override fun onDisconnected(camera: CameraDevice) {
-            camera.close()
-          }
-
-          override fun onError(camera: CameraDevice, error: Int) {
-            camera.close()
-          }
-        },
-        null
-      )
-    } catch (e: Exception) {
-      Log.e(TAG, "Camera Error", e)
     }
   }
 

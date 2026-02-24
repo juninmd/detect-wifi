@@ -120,9 +120,13 @@ class MainActivity : AppCompatActivity() {
     val cameraHelper = com.example.presencedetector.utils.CameraHelper(this)
 
     if (textureView.isAvailable && textureView.surfaceTexture != null) {
-      cameraHelper.captureSelfie(textureView.surfaceTexture!!) {
-        runOnUiThread { addLog(getString(R.string.log_snapshot_captured)) }
-      }
+      cameraHelper.captureSelfie(
+        surfaceTexture = textureView.surfaceTexture!!,
+        onImageCaptured = { bytes ->
+          com.example.presencedetector.utils.CameraHelper.saveAndSendImage(this@MainActivity, bytes)
+          runOnUiThread { addLog(getString(R.string.log_snapshot_captured)) }
+        }
+      )
     } else {
       textureView.surfaceTextureListener =
         object : android.view.TextureView.SurfaceTextureListener {
@@ -131,9 +135,13 @@ class MainActivity : AppCompatActivity() {
             width: Int,
             height: Int
           ) {
-            cameraHelper.captureSelfie(surface) {
-              runOnUiThread { addLog(getString(R.string.log_snapshot_captured)) }
-            }
+            cameraHelper.captureSelfie(
+              surfaceTexture = surface,
+              onImageCaptured = { bytes ->
+                com.example.presencedetector.utils.CameraHelper.saveAndSendImage(this@MainActivity, bytes)
+                runOnUiThread { addLog(getString(R.string.log_snapshot_captured)) }
+              }
+            )
           }
 
           override fun onSurfaceTextureSizeChanged(
