@@ -8,8 +8,6 @@ import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.presencedetector.model.DeviceCategory
@@ -18,6 +16,7 @@ import com.example.presencedetector.model.WiFiDevice
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 
 /** Bluetooth-based presence detection service. Scans for Bluetooth LE devices. */
 open class BluetoothDetectionService(private val context: Context) {
@@ -36,12 +35,16 @@ open class BluetoothDetectionService(private val context: Context) {
 
   private var scanJob: Job? = null
   private var cleanupJob: Job? = null
+  private var processingJob: Job? = null // Job for processing scan results
   private var presenceListener: PresenceListener? = null
   private val isScanning = AtomicBoolean(false)
 
   // Map to store unique devices by MAC address
   private val detectedDevices = ConcurrentHashMap<String, WiFiDevice>()
   private val lastUpdateMap = ConcurrentHashMap<String, Long>()
+
+  // Channel to buffer scan results (unlimited or buffered to prevent blocking callback)
+  private val scanResultsChannel = Channel<ScanResult>(Channel.UNLIMITED)
 
   // Cache scan settings
   private val scanSettings: ScanSettings? by lazy {
@@ -78,6 +81,14 @@ open class BluetoothDetectionService(private val context: Context) {
 
     isScanning.set(true)
     Log.i(TAG, "Starting Bluetooth scanning")
+
+    // Launch processing loop
+    processingJob = scope.launch {
+        for (result in scanResultsChannel) {
+            if (!isActive) break
+            processScanResult(result)
+        }
+    }
 
     scanJob =
       scope.launch {
@@ -128,11 +139,17 @@ open class BluetoothDetectionService(private val context: Context) {
 
     scanJob?.cancel()
     cleanupJob?.cancel()
+    processingJob?.cancel()
     scanJob = null
     cleanupJob = null
+    processingJob = null
     isScanning.set(false)
     detectedDevices.clear()
     lastUpdateMap.clear()
+
+    // Drain channel to prevent processing old results on restart
+    while(scanResultsChannel.tryReceive().isSuccess) {}
+
     Log.i(TAG, "Bluetooth scanning stopped")
   }
 
@@ -173,10 +190,8 @@ open class BluetoothDetectionService(private val context: Context) {
       override fun onScanResult(callbackType: Int, result: ScanResult?) {
         super.onScanResult(callbackType, result)
         result?.let {
-          val rssi = it.rssi
-          if (rssi >= SIGNAL_THRESHOLD) {
-            processScanResult(it)
-          }
+            // Offload processing to channel
+            scanResultsChannel.trySend(it)
         }
       }
 
@@ -187,6 +202,12 @@ open class BluetoothDetectionService(private val context: Context) {
     }
 
   private fun processScanResult(result: ScanResult) {
+    // Double check if scanning is active
+    if (!isScanning.get()) return
+
+    val rssi = result.rssi
+    if (rssi < SIGNAL_THRESHOLD) return
+
     val device = result.device
     val address = device.address
 
@@ -198,8 +219,6 @@ open class BluetoothDetectionService(private val context: Context) {
     }
     lastUpdateMap[address] = now
 
-    val rssi = result.rssi
-
     var name = if (hasConnectPermission()) device.name else null
     if (name.isNullOrEmpty()) {
       name = result.scanRecord?.deviceName
@@ -208,9 +227,7 @@ open class BluetoothDetectionService(private val context: Context) {
       name = "Unknown Bluetooth"
     }
 
-    // Only track devices that look like personal devices (have a name or are specific types)
-    // For now, we track everything that has a decent signal, but we try to filter nameless ones if
-    // rssi is weak
+    // Only track devices that look like personal devices
     if (name == "Unknown Bluetooth" && rssi < -80) return
 
     val wifiDevice =
@@ -252,7 +269,6 @@ open class BluetoothDetectionService(private val context: Context) {
     val hasDevices = devicesList.isNotEmpty()
 
     // Notify listener on the current (background) thread.
-    // The consumer (PresenceDetectionManager) is responsible for handling threading if needed.
     presenceListener?.onPresenceDetected(hasDevices, devicesList, "Bluetooth scan complete")
   }
 
@@ -261,5 +277,6 @@ open class BluetoothDetectionService(private val context: Context) {
   fun destroy() {
     stopScanning()
     scope.cancel()
+    scanResultsChannel.close()
   }
 }

@@ -87,6 +87,9 @@ class BluetoothDetectionServiceTest {
     // Let's try reflection to access 'scanCallback' field in BluetoothDetectionService
     // This is the most reliable way to test the private callback logic.
 
+    // Ensure processing job is running
+    service.startScanning()
+
     val field = BluetoothDetectionService::class.java.getDeclaredField("scanCallback")
     field.isAccessible = true
     val scanCallback = field.get(service) as android.bluetooth.le.ScanCallback
@@ -114,6 +117,9 @@ class BluetoothDetectionServiceTest {
       scanResult
     )
 
+    // Allow background thread to process the channel
+    Thread.sleep(200)
+
     // Verify detectedDevices contains it.
     // BluetoothDetectionService stores it in detectedDevices map.
     // But it only notifies in 'notifyPresence()' which is called by 'cleanupOldDevices' or
@@ -127,6 +133,17 @@ class BluetoothDetectionServiceTest {
     notifyMethod.invoke(service)
 
     org.robolectric.shadows.ShadowLooper.idleMainLooper(100)
+
+    // It might take a moment for the listener to be called if posted to main thread
+    // But notifyPresence calls listener directly.
+
+    // If still failing due to timing, we can loop
+    var retries = 5
+    while (devicesFound.isEmpty() && retries > 0) {
+        Thread.sleep(100)
+        notifyMethod.invoke(service)
+        retries--
+    }
 
     assertTrue("Should find 1 device", devicesFound.size == 1)
     org.junit.Assert.assertEquals("TestBLE", devicesFound[0].ssid)

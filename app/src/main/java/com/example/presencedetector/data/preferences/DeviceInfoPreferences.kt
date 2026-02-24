@@ -17,9 +17,14 @@ class DeviceInfoPreferences(context: Context) : BasePreferences(context, PREF_NA
         private const val PREFIX_HISTORY = "history_"
     }
 
-    // Cache for tracked BSSIDs to avoid hitting SharedPreferences repeatedly
+    // Cache for tracked BSSIDs (Last detected date) to avoid hitting SharedPreferences repeatedly
     // Key: BSSID, Value: Last Tracked Date (yyyy-MM-dd)
     private val trackedCache = ConcurrentHashMap<String, String>()
+
+    // Cache for all known BSSIDs to avoid reading the large set from disk repeatedly
+    @Volatile
+    private var allBssidsCache: MutableSet<String>? = null
+    private val allBssidsLock = Any()
 
     fun saveNickname(bssid: String, nickname: String) =
         putString(PREFIX_NICKNAME + bssid, nickname)
@@ -41,20 +46,25 @@ class DeviceInfoPreferences(context: Context) : BasePreferences(context, PREF_NA
     fun trackDetection(bssid: String) {
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
-        // Optimization: Check in-memory cache first
-        // If we have already tracked this BSSID for today during this session, skip expensive SP calls
+        // Optimization: Check in-memory cache first (most frequent path)
         if (trackedCache[bssid] == today) {
             return
         }
 
         // Ensure BSSID is in the master list
-        val allBssids = getStringSet(KEY_ALL_BSSIDS, mutableSetOf()) ?: mutableSetOf()
+        val allBssids = getOrLoadAllBssids()
+        // Fast check before lock
         if (!allBssids.contains(bssid)) {
-            val newAllBssids = allBssids.toMutableSet()
-            newAllBssids.add(bssid)
-            putStringSet(KEY_ALL_BSSIDS, newAllBssids)
+            synchronized(allBssidsLock) {
+                // Double check and add atomically
+                if (allBssids.add(bssid)) {
+                     // Write to disk asynchronously. Create snapshot to be safe.
+                     putStringSet(KEY_ALL_BSSIDS, HashSet(allBssids))
+                }
+            }
         }
 
+        // Update history
         val historyKey = PREFIX_HISTORY + bssid
         val history = getStringSet(historyKey, mutableSetOf()) ?: mutableSetOf()
         if (!history.contains(today)) {
@@ -63,8 +73,26 @@ class DeviceInfoPreferences(context: Context) : BasePreferences(context, PREF_NA
             putStringSet(historyKey, newHistory)
         }
 
-        // Update cache
+        // Update cache so subsequent checks today are fast
         trackedCache[bssid] = today
+    }
+
+    private fun getOrLoadAllBssids(): MutableSet<String> {
+        var cache = allBssidsCache
+        if (cache == null) {
+            synchronized(allBssidsLock) {
+                cache = allBssidsCache
+                if (cache == null) {
+                    val loaded = getStringSet(KEY_ALL_BSSIDS, mutableSetOf()) ?: mutableSetOf()
+                    // Use a concurrent set
+                    val concurrentSet = ConcurrentHashMap.newKeySet<String>()
+                    concurrentSet.addAll(loaded)
+                    cache = concurrentSet
+                    allBssidsCache = cache
+                }
+            }
+        }
+        return cache!!
     }
 
     fun getDetectionHistoryCount(bssid: String): Int {
@@ -72,6 +100,6 @@ class DeviceInfoPreferences(context: Context) : BasePreferences(context, PREF_NA
     }
 
     fun getAllTrackedBssids(): List<String> {
-        return getStringSet(KEY_ALL_BSSIDS, emptySet())?.toList() ?: emptyList()
+        return getOrLoadAllBssids().toList()
     }
 }

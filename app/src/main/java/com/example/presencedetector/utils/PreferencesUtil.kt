@@ -180,17 +180,12 @@ open class PreferencesUtil(context: Context) {
   open fun getManualCategory(bssid: String): DeviceCategory? =
     deviceInfoPreferences.getManualCategory(bssid)
 
-  open fun trackDetection(bssid: String) {
-    detectionHistoryRepository.trackDetection(bssid)
-  }
+  open fun trackDetection(bssid: String) = deviceInfoPreferences.trackDetection(bssid)
 
-  open fun getDetectionHistoryCount(bssid: String): Int {
-    return detectionHistoryRepository.getDetectionHistoryCount(bssid)
-  }
+  open fun getDetectionHistoryCount(bssid: String): Int =
+    deviceInfoPreferences.getDetectionHistoryCount(bssid)
 
-  fun getAllTrackedBssids(): List<String> {
-    return detectionHistoryRepository.getAllTrackedBssids()
-  }
+  fun getAllTrackedBssids(): List<String> = deviceInfoPreferences.getAllTrackedBssids()
 
   fun setTrustedWifiSsid(ssid: String) = securityPreferences.setTrustedWifiSsid(ssid)
 

@@ -19,7 +19,14 @@ object DeviceClassifier {
         )
     }
 
-    fun classify(ssid: String, bssid: String): DeviceCategory {
+    // Pre-compiled regex for hotspot detection
+    private val SHORT_NAME_REGEX = Regex("[A-Za-z0-9]+")
+
+    fun classify(ssid: String, bssid: String, isHotspot: Boolean = false): DeviceCategory {
+        if (isHotspot) {
+            return DeviceCategory.SMARTPHONE
+        }
+
         val name = ssid.lowercase()
 
         return when {
@@ -48,7 +55,7 @@ object DeviceClassifier {
         // Check if SSID is very short (typical for hotspots)
         val isShortName = ssid.length < 15 && !ssid.contains("_") && !ssid.contains("-")
 
-        return containsMobilePattern || (isShortName && ssid.matches(Regex("[A-Za-z0-9]+")))
+        return containsMobilePattern || (isShortName && ssid.matches(SHORT_NAME_REGEX))
     }
 
     private fun String.containsAny(patterns: List<String>): Boolean {
