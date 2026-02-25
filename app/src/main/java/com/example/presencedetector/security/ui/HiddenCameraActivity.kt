@@ -18,7 +18,7 @@ class HiddenCameraActivity : Activity() {
       onComplete = {
         Log.i("HiddenCamera", "Capture complete. Finishing.")
         finish()
-      }
+      },
     )
   }
 }

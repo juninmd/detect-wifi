@@ -19,7 +19,7 @@ import okhttp3.RequestBody.Companion.asRequestBody
 open class TelegramService(
   private val context: Context,
   var preferences: PreferencesUtil? = null,
-  private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+  private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
   companion object {
     private const val TAG = "TelegramService"

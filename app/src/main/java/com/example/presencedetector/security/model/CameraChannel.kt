@@ -21,7 +21,7 @@ data class CameraChannel(
   val username: String = "",
   val password: String = "",
   val streamPath: String = "cam/realmonitor", // Caminho padrão Intelbras
-  val isHidden: Boolean = false // Ocultar câmera no dashboard
+  val isHidden: Boolean = false, // Ocultar câmera no dashboard
 ) {
   /**
    * Constrói a URL RTSP completa para conexão com o DVR.
@@ -72,7 +72,7 @@ data class CameraChannel(
           channel = channel.toIntOrNull() ?: 1,
           username = user,
           password = pass,
-          streamPath = path
+          streamPath = path,
         )
       } else {
         CameraChannel(id = id, name = name, host = "")

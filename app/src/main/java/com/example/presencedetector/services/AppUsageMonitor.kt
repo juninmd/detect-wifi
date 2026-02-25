@@ -26,7 +26,7 @@ class AppUsageMonitor(private val context: Context) {
         "com.twitter.android", // Twitter
         "com.zhiliaoapp.musically", // TikTok
         "com.whatsapp", // WhatsApp
-        "com.google.android.apps.photos" // Photos
+        "com.google.android.apps.photos", // Photos
       )
   }
 

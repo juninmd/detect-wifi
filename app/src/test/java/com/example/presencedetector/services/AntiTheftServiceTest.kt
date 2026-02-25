@@ -55,7 +55,7 @@ class AntiTheftServiceTest {
       android.Manifest.permission.ACCESS_FINE_LOCATION,
       android.Manifest.permission.RECORD_AUDIO,
       android.Manifest.permission.READ_PHONE_STATE,
-      android.Manifest.permission.POST_NOTIFICATIONS // Required for foreground service
+      android.Manifest.permission.POST_NOTIFICATIONS, // Required for foreground service
     )
 
     val controller = Robolectric.buildService(AntiTheftService::class.java)
@@ -84,7 +84,7 @@ class AntiTheftServiceTest {
         action = AntiTheftService.ACTION_START
       },
       0,
-      0
+      0,
     )
 
     val intent =
@@ -100,13 +100,17 @@ class AntiTheftServiceTest {
     whenever(mockPreferences.isPocketModeEnabled()).thenReturn(true)
 
     // Trigger change
-    service.onSharedPreferenceChanged(mock(android.content.SharedPreferences::class.java), com.example.presencedetector.utils.PreferencesUtil.Companion.Keys.POCKET_MODE_ENABLED)
+    service.onSharedPreferenceChanged(
+      mock(android.content.SharedPreferences::class.java),
+      com.example.presencedetector.utils.PreferencesUtil.Companion.Keys.POCKET_MODE_ENABLED,
+    )
 
     // Verify sensor listener registered
     // We can't easily verify internal state `isPocketModeArmed` without reflection or side effect.
     // Side effect: `updateForegroundNotification` called.
     // `getSystemService(NotificationManager)` called.
-    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+    val notificationManager =
+      context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
     val shadows = Shadows.shadowOf(notificationManager)
     // notification ID 999
     assertNotNull(shadows.getNotification(999))
@@ -226,7 +230,7 @@ class AntiTheftServiceTest {
     location.time = System.currentTimeMillis()
     shadowLocationManager.setLastKnownLocation(
       android.location.LocationManager.GPS_PROVIDER,
-      location
+      location,
     )
 
     // Start Service
@@ -271,7 +275,7 @@ class AntiTheftServiceTest {
           putExtra(android.os.BatteryManager.EXTRA_SCALE, 100)
           putExtra(
             android.os.BatteryManager.EXTRA_STATUS,
-            android.os.BatteryManager.BATTERY_STATUS_DISCHARGING
+            android.os.BatteryManager.BATTERY_STATUS_DISCHARGING,
           )
         }
       batteryReceiverWrapper.broadcastReceiver.onReceive(context, batteryIntent)
@@ -418,11 +422,11 @@ class AntiTheftServiceTest {
     assertEquals(
       "Intent should target MainActivity",
       MainActivity::class.java.name,
-      shadowIntent.component?.className
+      shadowIntent.component?.className,
     )
     assertTrue(
       "Intent should have EXTRA_DISARM_REQUEST",
-      shadowIntent.getBooleanExtra(MainActivity.EXTRA_DISARM_REQUEST, false)
+      shadowIntent.getBooleanExtra(MainActivity.EXTRA_DISARM_REQUEST, false),
     )
   }
 }

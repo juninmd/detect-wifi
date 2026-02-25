@@ -4,14 +4,12 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.presencedetector.model.WiFiDevice
 import com.example.presencedetector.utils.DeviceClassifier
-import kotlinx.coroutines.*
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.*
 
 /** WiFi-based presence detection service. */
 open class WiFiDetectionService(private val context: Context) {
@@ -81,7 +79,8 @@ open class WiFiDetectionService(private val context: Context) {
 
       // Use withContext to ensure this mapping runs on Default dispatcher if not already
       // (though performScan is called from Default scope, so redundant but explicit)
-      val devices = withContext(Dispatchers.Default) {
+      val devices =
+        withContext(Dispatchers.Default) {
           // Detect both standard networks AND mobile hotspots
           scanResults.mapNotNull { result ->
             val ssid = result.SSID ?: "Unknown"
@@ -103,10 +102,10 @@ open class WiFiDetectionService(private val context: Context) {
               nickname = if (isHotspot) "📱 $ssid (Hotspot)" else ssid,
               capabilities = result.capabilities ?: "",
               channelWidth = result.channelWidth, // 0 if unknown
-              standard = standard
+              standard = standard,
             )
           }
-      }
+        }
 
       val presenceDetected = devices.any { it.level >= -70 }
 

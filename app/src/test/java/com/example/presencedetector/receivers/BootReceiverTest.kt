@@ -40,7 +40,7 @@ class BootReceiverTest {
     // If AntiTheft is not armed, only Detection should start.
     assertEquals(
       DetectionBackgroundService::class.java.name,
-      nextStartedService.component?.className
+      nextStartedService.component?.className,
     )
   }
 

@@ -14,23 +14,18 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class MainActivityEspressoTest {
 
-    @get:Rule
-    val activityRule = ActivityScenarioRule(MainActivity::class.java)
+  @get:Rule val activityRule = ActivityScenarioRule(MainActivity::class.java)
 
-    @Test
-    fun testAppLaunchAndUIElements() {
-        // Check if the Home Monitor switch is displayed. It's inside a CardView which is in a ScrollView.
-        onView(withId(R.id.switchHomeMonitor))
-            .perform(scrollTo())
-            .check(matches(isDisplayed()))
+  @Test
+  fun testAppLaunchAndUIElements() {
+    // Check if the Home Monitor switch is displayed. It's inside a CardView which is in a
+    // ScrollView.
+    onView(withId(R.id.switchHomeMonitor)).perform(scrollTo()).check(matches(isDisplayed()))
 
-        // Check if the AntiTheft button is displayed.
-        onView(withId(R.id.btnAntiTheft))
-            .perform(scrollTo())
-            .check(matches(isDisplayed()))
+    // Check if the AntiTheft button is displayed.
+    onView(withId(R.id.btnAntiTheft)).perform(scrollTo()).check(matches(isDisplayed()))
 
-        // Check if the Panic button is displayed. It is floating at the bottom, outside the ScrollView.
-        onView(withId(R.id.btnPanic))
-            .check(matches(isDisplayed()))
-    }
+    // Check if the Panic button is displayed. It is floating at the bottom, outside the ScrollView.
+    onView(withId(R.id.btnPanic)).check(matches(isDisplayed()))
+  }
 }

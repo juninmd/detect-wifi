@@ -113,7 +113,7 @@ class HistoryActivity : AppCompatActivity() {
                   nickname.ifEmpty { getString(R.string.text_unknown) },
                   logLine,
                   isArrival,
-                  isDeparture
+                  isDeparture,
                 )
               )
             }
@@ -134,7 +134,7 @@ class HistoryActivity : AppCompatActivity() {
     val nickname: String,
     val logDetail: String,
     val isArrival: Boolean = false,
-    val isDeparture: Boolean = false
+    val isDeparture: Boolean = false,
   )
 
   inner class HistoryAdapter : RecyclerView.Adapter<HistoryAdapter.ViewHolder>() {

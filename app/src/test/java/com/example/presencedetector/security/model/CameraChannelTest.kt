@@ -16,7 +16,7 @@ class CameraChannelTest {
         channel = 2,
         username = "admin",
         password = "password",
-        streamPath = "cam/realmonitor"
+        streamPath = "cam/realmonitor",
       )
 
     val expectedUrl = "rtsp://admin:password@192.168.1.100:554/cam/realmonitor?channel=2&subtype=0"

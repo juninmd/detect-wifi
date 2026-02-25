@@ -34,7 +34,7 @@ class CameraDashboardActivity : AppCompatActivity() {
         "--network-caching=300",
         "--no-audio",
         "--no-drop-late-frames",
-        "--no-skip-frames"
+        "--no-skip-frames",
       )
     libVLC = org.videolan.libvlc.LibVLC(this, vlcOptions)
 

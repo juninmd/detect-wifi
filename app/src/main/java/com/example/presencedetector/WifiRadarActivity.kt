@@ -31,7 +31,7 @@ class WifiRadarActivity : AppCompatActivity() {
   enum class SortOrder {
     DISTANCE,
     NAME,
-    CATEGORY
+    CATEGORY,
   }
 
   private var currentSortOrder = SortOrder.DISTANCE
@@ -53,7 +53,7 @@ class WifiRadarActivity : AppCompatActivity() {
     adapter =
       WifiAdapter(
         onItemClick = { device -> showDeviceInfoDialog(device) },
-        onItemLongClick = { device -> showDeviceInfoDialog(device) }
+        onItemLongClick = { device -> showDeviceInfoDialog(device) },
       )
     binding.wifiRecyclerView.adapter = adapter
 
@@ -97,7 +97,7 @@ class WifiRadarActivity : AppCompatActivity() {
       arrayOf(
         getString(R.string.sort_option_distance),
         getString(R.string.sort_option_name),
-        getString(R.string.sort_option_category)
+        getString(R.string.sort_option_category),
       )
     val checkedItem = currentSortOrder.ordinal
 
@@ -185,7 +185,7 @@ class WifiRadarActivity : AppCompatActivity() {
 
   inner class WifiAdapter(
     private val onItemClick: (WiFiDevice) -> Unit,
-    private val onItemLongClick: (WiFiDevice) -> Unit
+    private val onItemLongClick: (WiFiDevice) -> Unit,
   ) : RecyclerView.Adapter<WifiAdapter.ViewHolder>() {
     private var devices: List<WiFiDevice> = emptyList()
 

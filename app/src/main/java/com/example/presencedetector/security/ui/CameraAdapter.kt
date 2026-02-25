@@ -8,7 +8,7 @@ import com.example.presencedetector.security.model.CameraConfig
 
 class CameraAdapter(
   private var cameras: List<CameraConfig>,
-  private val onPlayClicked: (CameraConfig) -> Unit
+  private val onPlayClicked: (CameraConfig) -> Unit,
 ) : RecyclerView.Adapter<CameraAdapter.CameraViewHolder>() {
 
   override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CameraViewHolder {
