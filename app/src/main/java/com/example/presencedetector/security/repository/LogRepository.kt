@@ -94,31 +94,68 @@ object LogRepository {
   }
 
   /**
-   * Efficiently reads the last N lines from a file using a rolling buffer.
-   * This avoids loading the entire file into memory.
+   * Efficiently reads the last N lines from a file reading backwards from the end.
+   * This avoids loading the entire file into memory (O(limit) instead of O(file_size)).
    */
   private fun readLogsReverse(context: Context, filename: String, limit: Int): List<String> {
     val logsDir = getLogsDir(context)
     val file = File(logsDir, filename)
     if (!file.exists()) return emptyList()
 
-    val buffer = ArrayDeque<String>(limit)
+    val result = mutableListOf<String>()
+    var raf: java.io.RandomAccessFile? = null
     try {
-        file.useLines { lines ->
-            lines.forEach { line ->
-                if (buffer.size >= limit) {
-                    buffer.removeFirst()
+        raf = java.io.RandomAccessFile(file, "r")
+        val length = raf.length()
+        var currentPos = length
+        val bufferSize = 4096
+        var partialLine = ""
+
+        while (currentPos > 0 && result.size < limit) {
+            val readSize = if (currentPos >= bufferSize) bufferSize.toLong() else currentPos
+            currentPos -= readSize
+
+            raf.seek(currentPos)
+            val bytes = ByteArray(readSize.toInt())
+            raf.readFully(bytes)
+
+            val chunk = String(bytes, java.nio.charset.StandardCharsets.UTF_8)
+            val fullChunk = chunk + partialLine
+            val linesInChunk = fullChunk.split('\n')
+
+            if (linesInChunk.isNotEmpty()) {
+                if (currentPos > 0) {
+                    // The first element is the end of the previous line (which we haven't fully read yet)
+                    partialLine = linesInChunk[0]
+
+                    // Process the rest in reverse order
+                    for (i in linesInChunk.indices.reversed()) {
+                        if (i == 0) continue // Skip the partial part
+                        val line = linesInChunk[i]
+                        // Ignore empty strings that result from trailing newlines
+                        if (line.isNotEmpty() && result.size < limit) {
+                             result.add(line)
+                        }
+                    }
+                } else {
+                    // We are at the start of the file, all parts are valid
+                    for (i in linesInChunk.indices.reversed()) {
+                        val line = linesInChunk[i]
+                        if (line.isNotEmpty() && result.size < limit) {
+                             result.add(line)
+                        }
+                    }
                 }
-                buffer.addLast(line)
             }
         }
+
     } catch (e: Exception) {
       Log.e(TAG, "Error reading log file: $filename", e)
-      return emptyList()
+    } finally {
+        try { raf?.close() } catch (e: Exception) {}
     }
 
-    // Return reversed (newest first)
-    return buffer.toList().reversed()
+    return result
   }
 
   private fun getLogsDir(context: Context): File {

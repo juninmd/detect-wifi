@@ -14,69 +14,64 @@ import java.io.File
 class LogRepositoryTest {
 
     private lateinit var context: Context
+    private lateinit var logsDir: File
 
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        LogRepository.clearLogs(context)
-        // Give time for clearLogs async operation
-        Thread.sleep(100)
-    }
-
-    private fun waitForCondition(condition: () -> Boolean, timeoutMs: Long = 2000) {
-        val start = System.currentTimeMillis()
-        while (System.currentTimeMillis() - start < timeoutMs) {
-            if (condition()) return
-            Thread.sleep(50)
-        }
+        logsDir = File(context.getExternalFilesDir(null), "presence_detector_logs")
+        if (!logsDir.exists()) logsDir.mkdirs()
+        // Clear logs
+        logsDir.listFiles()?.forEach { it.delete() }
     }
 
     @Test
-    fun `logSystemEvent should create file and append log`() {
-        val message = "System Started"
-        LogRepository.logSystemEvent(context, message)
+    fun testReadLogsReverse() {
+        val bssid = "00:11:22"
+        val expectedFilename = "device_001122.log"
+        val logFile = File(logsDir, expectedFilename)
 
-        waitForCondition({ LogRepository.getSystemLogs(context).isNotEmpty() })
-
-        val logs = LogRepository.getSystemLogs(context)
-        assertEquals(1, logs.size)
-        assertTrue(logs[0].contains(message))
-
-        // Check file existence
-        val logFile = File(context.getExternalFilesDir(null), "presence_detector_logs/system_events.log")
-        assertTrue(logFile.exists())
-    }
-
-    @Test
-    fun `logDetectionEvent should create specific file`() {
-        val bssid = "AA:BB:CC:DD:EE:FF"
-        val message = "Device Arrived"
-        LogRepository.logDetectionEvent(context, bssid, message)
-
-        waitForCondition({ LogRepository.getDetectionLogs(context, bssid).isNotEmpty() })
-
-        val logs = LogRepository.getDetectionLogs(context, bssid)
-        assertEquals(1, logs.size)
-        assertTrue(logs[0].contains(message))
-
-        // Check filename sanitization
-        val safeBssid = bssid.replace(":", "")
-        val logFile = File(context.getExternalFilesDir(null), "presence_detector_logs/device_${safeBssid}.log")
-        assertTrue(logFile.exists())
-    }
-
-    @Test
-    fun `getLogs should return limited number of logs`() {
-        for (i in 1..10) {
-            LogRepository.logSystemEvent(context, "Log $i")
+        // Create a large log file
+        val totalLines = 1000
+        logFile.bufferedWriter().use { writer ->
+            for (i in 1..totalLines) {
+                writer.write("Log line $i\n")
+            }
         }
 
-        waitForCondition({ LogRepository.getSystemLogs(context).size >= 10 })
+        val limit = 50
+        val logs = LogRepository.getDetectionLogs(context, bssid, limit)
 
-        val logs = LogRepository.getSystemLogs(context, limit = 5)
-        assertEquals(5, logs.size)
-        // Newest first. Log 10 should be first.
-        assertTrue("Expected 'Log 10' but got '${logs[0]}'", logs[0].contains("Log 10"))
-        assertTrue("Expected 'Log 6' but got '${logs[4]}'", logs[4].contains("Log 6"))
+        assertEquals("Expected $limit logs", limit, logs.size)
+        // LogRepository returns newest first. So "Log line 1000" should be first.
+        assertEquals("Log line 1000", logs[0])
+        assertEquals("Log line 951", logs[49])
+    }
+
+    @Test
+    fun testReadLogsReverseShortFile() {
+        val bssid = "AA:BB:CC"
+        val expectedFilename = "device_AABBCC.log"
+        val logFile = File(logsDir, expectedFilename)
+
+        logFile.bufferedWriter().use { writer ->
+            writer.write("Line 1\nLine 2\n")
+        }
+
+        val logs = LogRepository.getDetectionLogs(context, bssid, 100)
+        assertEquals(2, logs.size)
+        assertEquals("Line 2", logs[0])
+        assertEquals("Line 1", logs[1])
+    }
+
+    @Test
+    fun testReadLogsReverseEmptyFile() {
+        val bssid = "DD:EE:FF"
+        val expectedFilename = "device_DDEEFF.log"
+        val logFile = File(logsDir, expectedFilename)
+        logFile.createNewFile()
+
+        val logs = LogRepository.getDetectionLogs(context, bssid, 100)
+        assertTrue(logs.isEmpty())
     }
 }

@@ -47,18 +47,32 @@ object DeviceClassifier {
      * patterns and heuristics.
      */
     fun isMobileHotspot(ssid: String): Boolean {
+        // Fast check: Short alphanumeric names often hotspots
+        // Optimization: Check length and structure before allocating lowercased string
+        val isShortName = ssid.length < 15 && !ssid.contains("_") && !ssid.contains("-")
+        if (isShortName && isAlphanumeric(ssid)) {
+            return true
+        }
+
         val lowerSsid = ssid.lowercase()
 
         // Check if contains mobile patterns
-        val containsMobilePattern = lowerSsid.containsAny(Patterns.MOBILE_HOTSPOT_PATTERNS)
+        return lowerSsid.containsAny(Patterns.MOBILE_HOTSPOT_PATTERNS)
+    }
 
-        // Check if SSID is very short (typical for hotspots)
-        val isShortName = ssid.length < 15 && !ssid.contains("_") && !ssid.contains("-")
-
-        return containsMobilePattern || (isShortName && ssid.matches(SHORT_NAME_REGEX))
+    private fun isAlphanumeric(s: String): Boolean {
+        if (s.isEmpty()) return false
+        for (c in s) {
+            if (!((c in 'a'..'z') || (c in 'A'..'Z') || (c in '0'..'9'))) return false
+        }
+        return true
     }
 
     private fun String.containsAny(patterns: List<String>): Boolean {
-        return patterns.any { this.contains(it) }
+        // Optimization: Fail fast is handled by any(), but explicit loop avoids lambda overhead if critical
+        for (pattern in patterns) {
+            if (this.contains(pattern)) return true
+        }
+        return false
     }
 }

@@ -21,21 +21,47 @@ class DeviceInfoPreferences(context: Context) : BasePreferences(context, PREF_NA
     // Key: BSSID, Value: Last Tracked Date (yyyy-MM-dd)
     private val trackedCache = ConcurrentHashMap<String, String>()
 
+    // Cache for nicknames and categories to avoid hitting SharedPreferences repeatedly
+    private val nicknameCache = ConcurrentHashMap<String, String>()
+    private val categoryCache = ConcurrentHashMap<String, String>()
+    private val NULL_MARKER = "##NULL##"
+
     // Cache for all known BSSIDs to avoid reading the large set from disk repeatedly
     @Volatile
     private var allBssidsCache: MutableSet<String>? = null
     private val allBssidsLock = Any()
 
-    fun saveNickname(bssid: String, nickname: String) =
+    fun saveNickname(bssid: String, nickname: String) {
         putString(PREFIX_NICKNAME + bssid, nickname)
+        nicknameCache[bssid] = nickname
+    }
 
-    fun getNickname(bssid: String) = getString(PREFIX_NICKNAME + bssid)
+    fun getNickname(bssid: String): String? {
+        val cached = nicknameCache[bssid]
+        if (cached != null) {
+            return if (cached == NULL_MARKER) null else cached
+        }
+        val stored = getString(PREFIX_NICKNAME + bssid)
+        nicknameCache[bssid] = stored ?: NULL_MARKER
+        return stored
+    }
 
-    fun saveManualCategory(bssid: String, category: DeviceCategory) =
+    fun saveManualCategory(bssid: String, category: DeviceCategory) {
         putString(PREFIX_CATEGORY + bssid, category.name)
+        categoryCache[bssid] = category.name
+    }
 
     fun getManualCategory(bssid: String): DeviceCategory? {
-        val name = getString(PREFIX_CATEGORY + bssid) ?: return null
+        val cached = categoryCache[bssid]
+        val name = if (cached != null) {
+            if (cached == NULL_MARKER) null else cached
+        } else {
+            val stored = getString(PREFIX_CATEGORY + bssid)
+            categoryCache[bssid] = stored ?: NULL_MARKER
+            stored
+        }
+
+        if (name == null) return null
         return try {
             DeviceCategory.valueOf(name)
         } catch (e: Exception) {
