@@ -16,11 +16,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.presencedetector.databinding.ActivityMainBinding
 import com.example.presencedetector.model.WiFiDevice
+import com.example.presencedetector.security.repository.LogRepository
 import com.example.presencedetector.services.AntiTheftService
 import com.example.presencedetector.services.DetectionBackgroundService
 import com.example.presencedetector.services.PresenceDetectionManager
 import com.example.presencedetector.utils.BiometricAuthenticator
-import com.example.presencedetector.security.repository.LogRepository
 import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil
 import java.text.SimpleDateFormat
@@ -79,7 +79,7 @@ class MainActivity : AppCompatActivity() {
           onFail = {
             Toast.makeText(this, R.string.msg_auth_failed, Toast.LENGTH_SHORT).show()
             triggerHiddenCamera("App Unlock Failed")
-          }
+          },
         )
     } else {
       binding.lockOverlay.visibility = View.GONE
@@ -125,7 +125,7 @@ class MainActivity : AppCompatActivity() {
         onImageCaptured = { bytes ->
           com.example.presencedetector.utils.CameraHelper.saveAndSendImage(this@MainActivity, bytes)
           runOnUiThread { addLog(getString(R.string.log_snapshot_captured)) }
-        }
+        },
       )
     } else {
       textureView.surfaceTextureListener =
@@ -133,21 +133,24 @@ class MainActivity : AppCompatActivity() {
           override fun onSurfaceTextureAvailable(
             surface: android.graphics.SurfaceTexture,
             width: Int,
-            height: Int
+            height: Int,
           ) {
             cameraHelper.captureSelfie(
               surfaceTexture = surface,
               onImageCaptured = { bytes ->
-                com.example.presencedetector.utils.CameraHelper.saveAndSendImage(this@MainActivity, bytes)
+                com.example.presencedetector.utils.CameraHelper.saveAndSendImage(
+                  this@MainActivity,
+                  bytes,
+                )
                 runOnUiThread { addLog(getString(R.string.log_snapshot_captured)) }
-              }
+              },
             )
           }
 
           override fun onSurfaceTextureSizeChanged(
             surface: android.graphics.SurfaceTexture,
             width: Int,
-            height: Int
+            height: Int,
           ) {}
 
           override fun onSurfaceTextureDestroyed(
@@ -212,14 +215,16 @@ class MainActivity : AppCompatActivity() {
     // AntiTheft Card: Click to Toggle, Long Click to Configure
     binding.btnAntiTheft.setOnClickListener { toggleAntiTheft() }
     binding.btnAntiTheft.setOnLongClickListener {
-        com.example.presencedetector.ui.DeviceSecurityBottomSheet()
-            .show(supportFragmentManager, com.example.presencedetector.ui.DeviceSecurityBottomSheet.TAG)
-        true
+      com.example.presencedetector.ui
+        .DeviceSecurityBottomSheet()
+        .show(supportFragmentManager, com.example.presencedetector.ui.DeviceSecurityBottomSheet.TAG)
+      true
     }
     // Also allow clicking the config text
     binding.tvDeviceSecurityConfig.setOnClickListener {
-        com.example.presencedetector.ui.DeviceSecurityBottomSheet()
-            .show(supportFragmentManager, com.example.presencedetector.ui.DeviceSecurityBottomSheet.TAG)
+      com.example.presencedetector.ui
+        .DeviceSecurityBottomSheet()
+        .show(supportFragmentManager, com.example.presencedetector.ui.DeviceSecurityBottomSheet.TAG)
     }
 
     // Long click on icon to test alarm
@@ -243,8 +248,9 @@ class MainActivity : AppCompatActivity() {
 
     // Home Security Card: Click to Configure
     binding.cardHomeSecurity.setOnClickListener {
-        com.example.presencedetector.ui.HomeSecurityBottomSheet()
-            .show(supportFragmentManager, com.example.presencedetector.ui.HomeSecurityBottomSheet.TAG)
+      com.example.presencedetector.ui
+        .HomeSecurityBottomSheet()
+        .show(supportFragmentManager, com.example.presencedetector.ui.HomeSecurityBottomSheet.TAG)
     }
 
     // Switch listener
@@ -638,7 +644,7 @@ class MainActivity : AppCompatActivity() {
         appOps.checkOpNoThrow(
           android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
           android.os.Process.myUid(),
-          packageName
+          packageName,
         )
       if (mode != android.app.AppOpsManager.MODE_ALLOWED) {
         com.google.android.material.dialog
@@ -680,7 +686,7 @@ class MainActivity : AppCompatActivity() {
             }
           startService(stopIntent)
         },
-        5000
+        5000,
       )
   }
 
@@ -698,7 +704,7 @@ class MainActivity : AppCompatActivity() {
   override fun onRequestPermissionsResult(
     requestCode: Int,
     permissions: Array<out String>,
-    grantResults: IntArray
+    grantResults: IntArray,
   ) {
     super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     if (requestCode == PERMISSION_REQUEST_CODE) {
@@ -738,7 +744,7 @@ class MainActivity : AppCompatActivity() {
       ActivityCompat.requestPermissions(
         this,
         arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
-        101
+        101,
       )
     } else {
       startDetection()

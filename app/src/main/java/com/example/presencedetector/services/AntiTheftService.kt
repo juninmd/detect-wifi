@@ -28,10 +28,10 @@ import com.example.presencedetector.receivers.NotificationActionReceiver
 import com.example.presencedetector.security.repository.LogRepository
 import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil
-import kotlin.math.sqrt
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.sqrt
 
 class AntiTheftService :
   Service(), SensorEventListener, SharedPreferences.OnSharedPreferenceChangeListener {
@@ -183,7 +183,7 @@ class AntiTheftService :
 
     Log.d(
       TAG,
-      "Anti-Theft Armed. Motion: ON, Pocket: $isPocketModeArmed, Charger: $isChargerModeArmed"
+      "Anti-Theft Armed. Motion: ON, Pocket: $isPocketModeArmed, Charger: $isChargerModeArmed",
     )
 
     preferences.setAntiTheftArmed(true) // Persist state
@@ -258,7 +258,7 @@ class AntiTheftService :
         this,
         1,
         panicIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
 
     // Dynamic Text
@@ -277,7 +277,7 @@ class AntiTheftService :
         .addAction(
           R.drawable.ic_status_inactive,
           getString(R.string.action_disarm),
-          pendingDisarmIntent
+          pendingDisarmIntent,
         )
         .addAction(android.R.drawable.ic_lock_power_off, "PÂNICO", pendingPanicIntent)
 
@@ -426,7 +426,7 @@ class AntiTheftService :
     if (
       androidx.core.content.ContextCompat.checkSelfPermission(
         this,
-        android.Manifest.permission.RECORD_AUDIO
+        android.Manifest.permission.RECORD_AUDIO,
       ) != android.content.pm.PackageManager.PERMISSION_GRANTED
     ) {
       Log.w(TAG, "Audio recording permission missing.")
@@ -483,7 +483,7 @@ class AntiTheftService :
     if (
       androidx.core.content.ContextCompat.checkSelfPermission(
         this,
-        android.Manifest.permission.ACCESS_FINE_LOCATION
+        android.Manifest.permission.ACCESS_FINE_LOCATION,
       ) == android.content.pm.PackageManager.PERMISSION_GRANTED
     ) {
       try {
@@ -518,7 +518,7 @@ class AntiTheftService :
         this,
         ALARM_NOTIFICATION_ID,
         disarmIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
 
     // Action 2: Snooze
@@ -531,7 +531,7 @@ class AntiTheftService :
         this,
         ALARM_NOTIFICATION_ID + 2,
         snoozeIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
 
     // Action 3: Call Emergency (Dialer)
@@ -544,7 +544,7 @@ class AntiTheftService :
         this,
         ALARM_NOTIFICATION_ID + 1,
         emergencyIntent,
-        PendingIntent.FLAG_IMMUTABLE
+        PendingIntent.FLAG_IMMUTABLE,
       )
 
     // Action 4: Mark as Safe
@@ -558,7 +558,7 @@ class AntiTheftService :
         this,
         ALARM_NOTIFICATION_ID + 99,
         safeIntent,
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
       )
 
     // Select icon based on reason
@@ -581,13 +581,13 @@ class AntiTheftService :
         .addAction(
           R.drawable.ic_status_inactive,
           getString(R.string.action_unlock_disarm),
-          pendingDisarmIntent
+          pendingDisarmIntent,
         )
         .addAction(android.R.drawable.ic_media_pause, "Soneca (30s)", pendingSnoozeIntent)
         .addAction(
           android.R.drawable.ic_menu_call,
           getString(R.string.action_emergency_call),
-          pendingEmergencyIntent
+          pendingEmergencyIntent,
         )
         .addAction(android.R.drawable.ic_menu_save, "Seguro", pendingSafeIntent)
         .setDeleteIntent(
@@ -668,14 +668,14 @@ class AntiTheftService :
           applicationContext,
           1,
           restartServiceIntent,
-          PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+          PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE,
         )
       val alarmService =
         applicationContext.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
       alarmService.set(
         android.app.AlarmManager.ELAPSED_REALTIME,
         android.os.SystemClock.elapsedRealtime() + 1000,
-        restartServicePendingIntent
+        restartServicePendingIntent,
       )
     }
   }
@@ -685,7 +685,9 @@ class AntiTheftService :
       val sensitivity = preferences.getAntiTheftSensitivity()
       Log.d(TAG, "Sensitivity updated to: $sensitivity")
       motionDetector = MotionDetector(sensitivity)
-    } else if (key == com.example.presencedetector.utils.PreferencesUtil.Companion.Keys.POCKET_MODE_ENABLED) {
+    } else if (
+      key == com.example.presencedetector.utils.PreferencesUtil.Companion.Keys.POCKET_MODE_ENABLED
+    ) {
       isPocketModeArmed = preferences.isPocketModeEnabled()
       Log.d(TAG, "Pocket Mode updated to: $isPocketModeArmed")
       // Start/Stop listening to Proximity sensor dynamically
@@ -694,13 +696,14 @@ class AntiTheftService :
           sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
         }
       } else {
-        // Only unregister if we are sure we don't need it (simplified: unregister specific listener for this sensor)
-        proximitySensor?.let {
-          sensorManager.unregisterListener(this, it)
-        }
+        // Only unregister if we are sure we don't need it (simplified: unregister specific listener
+        // for this sensor)
+        proximitySensor?.let { sensorManager.unregisterListener(this, it) }
       }
       updateForegroundNotification()
-    } else if (key == com.example.presencedetector.utils.PreferencesUtil.Companion.Keys.CHARGER_MODE_ENABLED) {
+    } else if (
+      key == com.example.presencedetector.utils.PreferencesUtil.Companion.Keys.CHARGER_MODE_ENABLED
+    ) {
       isChargerModeArmed = preferences.isChargerModeEnabled()
       Log.d(TAG, "Charger Mode updated to: $isChargerModeArmed")
       updateForegroundNotification()
@@ -731,7 +734,7 @@ class MotionDetector(private val threshold: Float) {
     z: Float,
     lastX: Float,
     lastY: Float,
-    lastZ: Float
+    lastZ: Float,
   ): Boolean {
     val deltaX = kotlin.math.abs(x - lastX)
     val deltaY = kotlin.math.abs(y - lastY)

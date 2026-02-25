@@ -31,7 +31,7 @@ class CameraHelper(private val context: Context) {
     surfaceTexture: SurfaceTexture? = null,
     onImageCaptured: (ByteArray) -> Unit,
     onError: ((Exception) -> Unit)? = null,
-    onComplete: (() -> Unit)? = null
+    onComplete: (() -> Unit)? = null,
   ) {
     if (
       ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) !=
@@ -50,7 +50,7 @@ class CameraHelper(private val context: Context) {
         mainHandler = mainHandler,
         onImageCaptured = onImageCaptured,
         onError = onError,
-        onComplete = onComplete
+        onComplete = onComplete,
       )
     session.start()
   }
@@ -58,15 +58,25 @@ class CameraHelper(private val context: Context) {
   companion object {
     fun saveAndSendImage(context: Context, bytes: ByteArray) {
       Thread {
-        try {
-          val file = saveImageToFile(context, bytes)
-          logSystemEvent(context, file.name)
-          sendToTelegram(context, file)
-          showNotification(context, bytes)
-        } catch (e: Exception) {
-          e.printStackTrace()
+          try {
+            val filename =
+              "EVENT_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg"
+            val file =
+              File(context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES), filename)
+            FileOutputStream(file).use { it.write(bytes) }
+
+            LogRepository.logSystemEvent(context, "📸 Photo Captured: $filename")
+
+            telegramService.sendPhoto(file, "📸 Security Event Captured")
+
+            // Show Notification
+            val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            NotificationUtil.sendIntruderAlert(context, bitmap)
+          } catch (e: Exception) {
+            e.printStackTrace()
+          }
         }
-      }.start()
+        .start()
     }
 
     private fun saveImageToFile(context: Context, bytes: ByteArray): File {
@@ -99,7 +109,7 @@ class CameraHelper(private val context: Context) {
     private val mainHandler: Handler,
     private val onImageCaptured: (ByteArray) -> Unit,
     private val onError: ((Exception) -> Unit)?,
-    private val onComplete: (() -> Unit)?
+    private val onComplete: (() -> Unit)?,
   ) {
     private var activeCamera: CameraDevice? = null
     private var activeSession: CameraCaptureSession? = null
@@ -194,7 +204,7 @@ class CameraHelper(private val context: Context) {
             this@SelfieCaptureSession.onError?.invoke(Exception("Camera error: $error"))
           }
         },
-        mainHandler
+        mainHandler,
       )
     }
 
@@ -220,7 +230,7 @@ class CameraHelper(private val context: Context) {
               onError?.invoke(Exception("Capture session configuration failed"))
             }
           },
-          null
+          null,
         )
       } catch (e: Exception) {
         cleanup()
@@ -231,7 +241,7 @@ class CameraHelper(private val context: Context) {
     private fun triggerCapture(
       session: CameraCaptureSession,
       previewSurface: Surface,
-      captureSurface: Surface
+      captureSurface: Surface,
     ) {
       try {
         // Warm up preview
@@ -261,7 +271,7 @@ class CameraHelper(private val context: Context) {
               cleanup()
             }
           },
-          500
+          500,
         )
       } catch (e: Exception) {
         e.printStackTrace()

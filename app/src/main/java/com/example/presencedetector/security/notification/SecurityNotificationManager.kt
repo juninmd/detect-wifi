@@ -50,7 +50,7 @@ class SecurityNotificationManager(private val context: Context) {
         context,
         channel.id, // Request code único por canal
         intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
 
     val builder =
@@ -87,7 +87,7 @@ class SecurityNotificationManager(private val context: Context) {
       // Permissão POST_NOTIFICATIONS não concedida em Android 13+
       android.util.Log.e(
         "SecurityNotificationManager",
-        "Sem permissão para notificações: ${e.message}"
+        "Sem permissão para notificações: ${e.message}",
       )
     }
   }

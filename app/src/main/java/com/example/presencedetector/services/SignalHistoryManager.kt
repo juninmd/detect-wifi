@@ -29,7 +29,7 @@ object SignalHistoryManager {
     // ArrayDeque is not a List, but toList() creates a copy which is safe for external consumption
     val list = history[bssid] ?: return emptyList()
     synchronized(list) {
-        return list.toList()
+      return list.toList()
     }
   }
 

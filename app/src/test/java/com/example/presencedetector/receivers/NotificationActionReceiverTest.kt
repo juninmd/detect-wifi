@@ -14,7 +14,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
-import org.robolectric.shadows.ShadowApplication
 import org.robolectric.shadows.ShadowNotificationManager
 
 @RunWith(RobolectricTestRunner::class)
@@ -44,7 +43,9 @@ class NotificationActionReceiverTest {
     receiver.onReceive(context, intent)
 
     // Verify Service Started with STOP action
-    val nextStartedService = Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>()).nextStartedService
+    val nextStartedService =
+      Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
+        .nextStartedService
     assertNotNull("Service should be started", nextStartedService)
     assertEquals(AntiTheftService::class.java.name, nextStartedService.component?.className)
     assertEquals(AntiTheftService.ACTION_STOP, nextStartedService.action)
@@ -69,7 +70,9 @@ class NotificationActionReceiverTest {
     assertEquals(1, prefs.getDetectionHistoryCount(bssid))
 
     // Verify Service Started with STOP action
-    val nextStartedService = Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>()).nextStartedService
+    val nextStartedService =
+      Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
+        .nextStartedService
     assertNotNull("Service should be started to stop alarm", nextStartedService)
     assertEquals(AntiTheftService::class.java.name, nextStartedService.component?.className)
     assertEquals(AntiTheftService.ACTION_STOP, nextStartedService.action)
@@ -84,7 +87,9 @@ class NotificationActionReceiverTest {
 
     receiver.onReceive(context, intent)
 
-    val nextStartedService = Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>()).nextStartedService
+    val nextStartedService =
+      Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
+        .nextStartedService
     assertNotNull("Service should be started", nextStartedService)
     assertEquals(AntiTheftService::class.java.name, nextStartedService.component?.className)
     assertEquals(AntiTheftService.ACTION_START, nextStartedService.action)
@@ -96,7 +101,9 @@ class NotificationActionReceiverTest {
 
     receiver.onReceive(context, intent)
 
-    val nextStartedService = Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>()).nextStartedService
+    val nextStartedService =
+      Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
+        .nextStartedService
     assertNotNull("Service should be started", nextStartedService)
     assertEquals(AntiTheftService::class.java.name, nextStartedService.component?.className)
     assertEquals(AntiTheftService.ACTION_SNOOZE, nextStartedService.action)
@@ -128,7 +135,9 @@ class NotificationActionReceiverTest {
     receiver.onReceive(context, intent)
 
     // Verify Service Started with STOP action (fail-safe)
-    val nextStartedService = Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>()).nextStartedService
+    val nextStartedService =
+      Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
+        .nextStartedService
     assertNotNull("Service should be started to stop alarm", nextStartedService)
     assertEquals(AntiTheftService::class.java.name, nextStartedService.component?.className)
     assertEquals(AntiTheftService.ACTION_STOP, nextStartedService.action)

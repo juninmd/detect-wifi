@@ -19,44 +19,45 @@ object DeviceClassifier {
         )
     }
 
-    // Pre-compiled regex for hotspot detection
-    private val SHORT_NAME_REGEX = Regex("[A-Za-z0-9]+")
+  // Pre-compiled regex for hotspot detection
+  private val SHORT_NAME_REGEX = Regex("[A-Za-z0-9]+")
 
-    fun classify(ssid: String, bssid: String, isHotspot: Boolean = false): DeviceCategory {
-        if (isHotspot) {
-            return DeviceCategory.SMARTPHONE
-        }
-
-        val name = ssid.lowercase()
-
-        return when {
-            name.containsAny(Patterns.SMARTPHONE_HIGH_CONFIDENCE) -> DeviceCategory.SMARTPHONE
-            name.containsAny(Patterns.E_READERS) -> DeviceCategory.KINDLE
-            name.containsAny(Patterns.SMART_HOME_ASSISTANTS) -> DeviceCategory.ALEXA
-            name.containsAny(Patterns.SMART_LIGHTS) -> DeviceCategory.SMART_LIGHT
-            name.containsAny(Patterns.SMART_TVS) -> DeviceCategory.SMART_TV
-            // Check hotspot patterns. If it matches, classify as Smartphone (assuming hotspots are mostly phones)
-            name.containsAny(Patterns.MOBILE_HOTSPOT_PATTERNS) -> DeviceCategory.SMARTPHONE
-            name.containsAny(Patterns.ROUTERS) -> DeviceCategory.ROUTER
-            else -> DeviceCategory.UNKNOWN
-        }
+  fun classify(ssid: String, bssid: String, isHotspot: Boolean = false): DeviceCategory {
+    if (isHotspot) {
+      return DeviceCategory.SMARTPHONE
     }
 
-    /**
-     * Detects if SSID looks like a mobile hotspot. Encapsulates logic for hotspot detection including
-     * patterns and heuristics.
-     */
-    fun isMobileHotspot(ssid: String): Boolean {
-        val lowerSsid = ssid.lowercase()
+    val name = ssid.lowercase()
 
-        // Check if contains mobile patterns
-        val containsMobilePattern = lowerSsid.containsAny(Patterns.MOBILE_HOTSPOT_PATTERNS)
-
-        // Check if SSID is very short (typical for hotspots)
-        val isShortName = ssid.length < 15 && !ssid.contains("_") && !ssid.contains("-")
-
-        return containsMobilePattern || (isShortName && ssid.matches(SHORT_NAME_REGEX))
+    return when {
+      name.containsAny(Patterns.SMARTPHONE_HIGH_CONFIDENCE) -> DeviceCategory.SMARTPHONE
+      name.containsAny(Patterns.E_READERS) -> DeviceCategory.KINDLE
+      name.containsAny(Patterns.SMART_HOME_ASSISTANTS) -> DeviceCategory.ALEXA
+      name.containsAny(Patterns.SMART_LIGHTS) -> DeviceCategory.SMART_LIGHT
+      name.containsAny(Patterns.SMART_TVS) -> DeviceCategory.SMART_TV
+      // Check hotspot patterns. If it matches, classify as Smartphone (assuming hotspots are mostly
+      // phones)
+      name.containsAny(Patterns.MOBILE_HOTSPOT_PATTERNS) -> DeviceCategory.SMARTPHONE
+      name.containsAny(Patterns.ROUTERS) -> DeviceCategory.ROUTER
+      else -> DeviceCategory.UNKNOWN
     }
+  }
+
+  /**
+   * Detects if SSID looks like a mobile hotspot. Encapsulates logic for hotspot detection including
+   * patterns and heuristics.
+   */
+  fun isMobileHotspot(ssid: String): Boolean {
+    val lowerSsid = ssid.lowercase()
+
+    // Check if contains mobile patterns
+    val containsMobilePattern = lowerSsid.containsAny(Patterns.MOBILE_HOTSPOT_PATTERNS)
+
+    // Check if SSID is very short (typical for hotspots)
+    val isShortName = ssid.length < 15 && !ssid.contains("_") && !ssid.contains("-")
+
+    return containsMobilePattern || (isShortName && ssid.matches(SHORT_NAME_REGEX))
+  }
 
     private fun String.containsAny(patterns: Collection<String>): Boolean {
         return patterns.any { this.contains(it) }

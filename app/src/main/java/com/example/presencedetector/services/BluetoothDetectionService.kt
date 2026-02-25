@@ -48,11 +48,11 @@ open class BluetoothDetectionService(private val context: Context) {
 
   // Cache scan settings
   private val scanSettings: ScanSettings? by lazy {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-          ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
-      } else {
-          null
-      }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+    } else {
+      null
+    }
   }
 
   fun interface PresenceListener {
@@ -83,12 +83,13 @@ open class BluetoothDetectionService(private val context: Context) {
     Log.i(TAG, "Starting Bluetooth scanning")
 
     // Launch processing loop
-    processingJob = scope.launch {
+    processingJob =
+      scope.launch {
         for (result in scanResultsChannel) {
-            if (!isActive) break
-            processScanResult(result)
+          if (!isActive) break
+          processScanResult(result)
         }
-    }
+      }
 
     scanJob =
       scope.launch {
@@ -148,7 +149,7 @@ open class BluetoothDetectionService(private val context: Context) {
     lastUpdateMap.clear()
 
     // Drain channel to prevent processing old results on restart
-    while(scanResultsChannel.tryReceive().isSuccess) {}
+    while (scanResultsChannel.tryReceive().isSuccess) {}
 
     Log.i(TAG, "Bluetooth scanning stopped")
   }
@@ -163,7 +164,7 @@ open class BluetoothDetectionService(private val context: Context) {
         if (hasBluetoothPermissions()) {
           // Use cached scan settings
           scanSettings?.let { settings ->
-             bluetoothAdapter.bluetoothLeScanner?.startScan(null, settings, scanCallback)
+            bluetoothAdapter.bluetoothLeScanner?.startScan(null, settings, scanCallback)
           }
 
           // Stop scan after SCAN_DURATION
@@ -190,8 +191,8 @@ open class BluetoothDetectionService(private val context: Context) {
       override fun onScanResult(callbackType: Int, result: ScanResult?) {
         super.onScanResult(callbackType, result)
         result?.let {
-            // Offload processing to channel
-            scanResultsChannel.trySend(it)
+          // Offload processing to channel
+          scanResultsChannel.trySend(it)
         }
       }
 
@@ -239,7 +240,7 @@ open class BluetoothDetectionService(private val context: Context) {
         nickname = null, // Will be set by manager/prefs
         lastSeen = System.currentTimeMillis(),
         manualCategory = DeviceCategory.UNKNOWN, // Manager will handle classification
-        source = DeviceSource.BLUETOOTH
+        source = DeviceSource.BLUETOOTH,
       )
 
     detectedDevices[address] = wifiDevice

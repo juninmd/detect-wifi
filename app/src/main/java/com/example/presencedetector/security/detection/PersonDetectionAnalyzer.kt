@@ -21,7 +21,7 @@ enum class DetectionState {
   GRACE_PERIOD,
 
   /** Alerta foi disparado, em cooldown. */
-  COOLDOWN
+  COOLDOWN,
 }
 
 /**
@@ -66,7 +66,7 @@ class PersonDetectionAnalyzer(
   private val detectionThresholdMs: Long = 5000L,
   private val gracePeriodMs: Long = 1000L,
   private val cooldownMs: Long = 60000L,
-  private val onPersonConfirmed: (CameraChannel, Bitmap?) -> Unit
+  private val onPersonConfirmed: (CameraChannel, Bitmap?) -> Unit,
 ) {
   companion object {
     private const val TAG = "PersonDetectionAnalyzer"
@@ -203,7 +203,7 @@ class PersonDetectionAnalyzer(
           } else {
             Log.d(
               TAG,
-              "[${channel.name}] Detectando... ${elapsedTime}ms / ${detectionThresholdMs}ms"
+              "[${channel.name}] Detectando... ${elapsedTime}ms / ${detectionThresholdMs}ms",
             )
           }
         } else {

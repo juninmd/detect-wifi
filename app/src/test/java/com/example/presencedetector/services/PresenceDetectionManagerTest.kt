@@ -55,7 +55,7 @@ class PresenceDetectionManagerTest {
         true,
         mockWifiService,
         mockBluetoothService,
-        mockTelegramService
+        mockTelegramService,
       )
   }
 
@@ -85,7 +85,7 @@ class PresenceDetectionManagerTest {
         bssid = "00:11:22:33:44:55",
         level = -50,
         frequency = 2400,
-        source = DeviceSource.WIFI
+        source = DeviceSource.WIFI,
       )
 
     preferences.setNotifyWifiArrival(true)
@@ -119,7 +119,7 @@ class PresenceDetectionManagerTest {
         bssid = "AA:BB:CC:DD:EE:FF",
         level = -50,
         frequency = 0,
-        source = DeviceSource.BLUETOOTH
+        source = DeviceSource.BLUETOOTH,
       )
     listener.onPresenceDetected(true, listOf(device), "Found BT")
 
@@ -162,7 +162,7 @@ class PresenceDetectionManagerTest {
         bssid = bssid,
         level = -50,
         frequency = 2400,
-        source = DeviceSource.WIFI
+        source = DeviceSource.WIFI,
       )
 
     val captor = argumentCaptor<WiFiDetectionService.PresenceListener>()
@@ -187,7 +187,7 @@ class PresenceDetectionManagerTest {
         bssid = "11:22:33:44:55:66",
         level = -50,
         frequency = 2400,
-        source = DeviceSource.WIFI
+        source = DeviceSource.WIFI,
       )
     val captor = argumentCaptor<WiFiDetectionService.PresenceListener>()
     verify(mockWifiService).setPresenceListener(captor.capture())

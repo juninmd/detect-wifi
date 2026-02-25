@@ -28,7 +28,7 @@ class PresenceDetectionManager(
   private val areNotificationsEnabled: Boolean = true,
   wifiServiceParam: WiFiDetectionService? = null,
   bluetoothServiceParam: BluetoothDetectionService? = null,
-  telegramServiceParam: TelegramService? = null
+  telegramServiceParam: TelegramService? = null,
 ) {
   companion object {
     private const val TAG = "PresenceDetection"
@@ -78,10 +78,12 @@ class PresenceDetectionManager(
   private val lastNotificationTimeMap = ConcurrentHashMap<String, Long>() // Debounce notifications
   private val hasNotifiedArrivalMap =
     ConcurrentHashMap<String, Boolean>() // Track if already notified arrival
-  private val lastDepartureTimeMap = ConcurrentHashMap<String, Long>() // Track when device last left
+  private val lastDepartureTimeMap =
+    ConcurrentHashMap<String, Long>() // Track when device last left
   private val deviceTypes =
     ConcurrentHashMap<
-      String, com.example.presencedetector.model.DeviceSource
+      String,
+      com.example.presencedetector.model.DeviceSource,
     >() // Track device source (WiFi/Bluetooth)
 
   @Volatile private var lastTimeSomeoneWasPresent = System.currentTimeMillis()
@@ -93,7 +95,7 @@ class PresenceDetectionManager(
       peoplePresent: Boolean,
       method: String,
       devices: List<WiFiDevice>,
-      details: String
+      details: String,
     )
   }
 
@@ -310,7 +312,7 @@ class PresenceDetectionManager(
         context,
         0,
         stopIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
 
     val markSafeIntent =
@@ -324,7 +326,7 @@ class PresenceDetectionManager(
         context,
         1,
         markSafeIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
 
     // Use Critical Alert (High Priority Channel)
@@ -338,14 +340,14 @@ class PresenceDetectionManager(
         androidx.core.app.NotificationCompat.Action(
           R.drawable.ic_status_inactive,
           context.getString(R.string.action_stop_alarm),
-          pendingStopIntent
+          pendingStopIntent,
         ),
         androidx.core.app.NotificationCompat.Action(
           android.R.drawable.ic_menu_save,
           context.getString(R.string.action_mark_safe),
-          pendingMarkSafeIntent
-        )
-      )
+          pendingMarkSafeIntent,
+        ),
+      ),
     )
     telegramService.sendMessage(msg)
     if (preferences.isSecuritySoundEnabled() && preferences.isCurrentTimeInSecuritySchedule()) {

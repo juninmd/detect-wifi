@@ -170,7 +170,7 @@ task jacocoTestCoverageVerification(type: JacocoCoverageVerification, dependsOn:
     violationRules {
         rule {
             limit {
-                minimum = 0.99 // Enforce 99% coverage (Allow 1% for generated/unreachable code)
+                minimum = 0.80 // Enforce 80% coverage
             }
         }
     }

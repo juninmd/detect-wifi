@@ -90,7 +90,7 @@ class RadarActivity : AppCompatActivity() {
               bssid = bssid,
               level = level,
               frequency = 2400,
-              nickname = savedNickname
+              nickname = savedNickname,
             )
           )
         }
@@ -106,7 +106,7 @@ class RadarActivity : AppCompatActivity() {
             bssid = wifeBssid,
             level = wifeLevel,
             frequency = 5000,
-            nickname = wifeNickname
+            nickname = wifeNickname,
           )
         )
 

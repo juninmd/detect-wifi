@@ -6,6 +6,8 @@ import android.net.wifi.ScanResult
 import android.net.wifi.WifiManager
 import androidx.test.core.app.ApplicationProvider
 import com.example.presencedetector.model.WiFiDevice
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -15,8 +17,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowWifiManager
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
@@ -38,7 +38,8 @@ class WiFiDetectionServiceTest {
   @Test
   fun `performScan handles permissions correctly`() {
     // No permissions by default
-    val shadowApp = Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
+    val shadowApp =
+      Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
     shadowApp.denyPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
 
     val latch = CountDownLatch(1)
@@ -60,24 +61,27 @@ class WiFiDetectionServiceTest {
 
   @Test
   fun `performScan parses scan results and detects hotspots`() {
-    val shadowApp = Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
+    val shadowApp =
+      Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
     shadowApp.grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
 
     // Mock ScanResult
-    val result1 = ScanResult().apply {
+    val result1 =
+      ScanResult().apply {
         SSID = "MyWiFi"
         BSSID = "00:11:22:33:44:55"
         level = -50
         frequency = 2400
         capabilities = "[WPA2]"
-    }
+      }
 
-    val result2 = ScanResult().apply {
+    val result2 =
+      ScanResult().apply {
         SSID = "iPhone 13" // Hotspot pattern
         BSSID = "AA:BB:CC:DD:EE:FF"
         level = -60
         frequency = 5000
-    }
+      }
 
     shadowWifiManager.setScanResults(listOf(result1, result2))
 

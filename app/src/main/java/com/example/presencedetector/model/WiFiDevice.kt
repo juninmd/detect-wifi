@@ -15,7 +15,7 @@ data class WiFiDevice(
   // New Advanced Fields
   val capabilities: String = "",
   val channelWidth: Int = 0, // MHz
-  val standard: Int = 0 // ScanResult.WIFI_STANDARD_... (API 30+)
+  val standard: Int = 0, // ScanResult.WIFI_STANDARD_... (API 30+)
 ) {
   // Compute classification once per device instance to improve performance
   private val classifiedCategory: DeviceCategory by lazy {
@@ -47,5 +47,5 @@ data class WiFiDevice(
 
 enum class DeviceSource {
   WIFI,
-  BLUETOOTH
+  BLUETOOTH,
 }

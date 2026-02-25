@@ -12,7 +12,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
-import org.robolectric.shadows.ShadowApplication
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
@@ -29,7 +28,8 @@ class BluetoothDetectionServiceTest {
 
   @Test
   fun `startScanning checks permissions`() {
-    Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>()).denyPermissions(Manifest.permission.BLUETOOTH_SCAN)
+    Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
+      .denyPermissions(Manifest.permission.BLUETOOTH_SCAN)
 
     service.startScanning()
     assertFalse(service.isScanning())
@@ -41,7 +41,7 @@ class BluetoothDetectionServiceTest {
       .grantPermissions(
         Manifest.permission.BLUETOOTH_SCAN,
         Manifest.permission.ACCESS_FINE_LOCATION,
-        Manifest.permission.BLUETOOTH_CONNECT
+        Manifest.permission.BLUETOOTH_CONNECT,
       )
     // Ensure adapter is enabled
     val adapter = BluetoothAdapter.getDefaultAdapter()
@@ -57,7 +57,8 @@ class BluetoothDetectionServiceTest {
 
   @Test
   fun `scan logic processes results`() {
-    Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>()).grantPermissions(Manifest.permission.BLUETOOTH_SCAN)
+    Shadows.shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>())
+      .grantPermissions(Manifest.permission.BLUETOOTH_SCAN)
     val adapter = BluetoothAdapter.getDefaultAdapter()
     adapter.enable()
 
@@ -72,7 +73,7 @@ class BluetoothDetectionServiceTest {
       .grantPermissions(
         Manifest.permission.BLUETOOTH_SCAN,
         Manifest.permission.ACCESS_FINE_LOCATION,
-        Manifest.permission.BLUETOOTH_CONNECT
+        Manifest.permission.BLUETOOTH_CONNECT,
       )
     val adapter = BluetoothAdapter.getDefaultAdapter()
     adapter.enable()
@@ -114,7 +115,7 @@ class BluetoothDetectionServiceTest {
     // Call onScanResult
     scanCallback.onScanResult(
       android.bluetooth.le.ScanSettings.CALLBACK_TYPE_ALL_MATCHES,
-      scanResult
+      scanResult,
     )
 
     // Allow background thread to process the channel
@@ -140,9 +141,9 @@ class BluetoothDetectionServiceTest {
     // If still failing due to timing, we can loop
     var retries = 5
     while (devicesFound.isEmpty() && retries > 0) {
-        Thread.sleep(100)
-        notifyMethod.invoke(service)
-        retries--
+      Thread.sleep(100)
+      notifyMethod.invoke(service)
+      retries--
     }
 
     assertTrue("Should find 1 device", devicesFound.size == 1)
