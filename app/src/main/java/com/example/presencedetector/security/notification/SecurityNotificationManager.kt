@@ -1,17 +1,15 @@
 package com.example.presencedetector.security.notification
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.presencedetector.R
 import com.example.presencedetector.security.model.CameraChannel
 import com.example.presencedetector.security.ui.CameraStreamActivity
+import com.example.presencedetector.utils.NotificationUtil
 
 /**
  * Gerencia notificações de alertas de segurança.
@@ -24,33 +22,12 @@ import com.example.presencedetector.security.ui.CameraStreamActivity
 class SecurityNotificationManager(private val context: Context) {
 
   companion object {
-    private const val CHANNEL_ID = "security_alerts"
-    private const val CHANNEL_NAME = "Alertas de Segurança"
-    private const val CHANNEL_DESCRIPTION = "Notificações quando uma pessoa é detectada nas câmeras"
-
     // ID base para notificações (somamos o ID do canal para ter IDs únicos)
     private const val NOTIFICATION_ID_BASE = 10000
   }
 
   init {
-    createNotificationChannel()
-  }
-
-  /** Cria o canal de notificação (obrigatório para Android 8.0+). */
-  private fun createNotificationChannel() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      val importance = NotificationManager.IMPORTANCE_HIGH
-      val channel =
-        NotificationChannel(CHANNEL_ID, CHANNEL_NAME, importance).apply {
-          description = CHANNEL_DESCRIPTION
-          enableVibration(true)
-          enableLights(true)
-        }
-
-      val notificationManager =
-        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-      notificationManager.createNotificationChannel(channel)
-    }
+    NotificationUtil.createNotificationChannels(context)
   }
 
   /**
@@ -77,7 +54,7 @@ class SecurityNotificationManager(private val context: Context) {
       )
 
     val builder =
-      NotificationCompat.Builder(context, CHANNEL_ID)
+      NotificationCompat.Builder(context, NotificationUtil.SECURITY_ALERTS_CHANNEL_ID)
         .setSmallIcon(R.drawable.ic_launcher_foreground) // TODO: Criar ícone próprio
         .setContentTitle("🚨 Movimento detectado")
         .setContentText(channel.name)

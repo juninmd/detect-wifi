@@ -37,18 +37,9 @@ open class TelegramService(
   private val prefs: PreferencesUtil by lazy { preferences ?: PreferencesUtil(context) }
 
   open fun sendMessage(message: String) {
-    if (!prefs.isTelegramEnabled()) return
+    executeTelegramAction("Message sent successfully", "Failed to send message") {
+        val (token, chatId) = getCredentials() ?: return@executeTelegramAction null
 
-    val token = prefs.getTelegramToken()
-    val chatId = prefs.getTelegramChatId()
-
-    if (token.isNullOrEmpty() || chatId.isNullOrEmpty()) {
-      Log.w(TAG, "Telegram credentials missing")
-      return
-    }
-
-    CoroutineScope(ioDispatcher).launch {
-      try {
         val url = "https://api.telegram.org/bot$token/sendMessage"
 
         val requestBody =
@@ -58,42 +49,20 @@ open class TelegramService(
             .addFormDataPart("text", message)
             .build()
 
-        val request = Request.Builder().url(url).post(requestBody).build()
-
-        client.newCall(request).execute().use { response ->
-          if (response.isSuccessful) {
-            Log.d(TAG, "Message sent successfully")
-          } else {
-            Log.e(TAG, "Failed to send message: ${response.code} ${response.message}")
-            Log.e(TAG, "Response: ${response.body?.string()}")
-          }
-        }
-      } catch (e: Exception) {
-        Log.e(TAG, "Error sending Telegram message", e)
-      }
+        Request.Builder().url(url).post(requestBody).build()
     }
   }
 
   open fun sendPhoto(photoFile: File, caption: String = "") {
-    if (!prefs.isTelegramEnabled()) return
+    executeTelegramAction("Photo sent successfully", "Failed to send photo") {
+        val (token, chatId) = getCredentials() ?: return@executeTelegramAction null
 
-    val token = prefs.getTelegramToken()
-    val chatId = prefs.getTelegramChatId()
+        if (!photoFile.exists()) {
+          Log.e(TAG, "Photo file does not exist: ${photoFile.absolutePath}")
+          return@executeTelegramAction null
+        }
 
-    if (token.isNullOrEmpty() || chatId.isNullOrEmpty()) {
-      Log.w(TAG, "Telegram credentials missing")
-      return
-    }
-
-    if (!photoFile.exists()) {
-      Log.e(TAG, "Photo file does not exist: ${photoFile.absolutePath}")
-      return
-    }
-
-    CoroutineScope(ioDispatcher).launch {
-      try {
         val url = "https://api.telegram.org/bot$token/sendPhoto"
-
         val mediaType = "image/jpeg".toMediaTypeOrNull()
         val fileBody = photoFile.asRequestBody(mediaType)
 
@@ -105,42 +74,20 @@ open class TelegramService(
             .addFormDataPart("photo", photoFile.name, fileBody)
             .build()
 
-        val request = Request.Builder().url(url).post(requestBody).build()
-
-        client.newCall(request).execute().use { response ->
-          if (response.isSuccessful) {
-            Log.d(TAG, "Photo sent successfully")
-          } else {
-            Log.e(TAG, "Failed to send photo: ${response.code} ${response.message}")
-            Log.e(TAG, "Response: ${response.body?.string()}")
-          }
-        }
-      } catch (e: Exception) {
-        Log.e(TAG, "Error sending Telegram photo", e)
-      }
+        Request.Builder().url(url).post(requestBody).build()
     }
   }
 
   open fun sendAudio(audioFile: File, caption: String = "") {
-    if (!prefs.isTelegramEnabled()) return
+    executeTelegramAction("Audio sent successfully", "Failed to send audio") {
+        val (token, chatId) = getCredentials() ?: return@executeTelegramAction null
 
-    val token = prefs.getTelegramToken()
-    val chatId = prefs.getTelegramChatId()
+        if (!audioFile.exists()) {
+          Log.e(TAG, "Audio file does not exist: ${audioFile.absolutePath}")
+          return@executeTelegramAction null
+        }
 
-    if (token.isNullOrEmpty() || chatId.isNullOrEmpty()) {
-      Log.w(TAG, "Telegram credentials missing")
-      return
-    }
-
-    if (!audioFile.exists()) {
-      Log.e(TAG, "Audio file does not exist: ${audioFile.absolutePath}")
-      return
-    }
-
-    CoroutineScope(ioDispatcher).launch {
-      try {
         val url = "https://api.telegram.org/bot$token/sendAudio"
-
         val mediaType = "audio/mp4".toMediaTypeOrNull()
         val fileBody = audioFile.asRequestBody(mediaType)
 
@@ -152,18 +99,37 @@ open class TelegramService(
             .addFormDataPart("audio", audioFile.name, fileBody)
             .build()
 
-        val request = Request.Builder().url(url).post(requestBody).build()
+        Request.Builder().url(url).post(requestBody).build()
+    }
+  }
 
+  private fun getCredentials(): Pair<String, String>? {
+    if (!prefs.isTelegramEnabled()) return null
+
+    val token = prefs.getTelegramToken()
+    val chatId = prefs.getTelegramChatId()
+
+    if (token.isNullOrEmpty() || chatId.isNullOrEmpty()) {
+      Log.w(TAG, "Telegram credentials missing")
+      return null
+    }
+    return Pair(token, chatId)
+  }
+
+  private fun executeTelegramAction(successMsg: String, errorMsg: String, action: () -> Request?) {
+    CoroutineScope(ioDispatcher).launch {
+      try {
+        val request = action() ?: return@launch
         client.newCall(request).execute().use { response ->
           if (response.isSuccessful) {
-            Log.d(TAG, "Audio sent successfully")
+            Log.d(TAG, successMsg)
           } else {
-            Log.e(TAG, "Failed to send audio: ${response.code} ${response.message}")
+            Log.e(TAG, "$errorMsg: ${response.code} ${response.message}")
             Log.e(TAG, "Response: ${response.body?.string()}")
           }
         }
       } catch (e: Exception) {
-        Log.e(TAG, "Error sending Telegram audio", e)
+        Log.e(TAG, "Error performing Telegram request: $errorMsg", e)
       }
     }
   }

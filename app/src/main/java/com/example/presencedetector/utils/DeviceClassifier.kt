@@ -6,13 +6,13 @@ import com.example.presencedetector.model.DeviceCategory
 object DeviceClassifier {
 
     private object Patterns {
-        val SMARTPHONE_HIGH_CONFIDENCE = listOf("iphone", "android", "galaxy", "note", "pixel")
-        val E_READERS = listOf("kindle", "ebook")
-        val SMART_HOME_ASSISTANTS = listOf("alexa", "echo", "amazon")
-        val SMART_LIGHTS = listOf("light", "bulb", "hue", "tuya", "smart life", "yeelight", "continua", "batcaverna")
-        val SMART_TVS = listOf("tv", "samsung", "lg", "sony", "bravia", "firestick", "chromecast", "roku")
-        val ROUTERS = listOf("2.4g", "5g", "router", "gateway", "tp-link", "d-link", "familia", "adriana")
-        val MOBILE_HOTSPOT_PATTERNS = listOf(
+        val SMARTPHONE_HIGH_CONFIDENCE = setOf("iphone", "android", "galaxy", "note", "pixel")
+        val E_READERS = setOf("kindle", "ebook")
+        val SMART_HOME_ASSISTANTS = setOf("alexa", "echo", "amazon")
+        val SMART_LIGHTS = setOf("light", "bulb", "hue", "tuya", "smart life", "yeelight", "continua", "batcaverna")
+        val SMART_TVS = setOf("tv", "samsung", "lg", "sony", "bravia", "firestick", "chromecast", "roku")
+        val ROUTERS = setOf("2.4g", "5g", "router", "gateway", "tp-link", "d-link", "familia", "adriana")
+        val MOBILE_HOTSPOT_PATTERNS = setOf(
             "iphone", "android", "samsung", "xiaomi", "redmi", "oneplus", "pixel", "motorola",
             "huawei", "poco", "nokia", "realme", "vivo", "oppo", "honor", "personal", "hotspot",
             "moto", "galaxy", "note", "12 pro", "s21", "s22", "note 20", "iphone 13"
@@ -58,7 +58,7 @@ object DeviceClassifier {
         return containsMobilePattern || (isShortName && ssid.matches(SHORT_NAME_REGEX))
     }
 
-    private fun String.containsAny(patterns: List<String>): Boolean {
+    private fun String.containsAny(patterns: Collection<String>): Boolean {
         return patterns.any { this.contains(it) }
     }
 }

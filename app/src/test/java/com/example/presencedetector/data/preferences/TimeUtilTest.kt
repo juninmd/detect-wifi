@@ -1,5 +1,6 @@
 package com.example.presencedetector.data.preferences
 
+import com.example.presencedetector.utils.TimeUtil
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

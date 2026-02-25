@@ -42,31 +42,7 @@ class BiometricAuthenticator(private val activity: FragmentActivity) {
 
   private fun showPrompt(onSuccess: () -> Unit, onFail: (() -> Unit)?) {
     val executor = ContextCompat.getMainExecutor(activity)
-
-    val callback =
-      object : BiometricPrompt.AuthenticationCallback() {
-        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-          super.onAuthenticationSucceeded(result)
-          onSuccess()
-        }
-
-        override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-          super.onAuthenticationError(errorCode, errString)
-          // Error 13 is usually "Canceled by user" (touching outside)
-          if (
-            errorCode != BiometricPrompt.ERROR_USER_CANCELED &&
-              errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON
-          ) {
-            Toast.makeText(activity, "Authentication error: $errString", Toast.LENGTH_SHORT).show()
-          }
-          onFail?.invoke()
-        }
-
-        override fun onAuthenticationFailed() {
-          super.onAuthenticationFailed()
-          // Biometric is valid but not recognized (wrong finger)
-        }
-      }
+    val callback = createAuthenticationCallback(onSuccess, onFail)
 
     val promptInfo =
       BiometricPrompt.PromptInfo.Builder()
@@ -80,6 +56,35 @@ class BiometricAuthenticator(private val activity: FragmentActivity) {
 
     val biometricPrompt = BiometricPrompt(activity, executor, callback)
     biometricPrompt.authenticate(promptInfo)
+  }
+
+  private fun createAuthenticationCallback(
+    onSuccess: () -> Unit,
+    onFail: (() -> Unit)?
+  ): BiometricPrompt.AuthenticationCallback {
+    return object : BiometricPrompt.AuthenticationCallback() {
+      override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+        super.onAuthenticationSucceeded(result)
+        onSuccess()
+      }
+
+      override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+        super.onAuthenticationError(errorCode, errString)
+        // Error 13 is usually "Canceled by user" (touching outside)
+        if (
+          errorCode != BiometricPrompt.ERROR_USER_CANCELED &&
+            errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON
+        ) {
+          Toast.makeText(activity, "Authentication error: $errString", Toast.LENGTH_SHORT).show()
+        }
+        onFail?.invoke()
+      }
+
+      override fun onAuthenticationFailed() {
+        super.onAuthenticationFailed()
+        // Biometric is valid but not recognized (wrong finger)
+      }
+    }
   }
 
   companion object {

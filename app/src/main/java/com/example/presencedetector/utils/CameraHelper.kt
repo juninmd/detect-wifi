@@ -57,26 +57,39 @@ class CameraHelper(private val context: Context) {
 
   companion object {
     fun saveAndSendImage(context: Context, bytes: ByteArray) {
-      val telegramService = TelegramService(context)
       Thread {
         try {
-          val filename =
-            "EVENT_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg"
-          val file =
-            File(context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES), filename)
-          FileOutputStream(file).use { it.write(bytes) }
-
-          LogRepository.logSystemEvent(context, "📸 Photo Captured: $filename")
-
-          telegramService.sendPhoto(file, "📸 Security Event Captured")
-
-          // Show Notification
-          val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-          NotificationUtil.sendIntruderAlert(context, bitmap)
+          val file = saveImageToFile(context, bytes)
+          logSystemEvent(context, file.name)
+          sendToTelegram(context, file)
+          showNotification(context, bytes)
         } catch (e: Exception) {
           e.printStackTrace()
         }
       }.start()
+    }
+
+    private fun saveImageToFile(context: Context, bytes: ByteArray): File {
+      val filename =
+        "EVENT_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg"
+      val file =
+        File(context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES), filename)
+      FileOutputStream(file).use { it.write(bytes) }
+      return file
+    }
+
+    private fun logSystemEvent(context: Context, filename: String) {
+      LogRepository.logSystemEvent(context, "📸 Photo Captured: $filename")
+    }
+
+    private fun sendToTelegram(context: Context, file: File) {
+      val telegramService = TelegramService(context)
+      telegramService.sendPhoto(file, "📸 Security Event Captured")
+    }
+
+    private fun showNotification(context: Context, bytes: ByteArray) {
+      val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+      NotificationUtil.sendIntruderAlert(context, bitmap)
     }
   }
 
