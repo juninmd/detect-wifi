@@ -1,7 +1,7 @@
 package com.example.presencedetector.data.preferences
 
 import android.content.Context
-import java.util.Calendar
+import com.example.presencedetector.utils.TimeUtil
 
 class SecurityPreferences(context: Context) : BasePreferences(context, PREF_NAME) {
 

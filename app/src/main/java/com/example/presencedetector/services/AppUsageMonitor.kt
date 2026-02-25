@@ -11,7 +11,7 @@ class AppUsageMonitor(private val context: Context) {
     private const val TAG = "AppUsageMonitor"
 
     // Sensitive Apps List (Brazil specific + Global)
-    val SENSITIVE_APPS =
+    private val SENSITIVE_APPS =
       setOf(
         "com.nu.production", // Nubank
         "com.itau", // Itau
@@ -40,24 +40,11 @@ class AppUsageMonitor(private val context: Context) {
 
     val time = System.currentTimeMillis()
     val usageEvents = usageStatsManager.queryEvents(time - 5000, time) // Check last 5 seconds
-    val event = UsageEvents.Event()
 
     // If usageEvents is null or empty, it might mean permission is missing or no events.
     if (usageEvents == null) return
 
-    var latestEventTime = 0L
-    var currentPkg: String? = null
-
-    // Iterate to find the latest MOVE_TO_FOREGROUND event
-    while (usageEvents.hasNextEvent()) {
-      usageEvents.getNextEvent(event)
-      if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND) {
-        if (event.timeStamp > latestEventTime) {
-          latestEventTime = event.timeStamp
-          currentPkg = event.packageName
-        }
-      }
-    }
+    val currentPkg = findLatestForegroundEvent(usageEvents)
 
     // Only trigger if package CHANGED or it's a new detection cycle where we care
     // Actually, for "Every time a banking app is opened", we care about the transition.
@@ -76,5 +63,23 @@ class AppUsageMonitor(private val context: Context) {
         }
       }
     }
+  }
+
+  private fun findLatestForegroundEvent(usageEvents: UsageEvents): String? {
+    val event = UsageEvents.Event()
+    var latestEventTime = 0L
+    var currentPkg: String? = null
+
+    // Iterate to find the latest MOVE_TO_FOREGROUND event
+    while (usageEvents.hasNextEvent()) {
+      usageEvents.getNextEvent(event)
+      if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND) {
+        if (event.timeStamp > latestEventTime) {
+          latestEventTime = event.timeStamp
+          currentPkg = event.packageName
+        }
+      }
+    }
+    return currentPkg
   }
 }

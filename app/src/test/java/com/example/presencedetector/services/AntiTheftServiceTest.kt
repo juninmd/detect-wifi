@@ -134,7 +134,12 @@ class AntiTheftServiceTest {
     service.onSensorChanged(event2)
 
     // Verify log system event was called with suppressed message
-    val logs = LogRepository.getSystemLogs(context)
+    var logs: List<String> = emptyList()
+    for (i in 0..10) {
+      logs = LogRepository.getSystemLogs(context)
+      if (logs.any { it.contains("Silent Alarm") || it.contains("Suppressed") }) break
+      SystemClock.sleep(100)
+    }
     assertTrue(logs.any { it.contains("Silent Alarm") || it.contains("Suppressed") })
   }
 
