@@ -39,7 +39,7 @@ class MainActivityTest {
         android.Manifest.permission.ACCESS_FINE_LOCATION,
         android.Manifest.permission.CAMERA,
         android.Manifest.permission.ACCESS_WIFI_STATE,
-        android.Manifest.permission.READ_PHONE_STATE
+        android.Manifest.permission.READ_PHONE_STATE,
       )
   }
 
@@ -116,7 +116,7 @@ class MainActivityTest {
     assertEquals(AntiTheftService.ACTION_PANIC, startedIntent.action)
     assertEquals(
       "TESTE DE SIRENE",
-      startedIntent.getStringExtra("com.example.presencedetector.EXTRA_REASON")
+      startedIntent.getStringExtra("com.example.presencedetector.EXTRA_REASON"),
     )
   }
 
@@ -203,19 +203,19 @@ class MainActivityTest {
     activity.findViewById<View>(R.id.btnSettings).performClick()
     assertEquals(
       SettingsActivity::class.java.name,
-      shadowActivity.nextStartedActivity.component?.className
+      shadowActivity.nextStartedActivity.component?.className,
     )
 
     activity.findViewById<View>(R.id.btnOpenHistory).performClick()
     assertEquals(
       HistoryActivity::class.java.name,
-      shadowActivity.nextStartedActivity.component?.className
+      shadowActivity.nextStartedActivity.component?.className,
     )
 
     activity.findViewById<View>(R.id.btnOpenRadarFromGrid).performClick()
     assertEquals(
       WifiRadarActivity::class.java.name,
-      shadowActivity.nextStartedActivity.component?.className
+      shadowActivity.nextStartedActivity.component?.className,
     )
   }
 
@@ -260,7 +260,7 @@ class MainActivityTest {
     activity.findViewById<View>(R.id.btnSecuritySettings).performClick()
     assertEquals(
       "com.example.presencedetector.security.ui.CameraDashboardActivity",
-      shadowActivity.nextStartedActivity.component?.className
+      shadowActivity.nextStartedActivity.component?.className,
     )
   }
 
@@ -276,15 +276,15 @@ class MainActivityTest {
           "00:00:00:00:00:01",
           -50,
           2400,
-          source = com.example.presencedetector.model.DeviceSource.WIFI
+          source = com.example.presencedetector.model.DeviceSource.WIFI,
         ),
         com.example.presencedetector.model.WiFiDevice(
           "Dev2",
           "00:00:00:00:00:02",
           -60,
           2400,
-          source = com.example.presencedetector.model.DeviceSource.WIFI
-        )
+          source = com.example.presencedetector.model.DeviceSource.WIFI,
+        ),
       )
 
     // Use reflection to call private updateDashboard
@@ -295,7 +295,7 @@ class MainActivityTest {
           "updateDashboard",
           List::class.java,
           String::class.java,
-          String::class.java
+          String::class.java,
         )
     method.isAccessible = true
     method.invoke(activity, devices, "WiFi", "Test Details")

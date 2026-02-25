@@ -110,7 +110,7 @@ class CameraMonitoringService : Service() {
         "--no-stats", // Sem estatísticas
         "--no-sub-autodetect-file", // Sem legendas
         "--no-spu", // Sem subtítulos
-        "-vvv" // Log verbose para debug
+        "-vvv", // Log verbose para debug
       )
     libVLC = LibVLC(this, vlcOptions)
   }
@@ -133,7 +133,7 @@ class CameraMonitoringService : Service() {
       startForeground(
         FOREGROUND_NOTIFICATION_ID,
         notification,
-        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA,
       )
     } else {
       startForeground(FOREGROUND_NOTIFICATION_ID, notification)
@@ -170,7 +170,7 @@ class CameraMonitoringService : Service() {
         onPersonConfirmed = { confirmedChannel, snapshot ->
           // Callback quando pessoa é confirmada (com frame capturado)
           onPersonConfirmed(confirmedChannel, snapshot)
-        }
+        },
       )
     analyzers[channel.id] = analyzer
 
@@ -194,7 +194,7 @@ class CameraMonitoringService : Service() {
           }
         }
       },
-      backgroundHandler
+      backgroundHandler,
     )
     imageReaders[channel.id] = imageReader
 
@@ -234,7 +234,7 @@ class CameraMonitoringService : Service() {
       Bitmap.createBitmap(
         image.width + rowPadding / pixelStride,
         image.height,
-        Bitmap.Config.ARGB_8888
+        Bitmap.Config.ARGB_8888,
       )
     bitmap.copyPixelsFromBuffer(buffer)
 
@@ -311,7 +311,7 @@ class CameraMonitoringService : Service() {
         NotificationChannel(
             FOREGROUND_CHANNEL_ID,
             "Monitoramento de Câmeras",
-            NotificationManager.IMPORTANCE_LOW
+            NotificationManager.IMPORTANCE_LOW,
           )
           .apply {
             description = "Notificação do serviço de monitoramento em segundo plano"

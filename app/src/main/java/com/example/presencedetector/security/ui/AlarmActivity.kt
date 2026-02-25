@@ -97,7 +97,7 @@ class AlarmActivity : AppCompatActivity() {
           override fun onSurfaceTextureSizeChanged(
             surface: SurfaceTexture,
             width: Int,
-            height: Int
+            height: Int,
           ) {}
 
           override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean = true

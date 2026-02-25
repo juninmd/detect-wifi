@@ -9,7 +9,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
-import org.robolectric.shadows.ShadowApplication
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
@@ -27,7 +26,7 @@ class DetectionBackgroundServiceTest {
       service.onStartCommand(
         Intent(ApplicationProvider.getApplicationContext(), DetectionBackgroundService::class.java),
         0,
-        0
+        0,
       )
 
     assert(result == android.app.Service.START_STICKY)
@@ -44,7 +43,7 @@ class DetectionBackgroundServiceTest {
     service.onStartCommand(
       Intent(ApplicationProvider.getApplicationContext(), DetectionBackgroundService::class.java),
       0,
-      0
+      0,
     )
 
     val notification = org.robolectric.Shadows.shadowOf(service).lastForegroundNotification

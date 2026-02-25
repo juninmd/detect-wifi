@@ -52,7 +52,7 @@ class SecurityNotificationManagerTest {
     val notification = notifications[0]
     assertEquals(
       "🚨 Movimento detectado",
-      notification.extras.getString(android.app.Notification.EXTRA_TITLE)
+      notification.extras.getString(android.app.Notification.EXTRA_TITLE),
     )
     assertEquals("Front Door", notification.extras.getString(android.app.Notification.EXTRA_TEXT))
     assertEquals("security_alerts", notification.channelId)

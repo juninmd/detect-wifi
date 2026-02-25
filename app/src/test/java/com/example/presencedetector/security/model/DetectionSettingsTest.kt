@@ -41,7 +41,7 @@ class DetectionSettingsTest {
         dvrHost = "10.0.0.1",
         detectionThresholdSeconds = 10,
         enabledChannelIds = setOf(1),
-        channels = listOf(channel)
+        channels = listOf(channel),
       )
 
     DetectionSettings.save(context, settings)

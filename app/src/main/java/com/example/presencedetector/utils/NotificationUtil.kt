@@ -33,7 +33,7 @@ object NotificationUtil {
     val notificationId: Int? = null,
     val secondActionTitle: String? = null,
     val secondActionIntent: PendingIntent? = null,
-    val iconResId: Int? = null
+    val iconResId: Int? = null,
   )
 
   // Channel IDs
@@ -52,102 +52,105 @@ object NotificationUtil {
     val name: String,
     val importance: Int,
     val description: String? = null,
-    val configure: (NotificationChannel.() -> Unit)? = null
+    val configure: (NotificationChannel.() -> Unit)? = null,
   )
 
   fun createNotificationChannels(context: Context) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val notificationManager = context.getSystemService(NotificationManager::class.java) ?: return
-      val channels = getChannelDefinitions(context).map { def ->
-        NotificationChannel(def.id, def.name, def.importance).apply {
-          description = def.description
-          def.configure?.invoke(this)
+      val channels =
+        getChannelDefinitions(context).map { def ->
+          NotificationChannel(def.id, def.name, def.importance).apply {
+            description = def.description
+            def.configure?.invoke(this)
+          }
         }
-      }
       notificationManager.createNotificationChannels(channels)
     }
   }
 
   private fun getChannelDefinitions(context: Context): List<ChannelDefinition> {
-     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return emptyList()
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return emptyList()
 
-     return listOf(
-        ChannelDefinition(
-          CHANNEL_ID,
-          context.getString(R.string.channel_service_name),
-          NotificationManager.IMPORTANCE_LOW,
-          context.getString(R.string.channel_service_desc)
-        ) { setShowBadge(false) },
-
-        ChannelDefinition(
-          INFO_CHANNEL_ID,
-          context.getString(R.string.channel_info_name),
-          NotificationManager.IMPORTANCE_DEFAULT,
-          context.getString(R.string.channel_info_desc)
-        ) {
-          enableLights(true)
-          lightColor = android.graphics.Color.BLUE
-        },
-
-        ChannelDefinition(
-          SILENT_CHANNEL_ID,
-          "Eventos Silenciosos",
-          NotificationManager.IMPORTANCE_LOW,
-          "Notificações de rotina sem som"
-        ) { setShowBadge(false) },
-
-        createSecurityChannelDefinition(),
-
-        ChannelDefinition(
-          BATTERY_CHANNEL_ID,
-          context.getString(R.string.channel_battery_name),
-          NotificationManager.IMPORTANCE_HIGH,
-          context.getString(R.string.channel_battery_desc)
-        ) {
-          enableVibration(true)
-          enableLights(true)
-          lightColor = android.graphics.Color.YELLOW
-        },
-
-        ChannelDefinition(
-          HOME_SECURITY_CHANNEL_ID,
-          "Segurança Residencial",
-          NotificationManager.IMPORTANCE_LOW,
-          "Notificações de monitoramento WiFi e presença em casa"
-        ) { setShowBadge(false) },
-
-        ChannelDefinition(
-          MOBILE_SECURITY_CHANNEL_ID,
-          "Segurança do Celular",
-          NotificationManager.IMPORTANCE_LOW,
-          "Notificações de monitoramento anti-furto (bolso, movimento)"
-        ) { setShowBadge(true) }
-      )
+    return listOf(
+      ChannelDefinition(
+        CHANNEL_ID,
+        context.getString(R.string.channel_service_name),
+        NotificationManager.IMPORTANCE_LOW,
+        context.getString(R.string.channel_service_desc),
+      ) {
+        setShowBadge(false)
+      },
+      ChannelDefinition(
+        INFO_CHANNEL_ID,
+        context.getString(R.string.channel_info_name),
+        NotificationManager.IMPORTANCE_DEFAULT,
+        context.getString(R.string.channel_info_desc),
+      ) {
+        enableLights(true)
+        lightColor = android.graphics.Color.BLUE
+      },
+      ChannelDefinition(
+        SILENT_CHANNEL_ID,
+        "Eventos Silenciosos",
+        NotificationManager.IMPORTANCE_LOW,
+        "Notificações de rotina sem som",
+      ) {
+        setShowBadge(false)
+      },
+      createSecurityChannelDefinition(),
+      ChannelDefinition(
+        BATTERY_CHANNEL_ID,
+        context.getString(R.string.channel_battery_name),
+        NotificationManager.IMPORTANCE_HIGH,
+        context.getString(R.string.channel_battery_desc),
+      ) {
+        enableVibration(true)
+        enableLights(true)
+        lightColor = android.graphics.Color.YELLOW
+      },
+      ChannelDefinition(
+        HOME_SECURITY_CHANNEL_ID,
+        "Segurança Residencial",
+        NotificationManager.IMPORTANCE_LOW,
+        "Notificações de monitoramento WiFi e presença em casa",
+      ) {
+        setShowBadge(false)
+      },
+      ChannelDefinition(
+        MOBILE_SECURITY_CHANNEL_ID,
+        "Segurança do Celular",
+        NotificationManager.IMPORTANCE_LOW,
+        "Notificações de monitoramento anti-furto (bolso, movimento)",
+      ) {
+        setShowBadge(true)
+      },
+    )
   }
 
   private fun createSecurityChannelDefinition(): ChannelDefinition {
-      return ChannelDefinition(
-          SECURITY_CHANNEL_ID,
-          "Alerta de Segurança Crítico",
-          NotificationManager.IMPORTANCE_HIGH,
-          "Alertas de intrusão e roubo. Toca mesmo em modo não perturbe."
-      ) {
-          enableVibration(true)
-          vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500, 1000)
-          enableLights(true)
-          lightColor = android.graphics.Color.RED
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-              lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-              setBypassDnd(true)
-              setSound(
-                  RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
-                  AudioAttributes.Builder()
-                      .setUsage(AudioAttributes.USAGE_ALARM)
-                      .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                      .build()
-              )
-          }
+    return ChannelDefinition(
+      SECURITY_CHANNEL_ID,
+      "Alerta de Segurança Crítico",
+      NotificationManager.IMPORTANCE_HIGH,
+      "Alertas de intrusão e roubo. Toca mesmo em modo não perturbe.",
+    ) {
+      enableVibration(true)
+      vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500, 1000)
+      enableLights(true)
+      lightColor = android.graphics.Color.RED
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        setBypassDnd(true)
+        setSound(
+          RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+          AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_ALARM)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build(),
+        )
       }
+    }
   }
 
   private fun buildBaseNotification(
@@ -155,7 +158,7 @@ object NotificationUtil {
     channelId: String,
     title: String,
     message: String,
-    priority: Int = NotificationCompat.PRIORITY_DEFAULT
+    priority: Int = NotificationCompat.PRIORITY_DEFAULT,
   ): NotificationCompat.Builder {
     return NotificationCompat.Builder(context, channelId)
       .setContentTitle(title)
@@ -182,7 +185,7 @@ object NotificationUtil {
         context,
         System.currentTimeMillis().toInt(),
         intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
 
     val builder =
@@ -192,7 +195,7 @@ object NotificationUtil {
           data.title,
           data.message,
           if (data.isImportantEvent) NotificationCompat.PRIORITY_DEFAULT
-          else NotificationCompat.PRIORITY_LOW
+          else NotificationCompat.PRIORITY_LOW,
         )
         .setContentIntent(pendingIntent)
         .setGroup(GROUP_KEY_PRESENCE)
@@ -205,7 +208,11 @@ object NotificationUtil {
       builder.addAction(R.drawable.ic_status_inactive, data.actionTitle, data.actionIntent)
     }
     if (data.secondActionTitle != null && data.secondActionIntent != null) {
-      builder.addAction(R.drawable.ic_status_active, data.secondActionTitle, data.secondActionIntent)
+      builder.addAction(
+        R.drawable.ic_status_active,
+        data.secondActionTitle,
+        data.secondActionIntent,
+      )
     }
 
     notify(context, data.notificationId ?: System.currentTimeMillis().toInt(), builder.build())
@@ -221,7 +228,7 @@ object NotificationUtil {
     notificationId: Int? = null,
     secondActionTitle: String? = null,
     secondActionIntent: PendingIntent? = null,
-    iconResId: Int? = null
+    iconResId: Int? = null,
   ) {
     sendPresenceNotification(
       context,
@@ -234,8 +241,8 @@ object NotificationUtil {
         notificationId,
         secondActionTitle,
         secondActionIntent,
-        iconResId
-      )
+        iconResId,
+      ),
     )
   }
 
@@ -245,7 +252,7 @@ object NotificationUtil {
     message: String,
     notificationId: Int,
     fullScreenIntent: PendingIntent? = null,
-    actions: List<NotificationCompat.Action> = emptyList()
+    actions: List<NotificationCompat.Action> = emptyList(),
   ) {
     createNotificationChannels(context)
 
@@ -255,7 +262,7 @@ object NotificationUtil {
           SECURITY_CHANNEL_ID,
           title,
           message,
-          NotificationCompat.PRIORITY_MAX
+          NotificationCompat.PRIORITY_MAX,
         )
         .setSmallIcon(R.drawable.ic_notification_alert)
         .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -281,7 +288,7 @@ object NotificationUtil {
         context,
         notificationId + 99,
         safeIntent,
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
       )
     builder.addAction(android.R.drawable.ic_menu_save, "Marcar Seguro", pendingSafeIntent)
 
@@ -300,7 +307,7 @@ object NotificationUtil {
         context,
         0,
         intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
 
     val builder =
@@ -309,7 +316,7 @@ object NotificationUtil {
           BATTERY_CHANNEL_ID,
           context.getString(R.string.notif_battery_warning),
           context.getString(R.string.notif_battery_desc, level),
-          NotificationCompat.PRIORITY_HIGH
+          NotificationCompat.PRIORITY_HIGH,
         )
         .setSmallIcon(android.R.drawable.ic_lock_idle_low_battery)
         .setContentIntent(pendingIntent)
@@ -330,7 +337,7 @@ object NotificationUtil {
         context,
         0,
         intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
 
     val builder =
@@ -339,7 +346,7 @@ object NotificationUtil {
           SECURITY_CHANNEL_ID,
           "🚨 INTRUSO DETECTADO!",
           "Uma foto foi capturada durante o alerta de segurança.",
-          NotificationCompat.PRIORITY_MAX
+          NotificationCompat.PRIORITY_MAX,
         )
         .setSmallIcon(R.drawable.ic_notification_alert)
         .setLargeIcon(bitmap)
@@ -362,7 +369,7 @@ object NotificationUtil {
         context,
         3001 + 99,
         safeIntent,
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
       )
     builder.addAction(android.R.drawable.ic_menu_save, "Marcar Seguro", pendingSafeIntent)
 
@@ -386,7 +393,7 @@ object NotificationUtil {
         context,
         4002,
         stopIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
 
     // Mark as Safe
@@ -400,7 +407,7 @@ object NotificationUtil {
         context,
         1000 + 99,
         safeIntent,
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
       )
 
     val builder =
@@ -409,7 +416,7 @@ object NotificationUtil {
           SECURITY_CHANNEL_ID,
           "🆘 ALARME DE PÂNICO ATIVO",
           "Sua segurança está em risco? A ajuda está a um toque.",
-          NotificationCompat.PRIORITY_MAX
+          NotificationCompat.PRIORITY_MAX,
         )
         .setSmallIcon(android.R.drawable.ic_lock_power_off)
         .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -429,7 +436,7 @@ object NotificationUtil {
     context: Context,
     title: String,
     message: String,
-    channelId: String
+    channelId: String,
   ): Notification {
     createNotificationChannels(context)
 
@@ -442,7 +449,7 @@ object NotificationUtil {
         context,
         0,
         intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
 
     return buildBaseNotification(
@@ -450,7 +457,7 @@ object NotificationUtil {
         channelId,
         title,
         message,
-        NotificationCompat.PRIORITY_LOW
+        NotificationCompat.PRIORITY_LOW,
       )
       .setContentIntent(pendingIntent)
       .setOngoing(true)

@@ -9,5 +9,5 @@ enum class DeviceCategory(val displayName: String, val iconRes: String) {
   KINDLE("E-Reader", "📖"),
   LAPTOP("Laptop/PC", "💻"),
   ROUTER("Router/AP", "🌐"),
-  UNKNOWN("Unknown Device", "❓")
+  UNKNOWN("Unknown Device", "❓"),
 }

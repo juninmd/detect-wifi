@@ -146,7 +146,7 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
         centerX,
         centerY,
         intArrayOf(Color.TRANSPARENT, Color.parseColor("#003300"), Color.parseColor("#00FF00")),
-        floatArrayOf(0f, 0.5f, 1f)
+        floatArrayOf(0f, 0.5f, 1f),
       )
     sweepPaint.shader = sweepGradient
 

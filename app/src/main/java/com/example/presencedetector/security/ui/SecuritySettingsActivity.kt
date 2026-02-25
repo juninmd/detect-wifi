@@ -189,7 +189,7 @@ class SecuritySettingsActivity : AppCompatActivity() {
         host = host,
         port = port,
         username = binding.etUsername.text.toString(),
-        password = binding.etPassword.text.toString()
+        password = binding.etPassword.text.toString(),
       )
 
     // Teste real de conexão e autenticação via LibVLC
@@ -221,7 +221,7 @@ class SecuritySettingsActivity : AppCompatActivity() {
             Toast.makeText(
                 this@SecuritySettingsActivity,
                 "Sucesso! DVR conectado e autenticado.",
-                Toast.LENGTH_LONG
+                Toast.LENGTH_LONG,
               )
               .show()
           } else {
@@ -229,7 +229,7 @@ class SecuritySettingsActivity : AppCompatActivity() {
             Toast.makeText(
                 this@SecuritySettingsActivity,
                 "Falha na autenticação ou conexão.",
-                Toast.LENGTH_LONG
+                Toast.LENGTH_LONG,
               )
               .show()
           }
@@ -242,7 +242,7 @@ class SecuritySettingsActivity : AppCompatActivity() {
           Toast.makeText(
               this@SecuritySettingsActivity,
               "Erro: ${e.localizedMessage}",
-              Toast.LENGTH_LONG
+              Toast.LENGTH_LONG,
             )
             .show()
         }
@@ -337,7 +337,7 @@ class SecuritySettingsActivity : AppCompatActivity() {
           password = password,
           detectionThresholdSeconds = detectionTime,
           gracePeriodSeconds = gracePeriod,
-          notificationCooldownSeconds = cooldown
+          notificationCooldownSeconds = cooldown,
         )
         .withUpdatedChannelConnections()
 

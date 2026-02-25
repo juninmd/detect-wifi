@@ -202,7 +202,7 @@ class SettingsActivity : AppCompatActivity() {
         },
         currentHour,
         currentMinute,
-        true
+        true,
       )
 
     timePickerDialog.show()

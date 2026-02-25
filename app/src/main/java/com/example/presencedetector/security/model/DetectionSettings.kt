@@ -36,7 +36,7 @@ data class DetectionSettings(
   val enabledChannelIds: Set<Int> = emptySet(),
 
   /** Lista de canais configurados */
-  val channels: List<CameraChannel> = emptyList()
+  val channels: List<CameraChannel> = emptyList(),
 ) {
   /** Tempo de detecção em milissegundos. */
   val detectionThresholdMs: Long
@@ -91,7 +91,7 @@ data class DetectionSettings(
         notificationCooldownSeconds = prefs.getInt(KEY_NOTIFICATION_COOLDOWN, 60),
         monitoringEnabled = prefs.getBoolean(KEY_MONITORING_ENABLED, false),
         enabledChannelIds = enabledChannelIds,
-        channels = channels
+        channels = channels,
       )
     }
 
@@ -138,7 +138,7 @@ data class DetectionSettings(
         port = dvrPort,
         channel = channelNumber,
         username = username,
-        password = password
+        password = password,
       )
     return copy(channels = channels + newChannel, enabledChannelIds = enabledChannelIds + newId)
   }
@@ -147,7 +147,7 @@ data class DetectionSettings(
   fun removeChannel(channelId: Int): DetectionSettings {
     return copy(
       channels = channels.filter { it.id != channelId },
-      enabledChannelIds = enabledChannelIds - channelId
+      enabledChannelIds = enabledChannelIds - channelId,
     )
   }
 }

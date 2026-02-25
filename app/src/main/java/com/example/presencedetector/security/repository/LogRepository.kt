@@ -2,21 +2,21 @@ package com.example.presencedetector.security.repository
 
 import android.content.Context
 import android.util.Log
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.ArrayDeque
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.Executors
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.launch
 
 /**
- * Repository for handling file-based logging of system and detection events.
- * Replaces LoggerUtil and SharedPreferences-based logging.
- * Optimized for performance using Coroutines and efficient file I/O.
+ * Repository for handling file-based logging of system and detection events. Replaces LoggerUtil
+ * and SharedPreferences-based logging. Optimized for performance using Coroutines and efficient
+ * file I/O.
  */
 object LogRepository {
   private const val TAG = "LogRepository"
@@ -28,8 +28,8 @@ object LogRepository {
   private val scope = CoroutineScope(dispatcher + SupervisorJob())
 
   /**
-   * Logs a general system event (e.g., service start, errors, security alerts).
-   * Asynchronous operation.
+   * Logs a general system event (e.g., service start, errors, security alerts). Asynchronous
+   * operation.
    */
   fun logSystemEvent(context: Context, message: String) {
     val appContext = context.applicationContext
@@ -45,10 +45,7 @@ object LogRepository {
     }
   }
 
-  /**
-   * Logs a detection event for a specific device (BSSID).
-   * Asynchronous operation.
-   */
+  /** Logs a detection event for a specific device (BSSID). Asynchronous operation. */
   fun logDetectionEvent(context: Context, bssid: String, message: String) {
     val appContext = context.applicationContext
     scope.launch {
@@ -66,16 +63,14 @@ object LogRepository {
   }
 
   /**
-   * Retrieves the last N system logs.
-   * This remains synchronous for compatibility but utilizes efficient streaming.
+   * Retrieves the last N system logs. This remains synchronous for compatibility but utilizes
+   * efficient streaming.
    */
   fun getSystemLogs(context: Context, limit: Int = 100): List<String> {
     return readLogsReverse(context, SYSTEM_LOG_FILE, limit)
   }
 
-  /**
-   * Retrieves the last N detection logs for a specific device.
-   */
+  /** Retrieves the last N detection logs for a specific device. */
   fun getDetectionLogs(context: Context, bssid: String, limit: Int = 100): List<String> {
     val safeBssid = bssid.replace(":", "")
     val filename = "device_${safeBssid}.log"
@@ -94,8 +89,8 @@ object LogRepository {
   }
 
   /**
-   * Efficiently reads the last N lines from a file using a rolling buffer.
-   * This avoids loading the entire file into memory.
+   * Efficiently reads the last N lines from a file using a rolling buffer. This avoids loading the
+   * entire file into memory.
    */
   private fun readLogsReverse(context: Context, filename: String, limit: Int): List<String> {
     val logsDir = getLogsDir(context)
@@ -104,14 +99,14 @@ object LogRepository {
 
     val buffer = ArrayDeque<String>(limit)
     try {
-        file.useLines { lines ->
-            lines.forEach { line ->
-                if (buffer.size >= limit) {
-                    buffer.removeFirst()
-                }
-                buffer.addLast(line)
-            }
+      file.useLines { lines ->
+        lines.forEach { line ->
+          if (buffer.size >= limit) {
+            buffer.removeFirst()
+          }
+          buffer.addLast(line)
         }
+      }
     } catch (e: Exception) {
       Log.e(TAG, "Error reading log file: $filename", e)
       return emptyList()
@@ -133,17 +128,15 @@ object LogRepository {
     return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
   }
 
-  /**
-   * Clears all logs.
-   */
+  /** Clears all logs. */
   fun clearLogs(context: Context) {
     val appContext = context.applicationContext
     scope.launch {
       try {
-          val logsDir = getLogsDir(appContext)
-          logsDir.listFiles()?.forEach { it.delete() }
+        val logsDir = getLogsDir(appContext)
+        logsDir.listFiles()?.forEach { it.delete() }
       } catch (e: Exception) {
-          Log.e(TAG, "Error clearing logs", e)
+        Log.e(TAG, "Error clearing logs", e)
       }
     }
   }

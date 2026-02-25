@@ -76,7 +76,8 @@ open class PreferencesUtil(context: Context) {
 
   fun shouldNotifyOnPresence() = detectionPreferences.shouldNotifyOnPresence()
 
-  open fun setNotifyWifiArrival(enabled: Boolean) = detectionPreferences.setNotifyWifiArrival(enabled)
+  open fun setNotifyWifiArrival(enabled: Boolean) =
+    detectionPreferences.setNotifyWifiArrival(enabled)
 
   open fun shouldNotifyWifiArrival() = detectionPreferences.shouldNotifyWifiArrival()
 
@@ -88,8 +89,7 @@ open class PreferencesUtil(context: Context) {
   open fun setNotifyDeparture(bssid: String, notify: Boolean) =
     detectionPreferences.setNotifyDeparture(bssid, notify)
 
-  open fun shouldNotifyDeparture(bssid: String) =
-    detectionPreferences.shouldNotifyDeparture(bssid)
+  open fun shouldNotifyDeparture(bssid: String) = detectionPreferences.shouldNotifyDeparture(bssid)
 
   open fun setCriticalAlertEnabled(bssid: String, enabled: Boolean) =
     detectionPreferences.setCriticalAlertEnabled(bssid, enabled)
@@ -152,11 +152,13 @@ open class PreferencesUtil(context: Context) {
 
   fun isAppLockEnabled() = securityPreferences.isAppLockEnabled()
 
-  open fun setPocketModeEnabled(enabled: Boolean) = securityPreferences.setPocketModeEnabled(enabled)
+  open fun setPocketModeEnabled(enabled: Boolean) =
+    securityPreferences.setPocketModeEnabled(enabled)
 
   open fun isPocketModeEnabled() = securityPreferences.isPocketModeEnabled()
 
-  open fun setChargerModeEnabled(enabled: Boolean) = securityPreferences.setChargerModeEnabled(enabled)
+  open fun setChargerModeEnabled(enabled: Boolean) =
+    securityPreferences.setChargerModeEnabled(enabled)
 
   open fun isChargerModeEnabled() = securityPreferences.isChargerModeEnabled()
 
@@ -164,7 +166,8 @@ open class PreferencesUtil(context: Context) {
 
   open fun isSmartModeEnabled() = securityPreferences.isSmartModeEnabled()
 
-  open fun setSilentModeEnabled(enabled: Boolean) = securityPreferences.setSilentModeEnabled(enabled)
+  open fun setSilentModeEnabled(enabled: Boolean) =
+    securityPreferences.setSilentModeEnabled(enabled)
 
   open fun isSilentModeEnabled() = securityPreferences.isSilentModeEnabled()
 

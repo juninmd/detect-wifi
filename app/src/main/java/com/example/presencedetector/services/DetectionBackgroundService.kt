@@ -76,7 +76,7 @@ class DetectionBackgroundService : Service() {
         this,
         "⚠️ Security Alert",
         "Sensitive App Accessed: $packageName. Photo captured.",
-        true
+        true,
       )
     } catch (e: Exception) {
       Log.e(TAG, "Failed to launch hidden camera", e)
@@ -107,7 +107,7 @@ class DetectionBackgroundService : Service() {
               this,
               "🛡️ Zona Segura",
               "Anti-Furto desativado: Conectado a $currentSsid",
-              false
+              false,
             )
           }
         } else {
@@ -138,7 +138,7 @@ class DetectionBackgroundService : Service() {
         this,
         "🛡️ Modo Inteligente",
         "Anti-Furto ativado automaticamente ao sair de casa.",
-        false
+        false,
       )
       return
     }
@@ -157,7 +157,7 @@ class DetectionBackgroundService : Service() {
           this,
           2002,
           enableIntent,
-          android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+          android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE,
         )
 
       NotificationUtil.sendPresenceNotification(
@@ -166,7 +166,7 @@ class DetectionBackgroundService : Service() {
         "Você saiu de casa. Deseja ativar o Anti-Furto?",
         false, // Info priority (user can ignore)
         "Ativar Agora",
-        pendingEnableIntent
+        pendingEnableIntent,
       )
 
       lastAutoArmSuggestionTime = System.currentTimeMillis()
@@ -214,14 +214,14 @@ class DetectionBackgroundService : Service() {
             this,
             "Monitoramento Residencial Ativo",
             "Escaneando dispositivos...",
-            NotificationUtil.HOME_SECURITY_CHANNEL_ID
+            NotificationUtil.HOME_SECURITY_CHANNEL_ID,
           )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
           startForeground(
             NOTIFICATION_ID,
             notification,
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION,
           )
         } else {
           startForeground(NOTIFICATION_ID, notification)
@@ -281,7 +281,7 @@ class DetectionBackgroundService : Service() {
   private fun updateForegroundNotification(
     peoplePresent: Boolean,
     method: String,
-    details: String
+    details: String,
   ) {
     try {
       val notification =
@@ -290,14 +290,14 @@ class DetectionBackgroundService : Service() {
             this,
             "✓ Presença Detectada",
             "$method • $details",
-            NotificationUtil.HOME_SECURITY_CHANNEL_ID
+            NotificationUtil.HOME_SECURITY_CHANNEL_ID,
           )
         } else {
           NotificationUtil.createForegroundNotification(
             this,
             "✗ Nenhuma Presença",
             "$method • Aguardando...",
-            NotificationUtil.HOME_SECURITY_CHANNEL_ID
+            NotificationUtil.HOME_SECURITY_CHANNEL_ID,
           )
         }
 

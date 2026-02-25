@@ -27,7 +27,7 @@ class SimStateReceiver : BroadcastReceiver() {
       if (simState == TelephonyManager.SIM_STATE_ABSENT) {
         LogRepository.logSystemEvent(
           context,
-          "SIM Card detected as ABSENT (Removed). Checking security status."
+          "SIM Card detected as ABSENT (Removed). Checking security status.",
         )
         checkAndTriggerAlarm(context)
       }
@@ -57,7 +57,7 @@ class SimStateReceiver : BroadcastReceiver() {
     } catch (e: Exception) {
       LogRepository.logSystemEvent(
         context,
-        "Error checking preferences or starting service: ${e.message}"
+        "Error checking preferences or starting service: ${e.message}",
       )
     }
   }

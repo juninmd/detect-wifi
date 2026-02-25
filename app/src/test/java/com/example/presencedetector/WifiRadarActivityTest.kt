@@ -19,7 +19,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import org.robolectric.fakes.RoboMenuItem
-import org.robolectric.shadows.ShadowApplication
 import org.robolectric.shadows.ShadowLooper
 import org.robolectric.shadows.ShadowWifiManager
 
@@ -96,7 +95,7 @@ class WifiRadarActivityTest {
           bssid = "00:11:22:33:44:55",
           level = -50,
           frequency = 2400,
-          source = DeviceSource.WIFI
+          source = DeviceSource.WIFI,
         )
       activity.runOnUiThread { adapter.updateDevices(listOf(device)) }
       ShadowLooper.idleMainLooper()

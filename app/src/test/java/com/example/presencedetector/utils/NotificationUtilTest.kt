@@ -86,7 +86,7 @@ class NotificationUtilTest {
     val actions = notification.actions
     assertTrue(
       "Should have Mark as Safe action",
-      actions.any { it.title.toString().contains("Mark") || it.title.toString().contains("Seguro") }
+      actions.any { it.title.toString().contains("Mark") || it.title.toString().contains("Seguro") },
     )
   }
 
@@ -102,7 +102,7 @@ class NotificationUtilTest {
     val actions = notification.actions
     assertTrue(
       "Should have Mark as Safe action",
-      actions.any { it.title.toString().contains("Seguro") }
+      actions.any { it.title.toString().contains("Seguro") },
     )
   }
 
@@ -123,7 +123,7 @@ class NotificationUtilTest {
         context,
         "Title",
         "Message",
-        NotificationUtil.CHANNEL_ID
+        NotificationUtil.CHANNEL_ID,
       )
     assertNotNull(notification)
     assertEquals(NotificationUtil.CHANNEL_ID, notification.channelId)
