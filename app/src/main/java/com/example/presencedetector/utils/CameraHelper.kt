@@ -67,7 +67,7 @@ class CameraHelper(private val context: Context) {
 
             LogRepository.logSystemEvent(context, "📸 Photo Captured: $filename")
 
-            telegramService.sendPhoto(file, "📸 Security Event Captured")
+            TelegramService(context).sendPhoto(file, "📸 Security Event Captured")
 
             // Show Notification
             val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)

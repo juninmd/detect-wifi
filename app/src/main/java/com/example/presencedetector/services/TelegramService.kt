@@ -38,68 +38,68 @@ open class TelegramService(
 
   open fun sendMessage(message: String) {
     executeTelegramAction("Message sent successfully", "Failed to send message") {
-        val (token, chatId) = getCredentials() ?: return@executeTelegramAction null
+      val (token, chatId) = getCredentials() ?: return@executeTelegramAction null
 
-        val url = "https://api.telegram.org/bot$token/sendMessage"
+      val url = "https://api.telegram.org/bot$token/sendMessage"
 
-        val requestBody =
-          MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart("chat_id", chatId)
-            .addFormDataPart("text", message)
-            .build()
+      val requestBody =
+        MultipartBody.Builder()
+          .setType(MultipartBody.FORM)
+          .addFormDataPart("chat_id", chatId)
+          .addFormDataPart("text", message)
+          .build()
 
-        Request.Builder().url(url).post(requestBody).build()
+      Request.Builder().url(url).post(requestBody).build()
     }
   }
 
   open fun sendPhoto(photoFile: File, caption: String = "") {
     executeTelegramAction("Photo sent successfully", "Failed to send photo") {
-        val (token, chatId) = getCredentials() ?: return@executeTelegramAction null
+      val (token, chatId) = getCredentials() ?: return@executeTelegramAction null
 
-        if (!photoFile.exists()) {
-          Log.e(TAG, "Photo file does not exist: ${photoFile.absolutePath}")
-          return@executeTelegramAction null
-        }
+      if (!photoFile.exists()) {
+        Log.e(TAG, "Photo file does not exist: ${photoFile.absolutePath}")
+        return@executeTelegramAction null
+      }
 
-        val url = "https://api.telegram.org/bot$token/sendPhoto"
-        val mediaType = "image/jpeg".toMediaTypeOrNull()
-        val fileBody = photoFile.asRequestBody(mediaType)
+      val url = "https://api.telegram.org/bot$token/sendPhoto"
+      val mediaType = "image/jpeg".toMediaTypeOrNull()
+      val fileBody = photoFile.asRequestBody(mediaType)
 
-        val requestBody =
-          MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart("chat_id", chatId)
-            .addFormDataPart("caption", caption)
-            .addFormDataPart("photo", photoFile.name, fileBody)
-            .build()
+      val requestBody =
+        MultipartBody.Builder()
+          .setType(MultipartBody.FORM)
+          .addFormDataPart("chat_id", chatId)
+          .addFormDataPart("caption", caption)
+          .addFormDataPart("photo", photoFile.name, fileBody)
+          .build()
 
-        Request.Builder().url(url).post(requestBody).build()
+      Request.Builder().url(url).post(requestBody).build()
     }
   }
 
   open fun sendAudio(audioFile: File, caption: String = "") {
     executeTelegramAction("Audio sent successfully", "Failed to send audio") {
-        val (token, chatId) = getCredentials() ?: return@executeTelegramAction null
+      val (token, chatId) = getCredentials() ?: return@executeTelegramAction null
 
-        if (!audioFile.exists()) {
-          Log.e(TAG, "Audio file does not exist: ${audioFile.absolutePath}")
-          return@executeTelegramAction null
-        }
+      if (!audioFile.exists()) {
+        Log.e(TAG, "Audio file does not exist: ${audioFile.absolutePath}")
+        return@executeTelegramAction null
+      }
 
-        val url = "https://api.telegram.org/bot$token/sendAudio"
-        val mediaType = "audio/mp4".toMediaTypeOrNull()
-        val fileBody = audioFile.asRequestBody(mediaType)
+      val url = "https://api.telegram.org/bot$token/sendAudio"
+      val mediaType = "audio/mp4".toMediaTypeOrNull()
+      val fileBody = audioFile.asRequestBody(mediaType)
 
-        val requestBody =
-          MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart("chat_id", chatId)
-            .addFormDataPart("caption", caption)
-            .addFormDataPart("audio", audioFile.name, fileBody)
-            .build()
+      val requestBody =
+        MultipartBody.Builder()
+          .setType(MultipartBody.FORM)
+          .addFormDataPart("chat_id", chatId)
+          .addFormDataPart("caption", caption)
+          .addFormDataPart("audio", audioFile.name, fileBody)
+          .build()
 
-        Request.Builder().url(url).post(requestBody).build()
+      Request.Builder().url(url).post(requestBody).build()
     }
   }
 

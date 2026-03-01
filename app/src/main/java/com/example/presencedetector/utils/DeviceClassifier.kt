@@ -5,19 +5,45 @@ import com.example.presencedetector.model.DeviceCategory
 /** Utility to classify devices based on SSID and BSSID patterns. */
 object DeviceClassifier {
 
-    private object Patterns {
-        val SMARTPHONE_HIGH_CONFIDENCE = setOf("iphone", "android", "galaxy", "note", "pixel")
-        val E_READERS = setOf("kindle", "ebook")
-        val SMART_HOME_ASSISTANTS = setOf("alexa", "echo", "amazon")
-        val SMART_LIGHTS = setOf("light", "bulb", "hue", "tuya", "smart life", "yeelight", "continua", "batcaverna")
-        val SMART_TVS = setOf("tv", "samsung", "lg", "sony", "bravia", "firestick", "chromecast", "roku")
-        val ROUTERS = setOf("2.4g", "5g", "router", "gateway", "tp-link", "d-link", "familia", "adriana")
-        val MOBILE_HOTSPOT_PATTERNS = setOf(
-            "iphone", "android", "samsung", "xiaomi", "redmi", "oneplus", "pixel", "motorola",
-            "huawei", "poco", "nokia", "realme", "vivo", "oppo", "honor", "personal", "hotspot",
-            "moto", "galaxy", "note", "12 pro", "s21", "s22", "note 20", "iphone 13"
-        )
-    }
+  private object Patterns {
+    val SMARTPHONE_HIGH_CONFIDENCE = setOf("iphone", "android", "galaxy", "note", "pixel")
+    val E_READERS = setOf("kindle", "ebook")
+    val SMART_HOME_ASSISTANTS = setOf("alexa", "echo", "amazon")
+    val SMART_LIGHTS =
+      setOf("light", "bulb", "hue", "tuya", "smart life", "yeelight", "continua", "batcaverna")
+    val SMART_TVS =
+      setOf("tv", "samsung", "lg", "sony", "bravia", "firestick", "chromecast", "roku")
+    val ROUTERS =
+      setOf("2.4g", "5g", "router", "gateway", "tp-link", "d-link", "familia", "adriana")
+    val MOBILE_HOTSPOT_PATTERNS =
+      setOf(
+        "iphone",
+        "android",
+        "samsung",
+        "xiaomi",
+        "redmi",
+        "oneplus",
+        "pixel",
+        "motorola",
+        "huawei",
+        "poco",
+        "nokia",
+        "realme",
+        "vivo",
+        "oppo",
+        "honor",
+        "personal",
+        "hotspot",
+        "moto",
+        "galaxy",
+        "note",
+        "12 pro",
+        "s21",
+        "s22",
+        "note 20",
+        "iphone 13",
+      )
+  }
 
   // Pre-compiled regex for hotspot detection
   private val SHORT_NAME_REGEX = Regex("[A-Za-z0-9]+")
@@ -59,7 +85,7 @@ object DeviceClassifier {
     return containsMobilePattern || (isShortName && ssid.matches(SHORT_NAME_REGEX))
   }
 
-    private fun String.containsAny(patterns: Collection<String>): Boolean {
-        return patterns.any { this.contains(it) }
-    }
+  private fun String.containsAny(patterns: Collection<String>): Boolean {
+    return patterns.any { this.contains(it) }
+  }
 }
