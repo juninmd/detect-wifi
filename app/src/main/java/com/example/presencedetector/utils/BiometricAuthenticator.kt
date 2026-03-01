@@ -60,7 +60,7 @@ class BiometricAuthenticator(private val activity: FragmentActivity) {
 
   private fun createAuthenticationCallback(
     onSuccess: () -> Unit,
-    onFail: (() -> Unit)?
+    onFail: (() -> Unit)?,
   ): BiometricPrompt.AuthenticationCallback {
     return object : BiometricPrompt.AuthenticationCallback() {
       override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
