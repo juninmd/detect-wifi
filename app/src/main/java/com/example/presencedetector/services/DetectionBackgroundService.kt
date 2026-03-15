@@ -212,8 +212,8 @@ class DetectionBackgroundService : Service() {
         val notification =
           NotificationUtil.createForegroundNotification(
             this,
-            "Monitoramento Residencial Ativo",
-            "Escaneando dispositivos...",
+            getString(com.example.presencedetector.R.string.notif_monitoring_active),
+            getString(com.example.presencedetector.R.string.notif_scanning_desc),
             NotificationUtil.HOME_SECURITY_CHANNEL_ID,
           )
 

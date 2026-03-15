@@ -101,7 +101,7 @@
                 android:drawablePadding="8dp"
                 app:drawableStartCompat="@android:drawable/ic_menu_myplaces"
                 app:drawableTint="@color/white"
-                android:text="Segurança Residencial"
+                android:text="@string/section_home_security"
                 android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                 android:textColor="@color/white"
                 android:textStyle="bold" />
@@ -306,7 +306,7 @@
                 android:drawablePadding="8dp"
                 app:drawableStartCompat="@android:drawable/ic_lock_lock"
                 app:drawableTint="@color/white"
-                android:text="Segurança do Dispositivo"
+                android:text="@string/section_mobile_security"
                 android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                 android:textColor="@color/white"
                 android:textStyle="bold" />
@@ -551,7 +551,7 @@
                     android:padding="16dp"
                     android:gravity="center_vertical">
                     <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_preferences" app:tint="@color/light_text"/>
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:text="Configurações Gerais" android:textColor="@color/light_text"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:text="@string/section_quick_settings" android:textColor="@color/light_text"/>
                     <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
                     <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_media_play" android:rotation="0" app:tint="@color/light_text"/>
                 </LinearLayout>
@@ -569,7 +569,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="8dp"
-                android:text="Atividade Recente"
+                android:text="@string/section_activity_log"
                 android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                 android:textColor="@color/light_text" />
 

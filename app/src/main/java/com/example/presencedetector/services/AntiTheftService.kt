@@ -263,14 +263,14 @@ class AntiTheftService :
 
     // Dynamic Text
     val modes = mutableListOf<String>()
-    modes.add("Movimento")
-    if (isPocketModeArmed) modes.add("Bolso")
-    if (isChargerModeArmed) modes.add("Carregador")
-    val modeText = "Ativo: " + modes.joinToString(", ")
+    modes.add(getString(R.string.mode_motion))
+    if (isPocketModeArmed) modes.add(getString(R.string.mode_pocket))
+    if (isChargerModeArmed) modes.add(getString(R.string.mode_charger))
+    val modeText = getString(R.string.status_active_format, modes.joinToString(", "))
 
     val builder =
       NotificationCompat.Builder(this, NotificationUtil.MOBILE_SECURITY_CHANNEL_ID)
-        .setContentTitle("Segurança do Celular")
+        .setContentTitle(getString(R.string.notif_mobile_security_active))
         .setContentText(modeText)
         .setSmallIcon(R.drawable.ic_status_active)
         .setOngoing(true)
@@ -279,7 +279,7 @@ class AntiTheftService :
           getString(R.string.action_disarm),
           pendingDisarmIntent,
         )
-        .addAction(android.R.drawable.ic_lock_power_off, "PÂNICO", pendingPanicIntent)
+        .addAction(android.R.drawable.ic_lock_power_off, getString(R.string.btn_panic), pendingPanicIntent)
 
     // Add intent to open app
     val appIntent = Intent(this, MainActivity::class.java)
