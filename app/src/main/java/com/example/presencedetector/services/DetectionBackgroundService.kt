@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.example.presencedetector.R
 import com.example.presencedetector.security.service.CameraMonitoringService
 import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil

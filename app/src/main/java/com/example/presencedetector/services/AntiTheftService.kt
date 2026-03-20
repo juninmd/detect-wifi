@@ -279,7 +279,11 @@ class AntiTheftService :
           getString(R.string.action_disarm),
           pendingDisarmIntent,
         )
-        .addAction(android.R.drawable.ic_lock_power_off, getString(R.string.btn_panic), pendingPanicIntent)
+        .addAction(
+          android.R.drawable.ic_lock_power_off,
+          getString(R.string.btn_panic),
+          pendingPanicIntent,
+        )
 
     // Add intent to open app
     val appIntent = Intent(this, MainActivity::class.java)

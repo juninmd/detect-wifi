@@ -8,22 +8,21 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class CameraHelperTest {
 
-    private lateinit var context: Context
+  private lateinit var context: Context
 
-    @Before
-    fun setup() {
-        context = ApplicationProvider.getApplicationContext()
-    }
+  @Before
+  fun setup() {
+    context = ApplicationProvider.getApplicationContext()
+  }
 
-    @Test
-    fun testInitialization() {
-        val helper = CameraHelper(context)
-        assertNotNull(helper)
-    }
+  @Test
+  fun testInitialization() {
+    val helper = CameraHelper(context)
+    assertNotNull(helper)
+  }
 }
