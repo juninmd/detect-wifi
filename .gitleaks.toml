@@ -1,0 +1,14 @@
+[[allowlist]]
+description = "False positive: hashicorp-tf-password in app/src/main/java/com/example/presencedetector/security/model/DetectionSettings.kt"
+rules = ["hashicorp-tf-password"]
+paths = ["app/src/main/java/com/example/presencedetector/security/model/DetectionSettings.kt"]
+
+[[allowlist]]
+description = "False positive: hashicorp-tf-password in app/src/main/java/com/example/presencedetector/security/model/DetectionSettings.kt"
+rules = ["hashicorp-tf-password"]
+paths = ["app/src/main/java/com/example/presencedetector/security/model/DetectionSettings.kt"]
+
+[[allowlist]]
+description = "False positive: private-key in app/google-services.json"
+rules = ["private-key"]
+paths = ["app/google-services.json"]
