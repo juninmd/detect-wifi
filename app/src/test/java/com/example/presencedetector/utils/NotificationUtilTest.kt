@@ -93,11 +93,7 @@ class NotificationUtilTest {
     // Verify Mark as Safe action exists
     val actions = notification.actions
     assertNotNull("Actions should exist", actions)
-    var hasSafeAction = false
-    actions?.forEach {
-        if (it.title == "Marcar Seguro") hasSafeAction = true
-    }
-    assertEquals("Should have Mark as Safe action", true, hasSafeAction)
+    assertTrue("Should have Mark as Safe action", actions.any { it.title == "Marcar Seguro" })
   }
 
   @Test
