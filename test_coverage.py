@@ -11,6 +11,9 @@ def get_coverage(class_name_contains):
                         missed = int(counter.attrib['missed'])
                         covered = int(counter.attrib['covered'])
                         total = missed + covered
-                        print(f"Coverage for {cls.attrib['name']}: {covered}/{total} ({(covered/total)*100:.2f}%)")
+                        if total > 0:
+                            print(f"Coverage for {cls.attrib['name']}: {covered}/{total} ({(covered/total)*100:.2f}%)")
+                        else:
+                            print(f"Coverage for {cls.attrib['name']}: {covered}/{total} (0.00%)")
 
 get_coverage("NotificationUtil")
