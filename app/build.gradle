@@ -144,7 +144,7 @@ task jacocoTestReport(type: JacocoReport, dependsOn: 'testDebugUnitTest') {
             '**/*BiometricAuthenticator*', // 200
             '**/*PresenceDetectionManager*', // 750
             '**/*AntiTheftService*', // 480
-            '**/*NotificationUtil*' // 200
+            /* removed NotificationUtil from exclusion */
     ]
     def debugTree = fileTree(dir: "${project.buildDir}/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes", excludes: fileFilter)
     def javaTree = fileTree(dir: "${project.buildDir}/intermediates/javac/debug/compileDebugJavaWithJavac/classes", excludes: fileFilter)
@@ -171,7 +171,7 @@ task jacocoTestCoverageVerification(type: JacocoCoverageVerification, dependsOn:
             '**/*BiometricAuthenticator*', // 200
             '**/*PresenceDetectionManager*', // 750
             '**/*AntiTheftService*', // 480
-            '**/*NotificationUtil*' // 200
+            /* removed NotificationUtil from exclusion */
     ]
     def debugTree = fileTree(dir: "${project.buildDir}/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes", excludes: fileFilter)
     def javaTree = fileTree(dir: "${project.buildDir}/intermediates/javac/debug/compileDebugJavaWithJavac/classes", excludes: fileFilter)
