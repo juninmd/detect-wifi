@@ -194,7 +194,7 @@ class WifiRadarActivity : AppCompatActivity() {
       devices =
         when (sortOrder) {
           SortOrder.DISTANCE -> newDevices.sortedWith(
-            compareBy<WiFiDevice> { preferences.getNickname(it.bssid) == null }
+            compareBy<WiFiDevice> { it.nickname == null }
               .thenByDescending { it.level }
           ) // Labeled devices first, then strongest signal
           SortOrder.NAME -> newDevices.sortedBy { preferences.getNickname(it.bssid) ?: it.ssid }
