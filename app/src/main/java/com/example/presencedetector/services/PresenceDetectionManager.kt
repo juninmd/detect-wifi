@@ -410,7 +410,7 @@ class PresenceDetectionManager(
     val message = context.getString(R.string.notif_device_arrived_desc, time, device.level)
 
     // Use FALSE for isImportantEvent to route to the Info channel
-    NotificationUtil.sendPresenceNotification(context, title, message, false)
+    NotificationUtil.sendPresenceNotification(context, title, message, false, channelType = NotificationUtil.HOME_SECURITY_CHANNEL_ID)
   }
 
   private fun sendDepartureNotification(bssid: String, device: WiFiDevice?) {
@@ -437,7 +437,7 @@ class PresenceDetectionManager(
     val message = context.getString(R.string.notif_device_left_desc, time)
 
     // Use FALSE for isImportantEvent to route to the Info channel
-    NotificationUtil.sendPresenceNotification(context, title, message, false)
+    NotificationUtil.sendPresenceNotification(context, title, message, false, channelType = NotificationUtil.HOME_SECURITY_CHANNEL_ID)
   }
 
   private fun sendArrivalTelegramAlert(device: WiFiDevice) {
@@ -563,7 +563,7 @@ class PresenceDetectionManager(
         "All tracked devices have left the area."
       }
     // Use FALSE for isImportantEvent unless it's a specific security threat handled elsewhere
-    NotificationUtil.sendPresenceNotification(context, title, message, false)
+    NotificationUtil.sendPresenceNotification(context, title, message, false, channelType = NotificationUtil.HOME_SECURITY_CHANNEL_ID)
   }
 
   fun setPresenceListener(listener: PresenceListener) {

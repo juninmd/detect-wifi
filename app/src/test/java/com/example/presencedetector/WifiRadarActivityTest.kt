@@ -116,5 +116,57 @@ class WifiRadarActivityTest {
 
     val dialog = org.robolectric.shadows.ShadowAlertDialog.getLatestDialog()
     assertNotNull("Sort dialog should be shown", dialog)
+
+    val refreshItem = RoboMenuItem(R.id.action_refresh)
+    activity.onOptionsItemSelected(refreshItem)
+    val latestToast = org.robolectric.shadows.ShadowToast.getTextOfLatestToast()
+    assertEquals("Atualizando radar...", latestToast)
+  }
+
+  @Test
+  fun `adapter sorting by distance prioritizes labeled devices`() {
+    activity =
+      Robolectric.buildActivity(WifiRadarActivity::class.java).create().start().resume().get()
+
+    val recyclerView = activity.findViewById<RecyclerView>(R.id.wifiRecyclerView)
+    val adapter = recyclerView.adapter as WifiRadarActivity.WifiAdapter
+
+    val labeledDevice = WiFiDevice(
+      ssid = "Weak Labeled",
+      bssid = "00:11:22:33:44:55",
+      level = -80,
+      frequency = 2400,
+      source = DeviceSource.WIFI
+    )
+    val strongUnlabeledDevice = WiFiDevice(
+      ssid = "Strong Unlabeled",
+      bssid = "AA:BB:CC:DD:EE:FF",
+      level = -40,
+      frequency = 2400,
+      source = DeviceSource.WIFI
+    )
+
+    preferences.saveNickname("00:11:22:33:44:55", "My Device")
+
+    activity.runOnUiThread {
+      adapter.updateDevices(listOf(labeledDevice, strongUnlabeledDevice), WifiRadarActivity.SortOrder.DISTANCE)
+    }
+    ShadowLooper.idleMainLooper()
+
+    recyclerView.measure(0, 0)
+    recyclerView.layout(0, 0, 100, 1000)
+
+    // Assuming we can access the first item's bound text
+    if (adapter.itemCount > 1) {
+      val holder0 = adapter.onCreateViewHolder(recyclerView, 0)
+      adapter.onBindViewHolder(holder0, 0)
+
+      val holder1 = adapter.onCreateViewHolder(recyclerView, 1)
+      adapter.onBindViewHolder(holder1, 1)
+
+      // Labeled device should be first despite having weaker signal
+      assertEquals("My Device", holder0.binding.tvName.text.toString())
+      assertEquals("Strong Unlabeled", holder1.binding.tvName.text.toString())
+    }
   }
 }

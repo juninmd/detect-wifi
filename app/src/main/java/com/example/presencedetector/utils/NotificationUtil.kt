@@ -179,10 +179,11 @@ object NotificationUtil {
     secondActionTitle: String? = null,
     secondActionIntent: PendingIntent? = null,
     iconResId: Int? = null,
+    channelType: String = INFO_CHANNEL_ID,
   ) {
     createNotificationChannels(context)
 
-    val channelId = if (isImportantEvent) INFO_CHANNEL_ID else SILENT_CHANNEL_ID
+    val channelId = if (channelType != INFO_CHANNEL_ID || isImportantEvent) channelType else SILENT_CHANNEL_ID
 
     val intent =
       Intent(context, WifiRadarActivity::class.java).apply {
