@@ -112,6 +112,7 @@ class WifiRadarActivity : AppCompatActivity() {
   }
 
   private fun forceRefreshDevices() {
+    android.widget.Toast.makeText(this, "Atualizando radar...", android.widget.Toast.LENGTH_SHORT).show()
     // Force WiFi scan to update device list
     detectionManager.startDetection()
   }
@@ -192,7 +193,10 @@ class WifiRadarActivity : AppCompatActivity() {
     fun updateDevices(newDevices: List<WiFiDevice>, sortOrder: SortOrder = SortOrder.DISTANCE) {
       devices =
         when (sortOrder) {
-          SortOrder.DISTANCE -> newDevices.sortedByDescending { it.level } // Strongest signal first
+          SortOrder.DISTANCE -> newDevices.sortedWith(
+            compareBy<WiFiDevice> { preferences.getNickname(it.bssid) == null }
+              .thenByDescending { it.level }
+          ) // Labeled devices first, then strongest signal
           SortOrder.NAME -> newDevices.sortedBy { preferences.getNickname(it.bssid) ?: it.ssid }
           SortOrder.CATEGORY ->
             newDevices.sortedBy { device ->

@@ -32,6 +32,25 @@ class NotificationUtilTest {
   }
 
   @Test
+  fun testCreateNotificationChannelsAPI25() {
+    // Should do nothing gracefully for APIs < 26
+    val oldVersion = android.os.Build.VERSION.SDK_INT
+    try {
+      org.robolectric.util.ReflectionHelpers.setStaticField(android.os.Build.VERSION::class.java, "SDK_INT", 25)
+
+      // Before execution
+      val previousSize = notificationManager.notificationChannels.size
+
+      NotificationUtil.createNotificationChannels(context)
+
+      // Verify size did not change
+      assertEquals(previousSize, notificationManager.notificationChannels.size)
+    } finally {
+      org.robolectric.util.ReflectionHelpers.setStaticField(android.os.Build.VERSION::class.java, "SDK_INT", oldVersion)
+    }
+  }
+
+  @Test
   fun testCreateNotificationChannels() {
     NotificationUtil.createNotificationChannels(context)
 
@@ -41,6 +60,56 @@ class NotificationUtilTest {
     assertNotNull("Channel should be created", channel)
     assertEquals(context.getString(R.string.channel_service_name), channel?.name)
     assertEquals(NotificationManager.IMPORTANCE_LOW, channel?.importance)
+    assertEquals(context.getString(R.string.channel_service_desc), channel?.description)
+
+    val infoChannel = notificationManager.getNotificationChannel(NotificationUtil.INFO_CHANNEL_ID)
+    assertNotNull(infoChannel)
+    assertEquals(context.getString(R.string.channel_info_name), infoChannel?.name)
+    assertEquals(context.getString(R.string.channel_info_desc), infoChannel?.description)
+    assertEquals(true, infoChannel?.shouldShowLights())
+    assertEquals(android.graphics.Color.BLUE, infoChannel?.lightColor)
+
+    val silentChannel = notificationManager.getNotificationChannel(NotificationUtil.SILENT_CHANNEL_ID)
+    assertNotNull(silentChannel)
+    assertEquals("Eventos Silenciosos", silentChannel?.name)
+    assertEquals("Notificações de rotina sem som", silentChannel?.description)
+    assertEquals(false, silentChannel?.canShowBadge())
+
+    val securityChannel = notificationManager.getNotificationChannel(NotificationUtil.SECURITY_CHANNEL_ID)
+    assertNotNull(securityChannel)
+    assertEquals("Alerta de Segurança Crítico", securityChannel?.name)
+    assertEquals("Alertas de intrusão e roubo. Toca mesmo em modo não perturbe.", securityChannel?.description)
+    assertEquals(true, securityChannel?.shouldVibrate())
+    assertEquals(android.graphics.Color.RED, securityChannel?.lightColor)
+    // AudioAttributes not accessible directly but bypass dnd is
+    assertEquals(true, securityChannel?.canBypassDnd())
+    assertEquals(Notification.VISIBILITY_PUBLIC, securityChannel?.lockscreenVisibility)
+
+    val batteryChannel = notificationManager.getNotificationChannel(NotificationUtil.BATTERY_CHANNEL_ID)
+    assertNotNull(batteryChannel)
+    assertEquals(context.getString(R.string.channel_battery_name), batteryChannel?.name)
+    assertEquals(context.getString(R.string.channel_battery_desc), batteryChannel?.description)
+    assertEquals(true, batteryChannel?.shouldVibrate())
+    assertEquals(android.graphics.Color.YELLOW, batteryChannel?.lightColor)
+
+    val homeChannel = notificationManager.getNotificationChannel(NotificationUtil.HOME_SECURITY_CHANNEL_ID)
+    assertNotNull(homeChannel)
+    assertEquals("Segurança Residencial", homeChannel?.name)
+    assertEquals("Notificações de monitoramento WiFi e presença em casa", homeChannel?.description)
+    assertEquals(false, homeChannel?.canShowBadge())
+
+    val mobileChannel = notificationManager.getNotificationChannel(NotificationUtil.MOBILE_SECURITY_CHANNEL_ID)
+    assertNotNull(mobileChannel)
+    assertEquals("Segurança do Celular", mobileChannel?.name)
+    assertEquals("Notificações de monitoramento anti-furto (bolso, movimento)", mobileChannel?.description)
+    assertEquals(true, mobileChannel?.canShowBadge())
+
+    val alertsChannel = notificationManager.getNotificationChannel(NotificationUtil.SECURITY_ALERTS_CHANNEL_ID)
+    assertNotNull(alertsChannel)
+    assertEquals("Alertas de Segurança", alertsChannel?.name)
+    assertEquals("Notificações quando uma pessoa é detectada nas câmeras", alertsChannel?.description)
+    assertEquals(true, alertsChannel?.shouldVibrate())
+    assertEquals(true, alertsChannel?.shouldShowLights())
   }
 
   @Test
@@ -93,7 +162,7 @@ class NotificationUtilTest {
     // Verify Mark as Safe action exists
     val actions = notification.actions
     assertNotNull("Actions should exist", actions)
-    assertTrue("Should have Mark as Safe action", actions.any { it.title == "Marcar Seguro" })
+    assertEquals(true, actions.any { it.title == "Marcar Seguro" })
   }
 
   @Test

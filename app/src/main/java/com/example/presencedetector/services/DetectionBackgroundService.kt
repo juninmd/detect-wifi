@@ -78,6 +78,7 @@ class DetectionBackgroundService : Service() {
         "⚠️ Security Alert",
         "Sensitive App Accessed: $packageName. Photo captured.",
         true,
+        channelType = NotificationUtil.MOBILE_SECURITY_CHANNEL_ID
       )
     } catch (e: Exception) {
       Log.e(TAG, "Failed to launch hidden camera", e)
@@ -109,6 +110,7 @@ class DetectionBackgroundService : Service() {
               "🛡️ Zona Segura",
               "Anti-Furto desativado: Conectado a $currentSsid",
               false,
+              channelType = NotificationUtil.HOME_SECURITY_CHANNEL_ID
             )
           }
         } else {
@@ -140,6 +142,7 @@ class DetectionBackgroundService : Service() {
         "🛡️ Modo Inteligente",
         "Anti-Furto ativado automaticamente ao sair de casa.",
         false,
+        channelType = NotificationUtil.MOBILE_SECURITY_CHANNEL_ID
       )
       return
     }
@@ -168,6 +171,7 @@ class DetectionBackgroundService : Service() {
         false, // Info priority (user can ignore)
         "Ativar Agora",
         pendingEnableIntent,
+        channelType = NotificationUtil.MOBILE_SECURITY_CHANNEL_ID
       )
 
       lastAutoArmSuggestionTime = System.currentTimeMillis()
