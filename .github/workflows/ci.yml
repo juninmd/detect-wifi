@@ -342,7 +342,7 @@ jobs:
 
       - name: Create Staging Release (Main)
         if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v1.1.${{ github.run_number }}
           name: Staging Release v1.1.${{ github.run_number }}
@@ -356,7 +356,7 @@ jobs:
 
       - name: Create Production Release (Tag)
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: Production Release ${{ github.ref_name }}
           files: |
