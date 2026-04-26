@@ -20,7 +20,7 @@ class LogRepositoryTest {
     context = ApplicationProvider.getApplicationContext()
     LogRepository.clearLogs(context)
     // Give time for clearLogs async operation
-    Thread.sleep(100)
+    Thread.sleep(500)
   }
 
   private fun waitForCondition(condition: () -> Boolean, timeoutMs: Long = 2000) {

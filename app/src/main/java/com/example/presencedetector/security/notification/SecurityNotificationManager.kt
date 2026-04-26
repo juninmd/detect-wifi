@@ -10,6 +10,8 @@ import com.example.presencedetector.R
 import com.example.presencedetector.security.model.CameraChannel
 import com.example.presencedetector.security.ui.CameraStreamActivity
 import com.example.presencedetector.utils.NotificationUtil
+import com.example.presencedetector.receivers.NotificationActionReceiver
+
 
 /**
  * Gerencia notificações de alertas de segurança.
@@ -78,6 +80,35 @@ class SecurityNotificationManager(private val context: Context) {
           .setSummaryText("Pessoa detectada na ${channel.name}")
       )
     }
+
+
+    val safeIntent =
+      Intent(context, NotificationActionReceiver::class.java).apply {
+        action = NotificationActionReceiver.ACTION_MARK_SAFE
+        putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, NOTIFICATION_ID_BASE + channel.id)
+      }
+    val pendingSafeIntent =
+      PendingIntent.getBroadcast(
+        context,
+        channel.id + 99,
+        safeIntent,
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+      )
+    builder.addAction(android.R.drawable.ic_menu_save, "Marcar Seguro", pendingSafeIntent)
+
+    val stopIntent =
+      Intent(context, NotificationActionReceiver::class.java).apply {
+        action = NotificationActionReceiver.ACTION_STOP_ALARM
+        putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, NOTIFICATION_ID_BASE + channel.id)
+      }
+    val pendingStopIntent =
+      PendingIntent.getBroadcast(
+        context,
+        channel.id + 100,
+        stopIntent,
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+      )
+    builder.addAction(android.R.drawable.ic_media_pause, "Desativar", pendingStopIntent)
 
     try {
       // Check permission is handled by caller or assumed granted if notification service is running

@@ -9,10 +9,15 @@ import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito
+import org.mockito.Mockito.mock
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
+import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowNotificationManager
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class SecurityNotificationManagerTest {
 
   private lateinit var context: Context
@@ -56,6 +61,30 @@ class SecurityNotificationManagerTest {
     )
     assertEquals("Front Door", notification.extras.getString(android.app.Notification.EXTRA_TEXT))
     assertEquals("security_alerts", notification.channelId)
+    // 2 new actions
+    assertEquals(2, notification.actions.size)
+  }
+
+  @Test
+  fun `test show detection notification with snapshot`() {
+    val cameraChannel = CameraChannel(id = 1, name = "Front Door", host = "192.168.1.100")
+    val bitmap = android.graphics.Bitmap.createBitmap(100, 100, android.graphics.Bitmap.Config.ARGB_8888)
+
+    securityNotificationManager.showDetectionNotification(cameraChannel, bitmap)
+
+    val notificationManager =
+      Shadows.shadowOf(
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+      )
+    val notifications = notificationManager.allNotifications
+
+    assertEquals(1, notifications.size)
+
+    val notification = notifications[0]
+    assertEquals(
+      "🚨 Movimento detectado",
+      notification.extras.getString(android.app.Notification.EXTRA_TITLE),
+    )
   }
 
   @Test
