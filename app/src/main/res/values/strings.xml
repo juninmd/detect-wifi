@@ -5,7 +5,7 @@
 
     <!-- Dashboard Sections -->
     <string name="section_home_security">🏠 Segurança Residencial</string>
-    <string name="section_mobile_security">📱 Segurança do Celular</string>
+    <string name="section_mobile_security">📱 Mobile &amp; Personal Security</string>
     <string name="section_activity_log">Registro de Atividades</string>
     <string name="section_quick_settings">Configurações Rápidas</string>
 
