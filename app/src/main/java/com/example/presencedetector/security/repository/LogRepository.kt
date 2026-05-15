@@ -100,7 +100,7 @@ object LogRepository {
     val buffer = ArrayDeque<String>(limit)
     try {
       file.useLines { lines ->
-        lines.forEach { line ->
+        for (line in lines) {
           if (buffer.size >= limit) {
             buffer.removeFirst()
           }
@@ -134,7 +134,8 @@ object LogRepository {
     scope.launch {
       try {
         val logsDir = getLogsDir(appContext)
-        logsDir.listFiles()?.forEach { it.delete() }
+        val files = logsDir.listFiles()
+        if (files != null) { for (file in files) { file.delete() } }
       } catch (e: Exception) {
         Log.e(TAG, "Error clearing logs", e)
       }

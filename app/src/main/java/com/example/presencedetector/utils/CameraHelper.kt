@@ -11,6 +11,7 @@ import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
 import android.media.ImageReader
+import com.example.presencedetector.security.notification.SecurityNotificationManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -71,7 +72,7 @@ class CameraHelper(private val context: Context) {
 
             // Show Notification
             val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-            NotificationUtil.sendIntruderAlert(context, bitmap)
+            SecurityNotificationManager(context).showIntruderAlert(bitmap)
           } catch (e: Exception) {
             e.printStackTrace()
           }
@@ -99,7 +100,7 @@ class CameraHelper(private val context: Context) {
 
     private fun showNotification(context: Context, bytes: ByteArray) {
       val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-      NotificationUtil.sendIntruderAlert(context, bitmap)
+      SecurityNotificationManager(context).showIntruderAlert(bitmap)
     }
   }
 

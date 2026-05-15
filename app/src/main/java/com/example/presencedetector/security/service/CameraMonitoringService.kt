@@ -151,7 +151,7 @@ class CameraMonitoringService : Service() {
     // Inicia monitoramento para cada câmera habilitada
     settings.channels
       .filter { it.id in settings.enabledChannelIds }
-      .forEach { channel -> startChannelMonitoring(channel) }
+      .let { channels -> for (channel in channels) { startChannelMonitoring(channel) } }
   }
 
   /** Inicia monitoramento de um canal específico. */
@@ -274,7 +274,7 @@ class CameraMonitoringService : Service() {
     serviceScope.cancel()
 
     // Para todos os media players
-    mediaPlayers.values.forEach { player ->
+    for (player in mediaPlayers.values) {
       player.stop()
       player.getVLCVout().detachViews()
       player.release()
@@ -282,11 +282,11 @@ class CameraMonitoringService : Service() {
     mediaPlayers.clear()
 
     // Fecha ImageReaders
-    imageReaders.values.forEach { it.close() }
+    for (reader in imageReaders.values) { reader.close() }
     imageReaders.clear()
 
     // Fecha todos os analyzers
-    analyzers.values.forEach { it.close() }
+    for (analyzer in analyzers.values) { analyzer.close() }
     analyzers.clear()
 
     // Para o serviço

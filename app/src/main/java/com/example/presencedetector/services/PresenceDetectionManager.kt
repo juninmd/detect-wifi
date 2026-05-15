@@ -16,6 +16,7 @@ import com.example.presencedetector.model.WiFiDevice
 import com.example.presencedetector.receivers.NotificationActionReceiver
 import com.example.presencedetector.security.repository.LogRepository
 import com.example.presencedetector.utils.NotificationUtil
+import com.example.presencedetector.security.notification.SecurityNotificationManager
 import com.example.presencedetector.utils.PreferencesUtil
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -157,7 +158,7 @@ class PresenceDetectionManager(
     processSmartDeviceEvents(allDevices)
 
     // Track history for all devices
-    allDevices.forEach {
+    for (it in allDevices) {
       preferences.trackDetection(it.bssid)
       deviceTypes[it.bssid] = it.source
 
@@ -176,7 +177,7 @@ class PresenceDetectionManager(
     val validDevices = detectedDevices.filter { it.level >= MIN_SIGNAL_THRESHOLD }
 
     // 1. Handle Arrivals and Updates
-    validDevices.forEach { device ->
+    for (device in validDevices) {
       val bssid = device.bssid
       val lastSeen = lastSeenMap[bssid] ?: 0L
       val wasNotifiedArrival = hasNotifiedArrivalMap[bssid] ?: false
@@ -220,7 +221,7 @@ class PresenceDetectionManager(
     }
 
     // 2. Handle Departures
-    lastSeenMap.keys.forEach { bssid ->
+    for (bssid in lastSeenMap.keys) {
       val lastSeen = lastSeenMap[bssid] ?: 0L
       val isCurrentlyMissing = !detectedBssids.contains(bssid)
 
@@ -330,8 +331,7 @@ class PresenceDetectionManager(
       )
 
     // Use Critical Alert (High Priority Channel)
-    NotificationUtil.sendCriticalAlert(
-      context,
+    SecurityNotificationManager(context).showHomeSecurityAlert(
       context.getString(R.string.notif_security_threat),
       msg,
       notificationId,

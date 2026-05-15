@@ -27,6 +27,8 @@ class SecurityNotificationManagerTest {
   fun setUp() {
     context = ApplicationProvider.getApplicationContext()
     securityNotificationManager = SecurityNotificationManager(context)
+    val shadowApp = Shadows.shadowOf(context as android.app.Application)
+    shadowApp.grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS)
   }
 
   @Test
@@ -118,4 +120,13 @@ class SecurityNotificationManagerTest {
     securityNotificationManager.cancelAllNotifications()
     assertEquals(0, notificationManager.allNotifications.size)
   }
+
+  @Test
+  fun `test permission failure`() {
+    val shadowApp = Shadows.shadowOf(context as android.app.Application)
+    shadowApp.denyPermissions(android.Manifest.permission.POST_NOTIFICATIONS)
+
+    securityNotificationManager.showHomeSecurityAlert("A", "B", 1)
+  }
+
 }

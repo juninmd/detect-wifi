@@ -8,6 +8,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.presencedetector.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import com.example.presencedetector.security.notification.SecurityNotificationManager
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -142,12 +143,7 @@ class NotificationUtilTest {
     val shadowApp = Shadows.shadowOf(context as android.app.Application)
     shadowApp.grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS)
 
-    NotificationUtil.sendCriticalAlert(
-      context = context,
-      title = "Critical Title",
-      message = "Critical Message",
-      notificationId = 456
-    )
+    SecurityNotificationManager(context).showHomeSecurityAlert("Critical Title", "Critical Message", 456)
 
     val notifications = shadowNotificationManager.allNotifications
     assertEquals("One notification should be shown", 1, notifications.size)
@@ -170,7 +166,7 @@ class NotificationUtilTest {
     val shadowApp = Shadows.shadowOf(context as android.app.Application)
     shadowApp.grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS)
 
-    NotificationUtil.sendBatteryAlert(context, 15)
+    SecurityNotificationManager(context).showMobileSecurityAlert(15)
 
     val notifications = shadowNotificationManager.allNotifications
     assertEquals("One notification should be shown", 1, notifications.size)
@@ -189,7 +185,7 @@ class NotificationUtilTest {
     val shadowApp = Shadows.shadowOf(context as android.app.Application)
     shadowApp.grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS)
 
-    NotificationUtil.sendPanicAlert(context)
+    SecurityNotificationManager(context).showPanicAlert()
 
     val notifications = shadowNotificationManager.allNotifications
     assertEquals("One notification should be shown", 1, notifications.size)
@@ -244,7 +240,7 @@ class NotificationUtilTest {
 
     val bitmap = android.graphics.Bitmap.createBitmap(100, 100, android.graphics.Bitmap.Config.ARGB_8888)
 
-    NotificationUtil.sendIntruderAlert(context, bitmap)
+    SecurityNotificationManager(context).showIntruderAlert(bitmap)
 
     val notifications = shadowNotificationManager.allNotifications
     assertEquals("One notification should be shown", 1, notifications.size)

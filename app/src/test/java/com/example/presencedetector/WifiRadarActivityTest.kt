@@ -134,6 +134,7 @@ class WifiRadarActivityTest {
     val labeledDevice = WiFiDevice(
       ssid = "Weak Labeled",
       bssid = "00:11:22:33:44:55",
+      nickname = "My Device",
       level = -80,
       frequency = 2400,
       source = DeviceSource.WIFI

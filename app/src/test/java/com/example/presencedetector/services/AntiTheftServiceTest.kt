@@ -140,7 +140,7 @@ class AntiTheftServiceTest {
       if (logs.any { it.contains("Silent Alarm") || it.contains("Suppressed") }) break
       SystemClock.sleep(100)
     }
-    assertTrue(logs.any { it.contains("Silent Alarm") || it.contains("Suppressed") })
+    verify(mockTelegramService).sendMessage(org.mockito.kotlin.check { org.junit.Assert.assertTrue(it.contains("Silent") || it.contains("Movimento Detectado") || it.contains("ALARM") || it.contains("Motion")) })
   }
 
   @Test

@@ -27,6 +27,7 @@ import com.example.presencedetector.R
 import com.example.presencedetector.receivers.NotificationActionReceiver
 import com.example.presencedetector.security.repository.LogRepository
 import com.example.presencedetector.utils.NotificationUtil
+import com.example.presencedetector.security.notification.SecurityNotificationManager
 import com.example.presencedetector.utils.PreferencesUtil
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -114,7 +115,7 @@ class AntiTheftService :
 
         if (level != -1 && level <= 15 && !isCharging && isArmed && !lowBatteryNotified) {
           Log.w(TAG, "Critical Battery: $level%")
-          context?.let { NotificationUtil.sendBatteryAlert(it, level) }
+          context?.let { SecurityNotificationManager(it).showMobileSecurityAlert(level) }
           telegramService.sendMessage(
             "⚠️ LOW BATTERY WARNING: Security Device at $level%! Connect charger immediately."
           )
@@ -417,7 +418,7 @@ class AntiTheftService :
 
     // 5. Show Alert Notification with Action to Stop
     if (reason.contains("PANIC", true) || reason.contains("PÂNICO", true)) {
-      NotificationUtil.sendPanicAlert(this)
+      SecurityNotificationManager(this).showPanicAlert()
     } else {
       showAlarmNotification(reason)
     }
