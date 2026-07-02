@@ -1,0 +1,295 @@
+package com.example.presencedetector.utils
+
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.graphics.ImageFormat
+import android.graphics.SurfaceTexture
+import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraDevice
+import android.hardware.camera2.CameraManager
+import android.hardware.camera2.CaptureRequest
+import android.media.ImageReader
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.view.Surface
+import androidx.core.app.ActivityCompat
+import com.example.presencedetector.security.repository.LogRepository
+import com.example.presencedetector.services.TelegramService
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.*
+
+class CameraHelper(private val context: Context) {
+
+  private val mainHandler = Handler(Looper.getMainLooper())
+
+  fun captureSelfie(
+    surfaceTexture: SurfaceTexture? = null,
+    onImageCaptured: (ByteArray) -> Unit,
+    onError: ((Exception) -> Unit)? = null,
+    onComplete: (() -> Unit)? = null,
+  ) {
+    if (
+      ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) !=
+        PackageManager.PERMISSION_GRANTED
+    ) {
+      Log.w("CameraHelper", "Camera permission not granted")
+      onError?.invoke(SecurityException("Camera permission not granted"))
+      onComplete?.invoke()
+      return
+    }
+
+    val session =
+      SelfieCaptureSession(
+        context = context,
+        providedSurfaceTexture = surfaceTexture,
+        mainHandler = mainHandler,
+        onImageCaptured = onImageCaptured,
+        onError = onError,
+        onComplete = onComplete,
+      )
+    session.start()
+  }
+
+  companion object {
+    fun saveAndSendImage(context: Context, bytes: ByteArray) {
+      Thread {
+          try {
+            val filename =
+              "EVENT_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg"
+            val file =
+              File(context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES), filename)
+            FileOutputStream(file).use { it.write(bytes) }
+
+            LogRepository.logSystemEvent(context, "📸 Photo Captured: $filename")
+
+            TelegramService(context).sendPhoto(file, "📸 Security Event Captured")
+
+            // Show Notification
+            val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            NotificationUtil.sendIntruderAlert(context, bitmap)
+          } catch (e: Exception) {
+            e.printStackTrace()
+          }
+        }
+        .start()
+    }
+
+    private fun saveImageToFile(context: Context, bytes: ByteArray): File {
+      val filename =
+        "EVENT_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg"
+      val file =
+        File(context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES), filename)
+      FileOutputStream(file).use { it.write(bytes) }
+      return file
+    }
+
+    private fun logSystemEvent(context: Context, filename: String) {
+      LogRepository.logSystemEvent(context, "📸 Photo Captured: $filename")
+    }
+
+    private fun sendToTelegram(context: Context, file: File) {
+      val telegramService = TelegramService(context)
+      telegramService.sendPhoto(file, "📸 Security Event Captured")
+    }
+
+    private fun showNotification(context: Context, bytes: ByteArray) {
+      val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+      NotificationUtil.sendIntruderAlert(context, bitmap)
+    }
+  }
+
+  private class SelfieCaptureSession(
+    private val context: Context,
+    private val providedSurfaceTexture: SurfaceTexture?,
+    private val mainHandler: Handler,
+    private val onImageCaptured: (ByteArray) -> Unit,
+    private val onError: ((Exception) -> Unit)?,
+    private val onComplete: (() -> Unit)?,
+  ) {
+    private var activeCamera: CameraDevice? = null
+    private var activeSession: CameraCaptureSession? = null
+    private var imageReader: ImageReader? = null
+    private var createdSurfaceTexture: SurfaceTexture? = null
+
+    companion object {
+      private const val CAPTURE_ORIENTATION = 270
+      private const val IMAGE_WIDTH = 640
+      private const val IMAGE_HEIGHT = 480
+    }
+
+    fun start() {
+      try {
+        val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        val cameraId = findFrontFacingCamera(cameraManager)
+
+        if (cameraId == null) {
+          onError?.invoke(Exception("Front camera not found"))
+          cleanup()
+          return
+        }
+
+        setupImageReader()
+        openCamera(cameraManager, cameraId)
+      } catch (e: Exception) {
+        Log.e("CameraHelper", "Error starting capture session", e)
+        onError?.invoke(e)
+        cleanup()
+      }
+    }
+
+    private fun findFrontFacingCamera(manager: CameraManager): String? {
+      return manager.cameraIdList.firstOrNull {
+        manager.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) ==
+          CameraCharacteristics.LENS_FACING_FRONT
+      } ?: manager.cameraIdList.firstOrNull()
+    }
+
+    private fun setupImageReader() {
+      imageReader =
+        ImageReader.newInstance(IMAGE_WIDTH, IMAGE_HEIGHT, ImageFormat.JPEG, 1).apply {
+          setOnImageAvailableListener({ reader -> handleImageAvailable(reader) }, mainHandler)
+        }
+    }
+
+    private fun handleImageAvailable(reader: ImageReader) {
+      try {
+        val image = reader.acquireLatestImage()
+        if (image != null) {
+          val buffer = image.planes[0].buffer
+          val bytes = ByteArray(buffer.remaining())
+          buffer.get(bytes)
+          image.close()
+
+          onImageCaptured(bytes)
+        }
+      } catch (e: Exception) {
+        e.printStackTrace()
+        onError?.invoke(e)
+      } finally {
+        mainHandler.post { cleanup() }
+      }
+    }
+
+    private fun openCamera(manager: CameraManager, cameraId: String) {
+      if (
+        ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) !=
+          PackageManager.PERMISSION_GRANTED
+      ) {
+        onError?.invoke(SecurityException("Camera permission not granted"))
+        cleanup()
+        return
+      }
+
+      manager.openCamera(
+        cameraId,
+        object : CameraDevice.StateCallback() {
+          override fun onOpened(camera: CameraDevice) {
+            activeCamera = camera
+            createCaptureSession()
+          }
+
+          override fun onDisconnected(camera: CameraDevice) {
+            activeCamera = camera
+            cleanup()
+          }
+
+          override fun onError(camera: CameraDevice, error: Int) {
+            activeCamera = camera
+            cleanup()
+            this@SelfieCaptureSession.onError?.invoke(Exception("Camera error: $error"))
+          }
+        },
+        mainHandler,
+      )
+    }
+
+    private fun createCaptureSession() {
+      try {
+        val texture =
+          providedSurfaceTexture ?: SurfaceTexture(10).also { createdSurfaceTexture = it }
+        texture.setDefaultBufferSize(IMAGE_WIDTH, IMAGE_HEIGHT)
+
+        val previewSurface = Surface(texture)
+        val captureSurface = imageReader?.surface ?: return
+
+        activeCamera?.createCaptureSession(
+          listOf(previewSurface, captureSurface),
+          object : CameraCaptureSession.StateCallback() {
+            override fun onConfigured(session: CameraCaptureSession) {
+              activeSession = session
+              triggerCapture(session, previewSurface, captureSurface)
+            }
+
+            override fun onConfigureFailed(session: CameraCaptureSession) {
+              cleanup()
+              onError?.invoke(Exception("Capture session configuration failed"))
+            }
+          },
+          null,
+        )
+      } catch (e: Exception) {
+        cleanup()
+        onError?.invoke(e)
+      }
+    }
+
+    private fun triggerCapture(
+      session: CameraCaptureSession,
+      previewSurface: Surface,
+      captureSurface: Surface,
+    ) {
+      try {
+        // Warm up preview
+        val previewRequest =
+          activeCamera?.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)?.apply {
+            addTarget(previewSurface)
+          }
+        if (previewRequest != null) {
+          session.setRepeatingRequest(previewRequest.build(), null, null)
+        }
+
+        // Capture after delay
+        mainHandler.postDelayed(
+          {
+            try {
+              val captureRequest =
+                activeCamera?.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)?.apply {
+                  addTarget(captureSurface)
+                  set(CaptureRequest.JPEG_ORIENTATION, CAPTURE_ORIENTATION)
+                }
+              if (captureRequest != null) {
+                session.capture(captureRequest.build(), null, null)
+              }
+            } catch (e: Exception) {
+              e.printStackTrace()
+              onError?.invoke(e)
+              cleanup()
+            }
+          },
+          500,
+        )
+      } catch (e: Exception) {
+        e.printStackTrace()
+        onError?.invoke(e)
+        cleanup()
+      }
+    }
+
+    private fun cleanup() {
+      try {
+        activeSession?.close()
+        activeCamera?.close()
+        imageReader?.close()
+        createdSurfaceTexture?.release()
+        onComplete?.invoke()
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
+    }
+  }
+}

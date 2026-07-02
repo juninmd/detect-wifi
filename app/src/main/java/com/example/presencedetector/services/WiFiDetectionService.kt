@@ -4,146 +4,132 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
-import kotlinx.coroutines.*
 import com.example.presencedetector.model.WiFiDevice
+import com.example.presencedetector.utils.DeviceClassifier
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.*
 
-/**
- * WiFi-based presence detection service.
- */
-class WiFiDetectionService(private val context: Context) {
-    companion object {
-        private const val TAG = "WiFiDetector"
-        private const val SCAN_INTERVAL = 3000L // Updated to 3 seconds as requested
-        private const val SIGNAL_THRESHOLD = -85
-    }
+/** WiFi-based presence detection service. */
+open class WiFiDetectionService(private val context: Context) {
+  companion object {
+    private const val TAG = "WiFiDetector"
+    private const val SCAN_INTERVAL = 15000L // Optimized to 15 seconds for battery
+    private const val SIGNAL_THRESHOLD = -85
+  }
 
-    private val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
-    private val mainHandler = Handler(Looper.getMainLooper())
-    private val scope = CoroutineScope(Dispatchers.Main + Job())
+  private val wifiManager =
+    context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
 
-    private var scanJob: Job? = null
-    private var presenceListener: PresenceListener? = null
-    private var isScanning = false
+  // Use Default dispatcher for CPU-intensive tasks (parsing scan results)
+  // Use IO if we consider WifiManager IPC as IO, but Default is fine for the mix
+  private val scope = CoroutineScope(Dispatchers.Default + Job())
 
-    fun interface PresenceListener {
-        fun onPresenceDetected(peopleDetected: Boolean, devices: List<WiFiDevice>, details: String)
-    }
+  private var scanJob: Job? = null
+  private var presenceListener: PresenceListener? = null
+  private val isScanning = AtomicBoolean(false)
 
-    fun setPresenceListener(listener: PresenceListener) {
-        this.presenceListener = listener
-    }
+  fun interface PresenceListener {
+    fun onPresenceDetected(peopleDetected: Boolean, devices: List<WiFiDevice>, details: String)
+  }
 
-    fun startScanning() {
-        if (isScanning) return
-        isScanning = true
-        scanJob = scope.launch {
-            while (isActive) {
-                performScan()
-                delay(SCAN_INTERVAL)
-            }
+  open fun setPresenceListener(listener: PresenceListener) {
+    this.presenceListener = listener
+  }
+
+  open fun startScanning() {
+    if (isScanning.get()) return
+    isScanning.set(true)
+
+    // Launch scanning loop on background thread
+    scanJob =
+      scope.launch {
+        while (isActive) {
+          performScan()
+          delay(SCAN_INTERVAL)
         }
+      }
+  }
+
+  open fun stopScanning() {
+    scanJob?.cancel()
+    scanJob = null
+    isScanning.set(false)
+  }
+
+  // Removed @RequiresPermission to handle it safely inside
+  private suspend fun performScan() {
+    if (
+      ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) !=
+        PackageManager.PERMISSION_GRANTED
+    ) {
+      Log.w(TAG, "Skipping scan: Location permission not granted")
+      notifyPresence(false, emptyList(), "Permission Denied")
+      return
     }
 
-    fun stopScanning() {
-        scanJob?.cancel()
-        scanJob = null
-        isScanning = false
-    }
+    try {
+      // WifiManager.scanResults is an IPC call, so it's good to be off the main thread
+      val scanResults = wifiManager?.scanResults
+      if (scanResults.isNullOrEmpty()) {
+        notifyPresence(false, emptyList(), "No networks")
+        return
+      }
 
-    // Removed @RequiresPermission to handle it safely inside
-    private suspend fun performScan() {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-             Log.w(TAG, "Skipping scan: Location permission not granted")
-             notifyPresence(false, emptyList(), "Permission Denied")
-             return
+      // Use withContext to ensure this mapping runs on Default dispatcher if not already
+      // (though performScan is called from Default scope, so redundant but explicit)
+      val devices =
+        withContext(Dispatchers.Default) {
+          // Detect both standard networks AND mobile hotspots
+          scanResults.mapNotNull { result ->
+            val ssid = result.SSID ?: "Unknown"
+            val isHotspot = DeviceClassifier.isMobileHotspot(ssid)
+
+            // Extract WiFi Standard (API 30+)
+            val standard =
+              if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                result.wifiStandard
+              } else {
+                0
+              }
+
+            WiFiDevice(
+              ssid = ssid,
+              bssid = result.BSSID ?: "00:00:00:00:00:00",
+              level = result.level,
+              frequency = result.frequency,
+              nickname = if (isHotspot) "📱 $ssid (Hotspot)" else ssid,
+              capabilities = result.capabilities ?: "",
+              channelWidth = result.channelWidth, // 0 if unknown
+              standard = standard,
+            )
+          }
         }
 
-        try {
-            val scanResults = wifiManager?.scanResults
-            if (scanResults.isNullOrEmpty()) {
-                notifyPresence(false, emptyList(), "No networks")
-                return
-            }
+      val presenceDetected = devices.any { it.level >= -70 }
 
-            // Detect both standard networks AND mobile hotspots
-            val devices = scanResults.mapNotNull { result ->
-                val ssid = result.SSID ?: "Unknown"
-                val isHotspot = isLikelyMobileHotspot(ssid)
+      // More details including hotspot count
+      val hotspotCount = devices.count { it.nickname?.contains("Hotspot") == true }
+      val details =
+        "Found ${devices.size} networks" + if (hotspotCount > 0) " ($hotspotCount hotspots)" else ""
 
-                // Extract WiFi Standard (API 30+)
-                val standard = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                    result.wifiStandard
-                } else {
-                    0
-                }
-
-                WiFiDevice(
-                    ssid = ssid,
-                    bssid = result.BSSID ?: "00:00:00:00:00:00",
-                    level = result.level,
-                    frequency = result.frequency,
-                    nickname = if (isHotspot) "📱 $ssid (Hotspot)" else ssid,
-                    capabilities = result.capabilities ?: "",
-                    channelWidth = result.channelWidth, // 0 if unknown
-                    standard = standard
-                )
-            }
-
-            val presenceDetected = devices.any { it.level >= -70 }
-
-            // More details including hotspot count
-            val hotspotCount = devices.count { it.nickname?.contains("Hotspot") == true }
-            val details = "Found ${devices.size} networks" +
-                         if (hotspotCount > 0) " ($hotspotCount hotspots)" else ""
-
-            notifyPresence(presenceDetected, devices, details)
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Scan error", e)
-        }
+      notifyPresence(presenceDetected, devices, details)
+    } catch (e: Exception) {
+      Log.e(TAG, "Scan error", e)
     }
+  }
 
-    /**
-     * Detects if SSID looks like a mobile hotspot.
-     * Mobile hotspots typically have patterns like:
-     * - "iPhone", "Android", "Samsung", etc.
-     * - End with numbers or alphanumerics
-     * - No spaces or special chars (usually)
-     */
-    private fun isLikelyMobileHotspot(ssid: String): Boolean {
-        val lowerSsid = ssid.lowercase()
+  private fun notifyPresence(detected: Boolean, devices: List<WiFiDevice>, details: String) {
+    // Notify listener on the current (background) thread.
+    // The consumer (PresenceDetectionManager) is responsible for handling threading if needed.
+    presenceListener?.onPresenceDetected(detected, devices, details)
+  }
 
-        // Common mobile hotspot patterns
-        val mobilePatterns = listOf(
-            "iphone", "android", "samsung", "xiaomi", "redmi",
-            "oneplus", "pixel", "motorola", "huawei", "poco",
-            "nokia", "realme", "vivo", "oppo", "honor",
-            "personal", "hotspot", "moto", "galaxy", "note"
-        )
+  fun isScanning(): Boolean = isScanning.get()
 
-        // Check if contains mobile patterns
-        val containsMobilePattern = mobilePatterns.any { lowerSsid.contains(it) }
-
-        // Check if SSID is very short (typical for hotspots)
-        val isShortName = ssid.length < 15 && !ssid.contains("_") && !ssid.contains("-")
-
-        return containsMobilePattern || (isShortName && ssid.matches(Regex("[A-Za-z0-9]+")))
-    }
-
-    private fun notifyPresence(detected: Boolean, devices: List<WiFiDevice>, details: String) {
-        presenceListener?.let {
-            mainHandler.post { it.onPresenceDetected(detected, devices, details) }
-        }
-    }
-
-    fun isScanning(): Boolean = isScanning
-
-    fun destroy() {
-        stopScanning()
-        scope.cancel()
-    }
+  fun destroy() {
+    stopScanning()
+    scope.cancel()
+  }
 }

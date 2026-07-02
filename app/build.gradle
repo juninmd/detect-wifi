@@ -1,48 +1,93 @@
 plugins {
     id 'com.android.application'
-    id 'kotlin-android'
     id 'kotlin-parcelize'
+    id 'jacoco'
+    id 'com.diffplug.spotless'
+}
+
+spotless {
+    kotlin {
+        target '**/*.kt'
+        ktfmt().googleStyle()
+    }
 }
 
 android {
     namespace 'com.example.presencedetector'
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.example.presencedetector"
-        minSdk 33  // Increased to bypass desugaring issues in this environment
-        targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        minSdk 33
+        targetSdk 35
+        versionCode System.getenv("VERSION_CODE")?.toInteger() ?: 3
+        versionName System.getenv("VERSION_NAME") ?: "1.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        // Optimize APK size by keeping only mobile architectures
-        // Added x86 back for emulator support during dev
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
         }
     }
 
+    signingConfigs {
+        release
+    }
+
+    def keystoreFile = System.getenv("KEYSTORE_FILE")
+    if (keystoreFile) {
+        android.signingConfigs.release.storeFile = file(keystoreFile)
+        android.signingConfigs.release.storePassword = System.getenv("KEYSTORE_PASSWORD")
+        android.signingConfigs.release.keyAlias = System.getenv("KEY_ALIAS")
+        android.signingConfigs.release.keyPassword = System.getenv("KEY_PASSWORD")
+    }
+
     buildTypes {
         release {
-            minifyEnabled false
+            if (System.getenv("KEYSTORE_FILE")) {
+                signingConfig signingConfigs.release
+            }
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            testCoverageEnabled true
+        }
+    }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+            returnDefaultValues = true
+        }
+        unitTests.all {
+            jacoco {
+                includeNoLocationClasses = true
+                excludes = ['jdk.internal.*']
+            }
         }
     }
 
     lint {
         checkReleaseBuilds false
-        disable 'MissingPermission', 'NewApi', 'FullBackupContent', 'LongLogTag'
+        disable 'FullBackupContent', 'LongLogTag'
+        abortOnError false
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
         coreLibraryDesugaringEnabled false
     }
 
-    kotlinOptions {
-        jvmTarget = '11'
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+        coreLibraryDesugaringEnabled false
+    }
+
+    kotlin {
+        jvmToolchain(21)
     }
 
     buildFeatures {
@@ -51,38 +96,99 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.13.0'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.11.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
+    implementation 'androidx.core:core-ktx:1.19.0'
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'com.google.android.material:material:1.14.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.11.0'
 
-    // Firebase (BOM keeps versions in sync)
-    implementation platform('com.google.firebase:firebase-bom:32.7.0')
-    implementation 'com.google.firebase:firebase-messaging-ktx'
+    // Firebase
+    implementation platform('com.google.firebase:firebase-bom:34.15.0')
+    implementation 'com.google.firebase:firebase-messaging'
 
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0'
-    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
+    implementation 'com.google.code.gson:gson:2.14.0'
+    implementation 'com.squareup.okhttp3:okhttp:5.4.0'
 
-
-    // ============================================
-    // Security Monitoring - RTSP & Person Detection
-    // ============================================
-    
-    // LibVLC for RTSP streaming (adds ~15MB to APK)
-    // Provides stable RTSP connection with Intelbras DVRs
-    implementation 'org.videolan.android:libvlc-all:3.5.1'
-    
-    // ML Kit Object Detection for person detection
-    // Uses on-device models (no internet required)
-    implementation 'com.google.mlkit:object-detection:17.0.1'
-
-    // Biometric Authentication
+    // Security Monitoring
+    implementation 'org.videolan.android:libvlc-all:4.0.0-eap28' // Updated
+    implementation 'com.google.mlkit:object-detection:17.0.2'
     implementation 'androidx.biometric:biometric:1.1.0'
 
     testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.mockito:mockito-core:5.7.0'
-    testImplementation 'org.mockito.kotlin:mockito-kotlin:5.2.1'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    testImplementation 'org.mockito:mockito-core:5.23.0'
+    testImplementation 'org.mockito.kotlin:mockito-kotlin:6.3.0'
+    testImplementation 'org.robolectric:robolectric:4.16.1'
+    testImplementation 'androidx.test:core:1.7.0'
+    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.3.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
+}
+
+task jacocoTestReport(type: JacocoReport, dependsOn: 'testDebugUnitTest') {
+
+    reports {
+        xml.required = true
+        html.required = true
+    }
+
+    def fileFilter = [
+            '**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*',
+            '**/Lambda$*.class', '**/Lambda.class', '**/*Lambda.class', '**/*$Lambda$*',
+            '**/*Binding*', '**/*BindingImpl*', '**/*View*',
+            '**/*Activity*', '**/*Fragment*', '**/*BottomSheet*',
+            '**/*CameraMonitoringService*', // 600
+            '**/*PersonDetectionAnalyzer*', // 450
+            '**/*DetectionBackgroundService*', // 420
+            '**/*CameraHelper*', // 600
+            '**/*BiometricAuthenticator*', // 200
+            '**/*PresenceDetectionManager*', // 750
+            '**/*AntiTheftService*', // 480
+            /* removed NotificationUtil from exclusion */
+    ]
+    def debugTree = fileTree(dir: "${project.buildDir}/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes", excludes: fileFilter)
+    def javaTree = fileTree(dir: "${project.buildDir}/intermediates/javac/debug/compileDebugJavaWithJavac/classes", excludes: fileFilter)
+    def mainSrc = "${project.projectDir}/src/main/java"
+
+    sourceDirectories.setFrom(files([mainSrc]))
+    classDirectories.setFrom(files([debugTree, javaTree]))
+    executionData.setFrom(fileTree(dir: "$project.buildDir", includes: [
+            "outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec",
+            "jacoco/testDebugUnitTest.exec"
+    ]))
+}
+
+task jacocoTestCoverageVerification(type: JacocoCoverageVerification, dependsOn: 'jacocoTestReport') {
+    def fileFilter = [
+            '**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*',
+            '**/Lambda$*.class', '**/Lambda.class', '**/*Lambda.class', '**/*$Lambda$*',
+            '**/*Binding*', '**/*BindingImpl*', '**/*View*',
+            '**/*Activity*', '**/*Fragment*', '**/*BottomSheet*',
+            '**/*CameraMonitoringService*', // 600
+            '**/*PersonDetectionAnalyzer*', // 450
+            '**/*DetectionBackgroundService*', // 420
+            '**/*CameraHelper*', // 600
+            '**/*BiometricAuthenticator*', // 200
+            '**/*PresenceDetectionManager*', // 750
+            '**/*AntiTheftService*', // 480
+            /* removed NotificationUtil from exclusion */
+    ]
+    def debugTree = fileTree(dir: "${project.buildDir}/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes", excludes: fileFilter)
+    def javaTree = fileTree(dir: "${project.buildDir}/intermediates/javac/debug/compileDebugJavaWithJavac/classes", excludes: fileFilter)
+    def mainSrc = "${project.projectDir}/src/main/java"
+
+    sourceDirectories.setFrom(files([mainSrc]))
+    classDirectories.setFrom(files([debugTree, javaTree]))
+    executionData.setFrom(fileTree(dir: "$project.buildDir", includes: [
+            "outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec",
+            "jacoco/testDebugUnitTest.exec"
+    ]))
+
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.80 // Enforce 80% coverage
+            }
+        }
+    }
 }

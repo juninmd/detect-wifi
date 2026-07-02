@@ -2,244 +2,207 @@ package com.example.presencedetector.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.presencedetector.data.preferences.DetectionPreferences
+import com.example.presencedetector.data.preferences.DeviceInfoPreferences
+import com.example.presencedetector.data.preferences.SecurityPreferences
+import com.example.presencedetector.data.preferences.TelegramPreferences
+import com.example.presencedetector.data.repository.DetectionHistoryRepository
 import com.example.presencedetector.model.DeviceCategory
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
-/**
- * Utility class for managing application preferences and history logs.
- */
-class PreferencesUtil(context: Context) {
-    companion object {
-        private const val PREF_NAME = "presence_detector_prefs"
-        private const val KEY_LAST_DETECTION = "last_detection"
-        private const val KEY_DETECTION_ENABLED = "detection_enabled"
-        private const val KEY_FOREGROUND_SERVICE = "foreground_service"
-        private const val KEY_NOTIFY_ON_PRESENCE = "notify_on_presence"
-        private const val KEY_NOTIFY_WIFI_ARRIVAL = "notify_wifi_arrival"
+/** Utility class for managing application preferences and history logs. */
+open class PreferencesUtil(context: Context) {
+  companion object {
+    private const val PREF_NAME = "presence_detector_prefs"
+    const val KEY_ANTI_THEFT_SENSITIVITY = "anti_theft_sensitivity"
 
-        // Telegram Settings
-        private const val KEY_TELEGRAM_ENABLED = "telegram_enabled"
-        private const val KEY_TELEGRAM_TOKEN = "telegram_token"
-        private const val KEY_TELEGRAM_CHAT_ID = "telegram_chat_id"
+    object Keys {
+      const val LAST_DETECTION = "last_detection"
+      const val DETECTION_ENABLED = "detection_enabled"
+      const val FOREGROUND_SERVICE = "foreground_service"
+      const val NOTIFY_ON_PRESENCE = "notify_on_presence"
+      const val NOTIFY_WIFI_ARRIVAL = "notify_wifi_arrival"
 
-        // Security Settings
-        private const val KEY_SECURITY_ALERT_ENABLED = "security_alert_enabled"
-        private const val KEY_SECURITY_SOUND_ENABLED = "security_sound_enabled"
-        private const val KEY_SECURITY_START_TIME = "security_start_time"
-        private const val KEY_SECURITY_END_TIME = "security_end_time"
-        private const val KEY_ANTI_THEFT_ARMED = "anti_theft_armed"
-        private const val KEY_ANTI_THEFT_SENSITIVITY = "anti_theft_sensitivity"
-        private const val KEY_BIOMETRIC_ENABLED = "biometric_enabled"
-        private const val KEY_POCKET_MODE_ENABLED = "pocket_mode_enabled"
-        private const val KEY_CHARGER_MODE_ENABLED = "charger_mode_enabled"
+      // Telegram Settings
+      const val TELEGRAM_ENABLED = "telegram_enabled"
+      const val TELEGRAM_TOKEN = "telegram_token"
+      const val TELEGRAM_CHAT_ID = "telegram_chat_id"
 
-        private const val PREFIX_HISTORY = "history_"
-        private const val PREFIX_NICKNAME = "nickname_"
-        private const val PREFIX_CATEGORY = "category_"
-        private const val PREFIX_NOTIFY_ARRIVAL = "notify_arrival_"
-        private const val PREFIX_NOTIFY_DEPARTURE = "notify_departure_"
-        private const val PREFIX_CRITICAL_ALERT = "critical_alert_"
-        private const val PREFIX_TELEGRAM_ALERT = "telegram_alert_"
-        private const val PREFIX_EVENT_LOGS = "event_logs_"
-        private const val KEY_ALL_BSSIDS = "all_bssids"
+      // Security Settings
+      const val SECURITY_ALERT_ENABLED = "security_alert_enabled"
+      const val SECURITY_SOUND_ENABLED = "security_sound_enabled"
+      const val SECURITY_START_TIME = "security_start_time"
+      const val SECURITY_END_TIME = "security_end_time"
+      const val ANTI_THEFT_ARMED = "anti_theft_armed"
+
+      const val BIOMETRIC_ENABLED = "biometric_enabled"
+      const val APP_LOCK_ENABLED = "app_lock_enabled"
+      const val POCKET_MODE_ENABLED = "pocket_mode_enabled"
+      const val CHARGER_MODE_ENABLED = "charger_mode_enabled"
+      const val SMART_MODE_ENABLED = "smart_mode_enabled"
+      const val SILENT_MODE_ENABLED = "silent_mode_enabled"
+
+      const val ALL_BSSIDS = "all_bssids"
+      const val TRUSTED_WIFI_SSID = "trusted_wifi_ssid"
+      const val SYSTEM_LOGS = "system_logs"
     }
 
-    private val preferences: SharedPreferences = context.getSharedPreferences(
-        PREF_NAME,
-        Context.MODE_PRIVATE
-    )
+    object Prefixes {
+      const val HISTORY = "history_"
+      const val NICKNAME = "nickname_"
+      const val CATEGORY = "category_"
+      const val NOTIFY_ARRIVAL = "notify_arrival_"
+      const val NOTIFY_DEPARTURE = "notify_departure_"
+      const val CRITICAL_ALERT = "critical_alert_"
+      const val TELEGRAM_ALERT = "telegram_alert_"
+      const val EVENT_LOGS = "event_logs_"
+    }
+  }
 
-    fun setDetectionEnabled(enabled: Boolean) {
-        preferences.edit().putBoolean(KEY_DETECTION_ENABLED, enabled).apply()
-    }
+  private val preferences: SharedPreferences =
+    context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
-    fun isDetectionEnabled(): Boolean {
-        return preferences.getBoolean(KEY_DETECTION_ENABLED, false)
-    }
+  private val detectionPreferences = DetectionPreferences(context)
+  private val securityPreferences = SecurityPreferences(context)
+  private val telegramPreferences = TelegramPreferences(context)
+  private val deviceInfoPreferences = DeviceInfoPreferences(context)
+  private val detectionHistoryRepository = DetectionHistoryRepository(context)
 
-    fun setNotifyOnPresence(enabled: Boolean) {
-        preferences.edit().putBoolean(KEY_NOTIFY_ON_PRESENCE, enabled).apply()
-    }
+  // --- Detection Settings ---
+  open fun setDetectionEnabled(enabled: Boolean) = detectionPreferences.setDetectionEnabled(enabled)
 
-    fun shouldNotifyOnPresence(): Boolean {
-        return preferences.getBoolean(KEY_NOTIFY_ON_PRESENCE, true)
-    }
+  open fun isDetectionEnabled() = detectionPreferences.isDetectionEnabled()
 
-    fun setNotifyWifiArrival(enabled: Boolean) {
-        preferences.edit().putBoolean(KEY_NOTIFY_WIFI_ARRIVAL, enabled).apply()
-    }
+  open fun setNotifyOnPresence(enabled: Boolean) = detectionPreferences.setNotifyOnPresence(enabled)
 
-    fun shouldNotifyWifiArrival(): Boolean {
-        return preferences.getBoolean(KEY_NOTIFY_WIFI_ARRIVAL, false)
-    }
+  fun shouldNotifyOnPresence() = detectionPreferences.shouldNotifyOnPresence()
 
-    fun setNotifyArrival(bssid: String, notify: Boolean) {
-        preferences.edit().putBoolean(PREFIX_NOTIFY_ARRIVAL + bssid, notify).apply()
-    }
+  open fun setNotifyWifiArrival(enabled: Boolean) =
+    detectionPreferences.setNotifyWifiArrival(enabled)
 
-    fun shouldNotifyArrival(bssid: String): Boolean {
-        return preferences.getBoolean(PREFIX_NOTIFY_ARRIVAL + bssid, false)
-    }
+  open fun shouldNotifyWifiArrival() = detectionPreferences.shouldNotifyWifiArrival()
 
-    fun setNotifyDeparture(bssid: String, notify: Boolean) {
-        preferences.edit().putBoolean(PREFIX_NOTIFY_DEPARTURE + bssid, notify).apply()
-    }
+  open fun setNotifyArrival(bssid: String, notify: Boolean) =
+    detectionPreferences.setNotifyArrival(bssid, notify)
 
-    fun shouldNotifyDeparture(bssid: String): Boolean {
-        return preferences.getBoolean(PREFIX_NOTIFY_DEPARTURE + bssid, false)
-    }
+  open fun shouldNotifyArrival(bssid: String) = detectionPreferences.shouldNotifyArrival(bssid)
 
-    fun setCriticalAlertEnabled(bssid: String, enabled: Boolean) {
-        preferences.edit().putBoolean(PREFIX_CRITICAL_ALERT + bssid, enabled).apply()
-    }
+  open fun setNotifyDeparture(bssid: String, notify: Boolean) =
+    detectionPreferences.setNotifyDeparture(bssid, notify)
 
-    fun isCriticalAlertEnabled(bssid: String): Boolean {
-        return preferences.getBoolean(PREFIX_CRITICAL_ALERT + bssid, false)
-    }
+  open fun shouldNotifyDeparture(bssid: String) = detectionPreferences.shouldNotifyDeparture(bssid)
 
-    fun setTelegramAlertEnabled(bssid: String, enabled: Boolean) {
-        preferences.edit().putBoolean(PREFIX_TELEGRAM_ALERT + bssid, enabled).apply()
-    }
+  open fun setCriticalAlertEnabled(bssid: String, enabled: Boolean) =
+    detectionPreferences.setCriticalAlertEnabled(bssid, enabled)
 
-    fun isTelegramAlertEnabled(bssid: String): Boolean {
-        return preferences.getBoolean(PREFIX_TELEGRAM_ALERT + bssid, false)
-    }
+  open fun isCriticalAlertEnabled(bssid: String) =
+    detectionPreferences.isCriticalAlertEnabled(bssid)
 
-    // Telegram
-    fun setTelegramEnabled(enabled: Boolean) = preferences.edit().putBoolean(KEY_TELEGRAM_ENABLED, enabled).apply()
-    fun isTelegramEnabled() = preferences.getBoolean(KEY_TELEGRAM_ENABLED, false)
-    fun setTelegramToken(token: String) = preferences.edit().putString(KEY_TELEGRAM_TOKEN, token).apply()
-    fun getTelegramToken(): String? = preferences.getString(KEY_TELEGRAM_TOKEN, null)
-    fun setTelegramChatId(chatId: String) = preferences.edit().putString(KEY_TELEGRAM_CHAT_ID, chatId).apply()
-    fun getTelegramChatId(): String? = preferences.getString(KEY_TELEGRAM_CHAT_ID, null)
+  open fun setTelegramAlertEnabled(bssid: String, enabled: Boolean) =
+    detectionPreferences.setTelegramAlertEnabled(bssid, enabled)
 
-    // Security
-    fun setSecurityAlertEnabled(enabled: Boolean) = preferences.edit().putBoolean(KEY_SECURITY_ALERT_ENABLED, enabled).apply()
-    fun isSecurityAlertEnabled() = preferences.getBoolean(KEY_SECURITY_ALERT_ENABLED, false)
-    fun setSecuritySoundEnabled(enabled: Boolean) = preferences.edit().putBoolean(KEY_SECURITY_SOUND_ENABLED, enabled).apply()
-    fun isSecuritySoundEnabled() = preferences.getBoolean(KEY_SECURITY_SOUND_ENABLED, false)
-    fun setSecuritySchedule(start: String, end: String) {
-        preferences.edit().putString(KEY_SECURITY_START_TIME, start).putString(KEY_SECURITY_END_TIME, end).apply()
-    }
-    fun getSecuritySchedule(): Pair<String, String> {
-        val start = preferences.getString(KEY_SECURITY_START_TIME, "22:00") ?: "22:00"
-        val end = preferences.getString(KEY_SECURITY_END_TIME, "06:00") ?: "06:00"
-        return Pair(start, end)
-    }
-    fun isCurrentTimeInSecuritySchedule(): Boolean {
-        val (startStr, endStr) = getSecuritySchedule()
-        val now = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-        return if (startStr > endStr) now >= startStr || now <= endStr else now in startStr..endStr
-    }
+  open fun isTelegramAlertEnabled(bssid: String) =
+    detectionPreferences.isTelegramAlertEnabled(bssid)
 
-    fun setAntiTheftArmed(armed: Boolean) {
-        preferences.edit().putBoolean(KEY_ANTI_THEFT_ARMED, armed).apply()
-    }
+  // --- Telegram Settings ---
+  open fun setTelegramEnabled(enabled: Boolean) = telegramPreferences.setTelegramEnabled(enabled)
 
-    fun isAntiTheftArmed(): Boolean {
-        return preferences.getBoolean(KEY_ANTI_THEFT_ARMED, false)
-    }
+  open fun isTelegramEnabled() = telegramPreferences.isTelegramEnabled()
 
-    fun setAntiTheftSensitivity(sensitivity: Float) {
-        preferences.edit().putFloat(KEY_ANTI_THEFT_SENSITIVITY, sensitivity).apply()
-    }
+  open fun setTelegramToken(token: String) = telegramPreferences.setTelegramToken(token)
 
-    fun getAntiTheftSensitivity(): Float {
-        return preferences.getFloat(KEY_ANTI_THEFT_SENSITIVITY, 1.5f)
-    }
+  open fun getTelegramToken(): String? = telegramPreferences.getTelegramToken()
 
-    fun setBiometricEnabled(enabled: Boolean) {
-        preferences.edit().putBoolean(KEY_BIOMETRIC_ENABLED, enabled).apply()
-    }
+  open fun setTelegramChatId(chatId: String) = telegramPreferences.setTelegramChatId(chatId)
 
-    fun isBiometricEnabled(): Boolean {
-        return preferences.getBoolean(KEY_BIOMETRIC_ENABLED, false)
-    }
+  open fun getTelegramChatId(): String? = telegramPreferences.getTelegramChatId()
 
-    fun setPocketModeEnabled(enabled: Boolean) {
-        preferences.edit().putBoolean(KEY_POCKET_MODE_ENABLED, enabled).apply()
-    }
+  // --- Security Settings ---
+  open fun setSecurityAlertEnabled(enabled: Boolean) =
+    securityPreferences.setSecurityAlertEnabled(enabled)
 
-    fun isPocketModeEnabled(): Boolean {
-        return preferences.getBoolean(KEY_POCKET_MODE_ENABLED, false)
-    }
+  open fun isSecurityAlertEnabled() = securityPreferences.isSecurityAlertEnabled()
 
-    fun setChargerModeEnabled(enabled: Boolean) {
-        preferences.edit().putBoolean(KEY_CHARGER_MODE_ENABLED, enabled).apply()
-    }
+  open fun setSecuritySoundEnabled(enabled: Boolean) =
+    securityPreferences.setSecuritySoundEnabled(enabled)
 
-    fun isChargerModeEnabled(): Boolean {
-        return preferences.getBoolean(KEY_CHARGER_MODE_ENABLED, false)
-    }
+  open fun isSecuritySoundEnabled() = securityPreferences.isSecuritySoundEnabled()
 
-    fun saveNickname(bssid: String, nickname: String) {
-        preferences.edit().putString(PREFIX_NICKNAME + bssid, nickname).apply()
-    }
+  fun setSecuritySchedule(start: String, end: String) =
+    securityPreferences.setSecuritySchedule(start, end)
 
-    fun getNickname(bssid: String): String? {
-        return preferences.getString(PREFIX_NICKNAME + bssid, null)
-    }
+  fun getSecuritySchedule(): Pair<String, String> = securityPreferences.getSecuritySchedule()
 
-    fun saveManualCategory(bssid: String, category: DeviceCategory) {
-        preferences.edit().putString(PREFIX_CATEGORY + bssid, category.name).apply()
-    }
+  open fun isCurrentTimeInSecuritySchedule(): Boolean =
+    securityPreferences.isCurrentTimeInSecuritySchedule()
 
-    fun getManualCategory(bssid: String): DeviceCategory? {
-        val name = preferences.getString(PREFIX_CATEGORY + bssid, null) ?: return null
-        return try { DeviceCategory.valueOf(name) } catch (e: Exception) { null }
-    }
+  // --- Anti-Theft Settings ---
+  fun setAntiTheftArmed(armed: Boolean) = securityPreferences.setAntiTheftArmed(armed)
 
-    /**
-     * Log precise arrival/departure events with time.
-     */
-    fun logEvent(bssid: String, eventType: String) {
-        val timestamp = SimpleDateFormat("dd/MM HH:mm:ss", Locale.getDefault()).format(Date())
-        val logEntry = "[$timestamp] $eventType"
-        
-        val logs = preferences.getStringSet(PREFIX_EVENT_LOGS + bssid, mutableSetOf()) ?: mutableSetOf()
-        val newLogs = logs.toMutableSet()
-        newLogs.add(logEntry)
-        
-        // Ensure BSSID is in the master list
-        val allBssids = preferences.getStringSet(KEY_ALL_BSSIDS, mutableSetOf()) ?: mutableSetOf()
-        val newAllBssids = allBssids.toMutableSet()
-        newAllBssids.add(bssid)
-        
-        preferences.edit()
-            .putStringSet(PREFIX_EVENT_LOGS + bssid, newLogs)
-            .putStringSet(KEY_ALL_BSSIDS, newAllBssids)
-            .apply()
-            
-        // Also keep the daily history count logic
-        trackDetection(bssid)
-    }
+  open fun isAntiTheftArmed() = securityPreferences.isAntiTheftArmed()
 
-    fun getEventLogs(bssid: String): List<String> {
-        return preferences.getStringSet(PREFIX_EVENT_LOGS + bssid, emptySet())?.toList()?.sortedDescending() ?: emptyList()
-    }
+  fun setAntiTheftSensitivity(value: Float) = securityPreferences.setAntiTheftSensitivity(value)
 
-    fun trackDetection(bssid: String) {
-        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val historyKey = PREFIX_HISTORY + bssid
-        val history = preferences.getStringSet(historyKey, mutableSetOf()) ?: mutableSetOf()
-        if (!history.contains(today)) {
-            val newHistory = history.toMutableSet()
-            newHistory.add(today)
-            preferences.edit().putStringSet(historyKey, newHistory).apply()
-        }
-    }
+  fun getAntiTheftSensitivity(): Float = securityPreferences.getAntiTheftSensitivity()
 
-    fun getDetectionHistoryCount(bssid: String): Int {
-        return preferences.getStringSet(PREFIX_HISTORY + bssid, emptySet())?.size ?: 0
-    }
+  open fun setBiometricEnabled(enabled: Boolean) = securityPreferences.setBiometricEnabled(enabled)
 
-    fun getAllTrackedBssids(): List<String> {
-        return preferences.getStringSet(KEY_ALL_BSSIDS, emptySet())?.toList() ?: emptyList()
-    }
+  open fun isBiometricEnabled() = securityPreferences.isBiometricEnabled()
 
-    fun clear() {
-        preferences.edit().clear().apply()
-    }
+  fun setAppLockEnabled(enabled: Boolean) = securityPreferences.setAppLockEnabled(enabled)
+
+  fun isAppLockEnabled() = securityPreferences.isAppLockEnabled()
+
+  open fun setPocketModeEnabled(enabled: Boolean) =
+    securityPreferences.setPocketModeEnabled(enabled)
+
+  open fun isPocketModeEnabled() = securityPreferences.isPocketModeEnabled()
+
+  open fun setChargerModeEnabled(enabled: Boolean) =
+    securityPreferences.setChargerModeEnabled(enabled)
+
+  open fun isChargerModeEnabled() = securityPreferences.isChargerModeEnabled()
+
+  open fun setSmartModeEnabled(enabled: Boolean) = securityPreferences.setSmartModeEnabled(enabled)
+
+  open fun isSmartModeEnabled() = securityPreferences.isSmartModeEnabled()
+
+  open fun setSilentModeEnabled(enabled: Boolean) =
+    securityPreferences.setSilentModeEnabled(enabled)
+
+  open fun isSilentModeEnabled() = securityPreferences.isSilentModeEnabled()
+
+  // --- Device Info ---
+  open fun saveNickname(bssid: String, nickname: String) =
+    deviceInfoPreferences.saveNickname(bssid, nickname)
+
+  open fun getNickname(bssid: String) = deviceInfoPreferences.getNickname(bssid)
+
+  open fun saveManualCategory(bssid: String, category: DeviceCategory) =
+    deviceInfoPreferences.saveManualCategory(bssid, category)
+
+  open fun getManualCategory(bssid: String): DeviceCategory? =
+    deviceInfoPreferences.getManualCategory(bssid)
+
+  open fun trackDetection(bssid: String) = deviceInfoPreferences.trackDetection(bssid)
+
+  open fun getDetectionHistoryCount(bssid: String): Int =
+    deviceInfoPreferences.getDetectionHistoryCount(bssid)
+
+  fun getAllTrackedBssids(): List<String> = deviceInfoPreferences.getAllTrackedBssids()
+
+  fun setTrustedWifiSsid(ssid: String) = securityPreferences.setTrustedWifiSsid(ssid)
+
+  fun getTrustedWifiSsid(): String? = securityPreferences.getTrustedWifiSsid()
+
+  fun clear() {
+    preferences.edit().clear().apply()
+  }
+
+  fun registerListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+    preferences.registerOnSharedPreferenceChangeListener(listener)
+  }
+
+  fun unregisterListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+    preferences.unregisterOnSharedPreferenceChangeListener(listener)
+  }
 }
