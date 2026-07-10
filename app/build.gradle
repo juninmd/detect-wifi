@@ -14,7 +14,7 @@ spotless {
 
 android {
     namespace 'com.example.presencedetector'
-    compileSdk 36
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.example.presencedetector"
