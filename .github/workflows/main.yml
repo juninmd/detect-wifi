@@ -63,7 +63,7 @@ jobs:
             else
               echo "Error: Code coverage in domain layer is below 100%."
               # Fail pipeline when actually testing flutter app (uncomment below for strict mode)
-              # exit 1
+              exit 1
             fi
           fi
 
