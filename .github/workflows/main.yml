@@ -14,7 +14,7 @@ jobs:
       run:
         working-directory: ./mobile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Only run if mobile/ pubspec.yaml exists, to not fail while we just scaffold the project structure in this exercise
       - name: Check Mobile directory exists
@@ -85,7 +85,7 @@ jobs:
       run:
         working-directory: ./backend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check Backend directory exists
         id: check_backend
