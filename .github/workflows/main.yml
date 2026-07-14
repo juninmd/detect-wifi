@@ -73,7 +73,7 @@ jobs:
 
       - name: Upload APK Artifact
         if: steps.check_mobile.outputs.exists == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: app-release
           path: mobile/build/app/outputs/flutter-apk/app-release.apk
