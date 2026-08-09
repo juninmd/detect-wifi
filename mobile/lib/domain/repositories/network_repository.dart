@@ -1,5 +1,5 @@
 import '../entities/device.dart';
 
-abstract class NetworkRepository {
-  Future<List<Device>> scanLocalNetwork();
+abstract class INetworkRepository {
+  Future<List<Device>> scanNetwork();
 }

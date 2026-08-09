@@ -1,35 +1,39 @@
 class Device {
-  final String ipAddress;
+  final String id;
   final String macAddress;
-  final String? vendor;
+  final String ipAddress;
+  final String vendor;
   final bool isKnown;
-  final String? customName;
-  final String? category;
+  final String category;
+  final DateTime lastSeen;
 
   Device({
-    required this.ipAddress,
+    required this.id,
     required this.macAddress,
-    this.vendor,
-    this.isKnown = false,
-    this.customName,
-    this.category,
+    required this.ipAddress,
+    required this.vendor,
+    required this.isKnown,
+    required this.category,
+    required this.lastSeen,
   });
 
   Device copyWith({
-    String? ipAddress,
+    String? id,
     String? macAddress,
+    String? ipAddress,
     String? vendor,
     bool? isKnown,
-    String? customName,
     String? category,
+    DateTime? lastSeen,
   }) {
     return Device(
-      ipAddress: ipAddress ?? this.ipAddress,
+      id: id ?? this.id,
       macAddress: macAddress ?? this.macAddress,
+      ipAddress: ipAddress ?? this.ipAddress,
       vendor: vendor ?? this.vendor,
       isKnown: isKnown ?? this.isKnown,
-      customName: customName ?? this.customName,
       category: category ?? this.category,
+      lastSeen: lastSeen ?? this.lastSeen,
     );
   }
 }

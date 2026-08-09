@@ -1,5 +1,8 @@
 import '../entities/device.dart';
 
-abstract class DeviceRepository {
-  Future<List<Device>> getKnownDevices();
+abstract class IDeviceRepository {
+  Future<List<Device>> getConnectedDevices();
+  Future<Device?> getDeviceByMac(String macAddress);
+  Future<void> saveDevice(Device device);
+  Future<void> updateDeviceStatus(String macAddress, bool isKnown);
 }
