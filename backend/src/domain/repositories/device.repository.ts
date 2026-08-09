@@ -1,7 +1,8 @@
 import { Device } from '../entities/device.entity';
 
 export interface IDeviceRepository {
-  getAllDevices(): Promise<Device[]>;
-  saveDevice(device: Device): Promise<void>;
-  updateLastSeen(macAddress: string, date: Date): Promise<void>;
+  findAll(): Promise<Device[]>;
+  findByMacAddress(macAddress: string): Promise<Device | null>;
+  save(device: Device): Promise<void>;
+  updateStatus(macAddress: string, isKnown: boolean): Promise<void>;
 }

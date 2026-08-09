@@ -1,44 +1,31 @@
 import '../entities/device.dart';
-import '../repositories/network_repository.dart';
 import '../repositories/device_repository.dart';
+import '../repositories/network_repository.dart';
 
-/// Use case responsável por escanear a rede e retornar os dispositivos encontrados,
-/// classificando-os conforme histórico conhecido.
 class ScanNetworkUseCase {
-  final NetworkRepository networkRepository;
-  final DeviceRepository deviceRepository;
+  final IDeviceRepository _deviceRepository;
+  final INetworkRepository _networkRepository;
 
-  ScanNetworkUseCase({
-    required this.networkRepository,
-    required this.deviceRepository,
-  });
+  ScanNetworkUseCase(this._deviceRepository, this._networkRepository);
 
-  /// Executa o scan da rede e mescla os dados com os dispositivos salvos.
-  Future<List<Device>> execute() async {
-    // 1. Busca dispositivos ativos na rede atual (ARP/mDNS)
-    final activeDevices = await networkRepository.scanLocalNetwork();
+  Future<List<Device>> call() async {
+    final scannedDevices = await _networkRepository.scanNetwork();
 
-    // 2. Busca lista de dispositivos salvos/conhecidos do banco local
-    final knownDevices = await deviceRepository.getKnownDevices();
+    List<Device> mergedDevices = [];
 
-    // 3. Classifica os dispositivos e aplica regras de whitelist
-    final classifiedDevices = activeDevices.map((activeDevice) {
-      final knownMatch = knownDevices.where(
-        (known) => known.macAddress == activeDevice.macAddress
-      ).firstOrNull;
+    for (var device in scannedDevices) {
+      final knownDevice = await _deviceRepository.getDeviceByMac(device.macAddress);
 
-      if (knownMatch != null) {
-        return activeDevice.copyWith(
-          isKnown: knownMatch.isKnown,
-          customName: knownMatch.customName,
-          category: knownMatch.category,
-        );
+      if (knownDevice != null) {
+        mergedDevices.add(device.copyWith(
+          isKnown: knownDevice.isKnown,
+          category: knownDevice.category,
+        ));
+      } else {
+        mergedDevices.add(device);
       }
+    }
 
-      // Se não conhece, por padrão é suspeito e não conhecido
-      return activeDevice.copyWith(isKnown: false);
-    }).toList();
-
-    return classifiedDevices;
+    return mergedDevices;
   }
 }

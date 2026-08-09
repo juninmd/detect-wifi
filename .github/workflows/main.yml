@@ -62,10 +62,19 @@ jobs:
               echo "Coverage requirement met: 100%"
             else
               echo "Error: Code coverage in domain layer is below 100%."
-              # Fail pipeline when actually testing flutter app (uncomment below for strict mode)
+              # Fail pipeline when actually testing flutter app
               exit 1
             fi
           fi
+
+      - name: Upload Coverage to Codecov
+        if: steps.check_mobile.outputs.exists == 'true'
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./mobile/coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
 
       - name: Build APK (Android)
         if: steps.check_mobile.outputs.exists == 'true'
@@ -116,6 +125,15 @@ jobs:
       - name: Run Unit Tests with Coverage
         if: steps.check_backend.outputs.exists == 'true'
         run: npm run test:cov
+
+      - name: Upload Coverage to Codecov
+        if: steps.check_backend.outputs.exists == 'true'
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./backend/coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
 
       # Enforce 100% coverage logic is typically handled in Jest config (coverageThreshold)
       # But we add a safeguard print here
