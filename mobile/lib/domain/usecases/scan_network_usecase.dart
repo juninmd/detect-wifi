@@ -10,7 +10,6 @@ class ScanNetworkUseCase {
 
   Future<List<Device>> call() async {
     final scannedDevices = await _networkRepository.scanNetwork();
-
     List<Device> mergedDevices = [];
 
     for (var device in scannedDevices) {

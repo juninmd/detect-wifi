@@ -8,11 +8,6 @@ export class DetectIntruderUseCase {
     private readonly notificationService: INotificationService,
   ) {}
 
-  /**
-   * Executa a lógica de detecção de intrusos considerando regras de Debounce.
-   * Não notifica se o dispositivo já estava conhecido e aprovado,
-   * ou se apenas teve uma queda rápida de conexão (Debounce).
-   */
   async execute(activeDevices: Device[]): Promise<void> {
     const knownDevices = await this.deviceRepository.getAllDevices();
     const currentTime = new Date().getTime();
@@ -25,11 +20,12 @@ export class DetectIntruderUseCase {
 
       if (!known) {
         // Novo dispositivo não listado = INTRUSO (Notifica e salva como não aprovado)
-        await this.deviceRepository.saveDevice({
-          ...active,
-          isApproved: false,
-          lastSeen: new Date(),
-        });
+        await this.deviceRepository.saveDevice(
+          new Device(
+            active.id, active.macAddress, active.ipAddress, active.vendor,
+            active.isKnown, false, active.category, new Date()
+          )
+        );
 
         await this.notificationService.sendAlert(
           'ALERTA: Novo Dispositivo Desconhecido',
