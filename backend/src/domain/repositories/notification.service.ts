@@ -1,5 +1,5 @@
 import { NetworkAlert } from '../entities/network-alert.entity';
 
 export interface INotificationService {
-  sendAlert(alert: NetworkAlert): Promise<void>;
+  sendAlert(title: string, message: string, metadata?: any): Promise<void>;
 }

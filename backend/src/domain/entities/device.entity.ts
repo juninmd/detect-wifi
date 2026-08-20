@@ -5,6 +5,7 @@ export class Device {
     public readonly ipAddress: string,
     public readonly vendor: string,
     public readonly isKnown: boolean,
+    public readonly isApproved: boolean,
     public readonly category: string,
     public readonly lastSeen: Date,
   ) {}
@@ -16,6 +17,7 @@ export class Device {
       overrides?.ipAddress ?? this.ipAddress,
       overrides?.vendor ?? this.vendor,
       overrides?.isKnown ?? this.isKnown,
+      overrides?.isApproved ?? this.isApproved,
       overrides?.category ?? this.category,
       overrides?.lastSeen ?? this.lastSeen,
     );
