@@ -15,30 +15,27 @@ export class DetectIntruderUseCase {
 
       if (!existing) {
         // New device, completely unknown
-        await this.deviceRepository.save(detected);
+        await this.deviceRepository.saveDevice(detected);
         await this.triggerAlert(detected, 'CRITICAL', 'New unknown device detected on the network.');
       } else if (!existing.isKnown) {
         // Device exists but is marked as unknown (maybe re-connected)
         // We'll update lastSeen (simplified here)
         const updatedDevice = existing.copy({ lastSeen: new Date() });
-        await this.deviceRepository.save(updatedDevice);
+        await this.deviceRepository.saveDevice(updatedDevice);
         await this.triggerAlert(updatedDevice, 'WARNING', 'Previously unknown device reconnected.');
       } else {
         // Known device, just update last seen
         const updatedDevice = existing.copy({ lastSeen: new Date() });
-        await this.deviceRepository.save(updatedDevice);
+        await this.deviceRepository.saveDevice(updatedDevice);
       }
     }
   }
 
   private async triggerAlert(device: Device, level: 'INFO' | 'WARNING' | 'CRITICAL', message: string): Promise<void> {
-    const alert = new NetworkAlert(
-      Math.random().toString(36).substring(7), // Simple ID generation
-      device.id,
+    await this.notificationService.sendAlert(
+      level === 'CRITICAL' ? 'Security Alert' : 'Network Notification',
       message,
-      level,
-      new Date(),
+      { deviceId: device.id, macAddress: device.macAddress, level }
     );
-    await this.notificationService.sendAlert(alert);
   }
 }

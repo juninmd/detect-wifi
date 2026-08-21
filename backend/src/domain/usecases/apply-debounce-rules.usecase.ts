@@ -15,13 +15,9 @@ export class ApplyDebounceRulesUseCase {
     if (eventType === 'CONNECTED') {
       if (timeSinceLastSeen > this.DEBOUNCE_TIME_MS) {
         await this.notificationService.sendAlert(
-          new NetworkAlert(
-            Math.random().toString(36).substring(7),
-            device.id,
+            'Device Connected',
             `Device ${device.vendor} (${device.macAddress}) connected.`,
-            'INFO',
-            new Date(),
-          )
+            { deviceId: device.id, level: 'INFO' }
         );
       }
     } else if (eventType === 'DISCONNECTED') {
