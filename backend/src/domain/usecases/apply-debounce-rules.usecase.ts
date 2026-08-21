@@ -1,6 +1,5 @@
 import { Device } from '../entities/device.entity';
 import { INotificationService } from '../repositories/notification.service';
-import { NetworkAlert } from '../entities/network-alert.entity';
 
 export class ApplyDebounceRulesUseCase {
   private readonly DEBOUNCE_TIME_MS = 5 * 60 * 1000; // 5 minutes
@@ -15,13 +14,9 @@ export class ApplyDebounceRulesUseCase {
     if (eventType === 'CONNECTED') {
       if (timeSinceLastSeen > this.DEBOUNCE_TIME_MS) {
         await this.notificationService.sendAlert(
-          new NetworkAlert(
-            Math.random().toString(36).substring(7),
-            device.id,
+            'Device Connected',
             `Device ${device.vendor} (${device.macAddress}) connected.`,
-            'INFO',
-            new Date(),
-          )
+            { deviceId: device.id, level: 'INFO' }
         );
       }
     } else if (eventType === 'DISCONNECTED') {
