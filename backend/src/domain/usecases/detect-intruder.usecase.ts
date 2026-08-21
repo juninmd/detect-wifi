@@ -1,5 +1,4 @@
 import { Device } from '../entities/device.entity';
-import { NetworkAlert } from '../entities/network-alert.entity';
 import { IDeviceRepository } from '../repositories/device.repository';
 import { INotificationService } from '../repositories/notification.service';
 

@@ -1,6 +1,5 @@
 import { Device } from '../entities/device.entity';
 import { INotificationService } from '../repositories/notification.service';
-import { NetworkAlert } from '../entities/network-alert.entity';
 
 export class ApplyDebounceRulesUseCase {
   private readonly DEBOUNCE_TIME_MS = 5 * 60 * 1000; // 5 minutes
