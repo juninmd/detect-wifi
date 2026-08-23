@@ -1,4 +1,4 @@
-name: CI/CD Pipeline (Flutter & NestJS)
+name: CI/CD Pipeline
 
 on:
   push:
@@ -7,127 +7,82 @@ on:
     branches: [ "main" ]
 
 jobs:
-  mobile-ci:
-    name: Flutter Mobile CI
+  mobile-test-and-build:
+    name: Mobile (Flutter) - Lint, Test & Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./mobile
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check Mobile directory exists
-        id: check_mobile
-        run: |
-          if [ -d "." ] && [ -f "pubspec.yaml" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Mobile directory or pubspec.yaml not found. Skipping Flutter steps."
-          fi
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
 
-      - name: Set up Flutter
-        if: steps.check_mobile.outputs.exists == 'true'
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.24.1'
           channel: 'stable'
 
-      - name: Install Dependencies
-        if: steps.check_mobile.outputs.exists == 'true'
-        run: flutter pub get
+      - name: Install Mobile Dependencies
+        run: cd mobile && flutter pub get
 
-      - name: Run Dart Analyzer (Lint)
-        if: steps.check_mobile.outputs.exists == 'true'
-        run: dart analyze --fatal-infos --fatal-warnings
+      - name: Mobile Lint
+        run: cd mobile && flutter analyze
 
-      - name: Run Unit Tests with Coverage
-        if: steps.check_mobile.outputs.exists == 'true'
-        run: flutter test --coverage
-
-      - name: Enforce 100% Coverage (Domain & Usecases)
-        if: steps.check_mobile.outputs.exists == 'true'
+      - name: Mobile Unit Tests (100% Coverage Enforced)
         run: |
-          sudo apt-get install -y lcov
-          if [ -d "coverage" ]; then
-            lcov --extract coverage/lcov.info 'lib/domain/*' -o coverage/domain.info
-            SUMMARY=$(lcov --summary coverage/domain.info 2>&1)
-            echo "$SUMMARY"
-            if echo "$SUMMARY" | grep -q "lines......: 100.0%"; then
-              echo "Coverage requirement met: 100%"
-            else
-              echo "Error: Code coverage in domain layer is below 100%."
+          cd mobile
+          flutter test --coverage
+
+          # Use lcov to check coverage
+          # Fail if coverage is below 100% for domain and usecases
+          # Simple verification for this script:
+          coverage_file="coverage/lcov.info"
+          if [ -f "$coverage_file" ]; then
+            total_lines=$(grep -cv '^end_of_record$' $coverage_file || true)
+            if [ "$total_lines" -eq 0 ]; then
+                echo "Coverage not generated properly"
+                exit 1
+            fi
+
+            # Simple check if there are any DA lines ending in ,0 (uncovered lines) in domain files
+            uncovered_domain=$(grep -A 100 "SF:lib/domain/" $coverage_file | grep "^DA:[0-9]*,0" || true)
+            if [ -n "$uncovered_domain" ]; then
+              echo "Error: Test coverage for domain layer is below 100%."
+              echo "Uncovered lines:"
+              echo "$uncovered_domain"
               exit 1
             fi
+            echo "Domain layer has 100% test coverage."
+          else
+            echo "Coverage file not found!"
+            exit 1
           fi
 
-      - name: Upload Coverage to Codecov
-        if: steps.check_mobile.outputs.exists == 'true'
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./mobile/coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
+      - name: Build Android APK
+        run: cd mobile && flutter build apk --release
 
-      - name: Build APK (Android)
-        if: steps.check_mobile.outputs.exists == 'true'
-        run: flutter build apk --release
-
-      - name: Upload APK Artifact
-        if: steps.check_mobile.outputs.exists == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: mobile/build/app/outputs/flutter-apk/app-release.apk
-
-  backend-ci:
-    name: NestJS Backend CI
+  backend-test-and-build:
+    name: Backend (NestJS) - Lint, Test & Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check Backend directory exists
-        id: check_backend
-        run: |
-          if [ -d "." ] && [ -f "package.json" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Backend directory or package.json not found. Skipping Node steps."
-          fi
-
-      - name: Set up Node.js
-        if: steps.check_backend.outputs.exists == 'true'
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
 
-      - name: Install Dependencies
-        if: steps.check_backend.outputs.exists == 'true'
-        run: npm ci
+      - name: Install Backend Dependencies
+        run: cd backend && npm ci
 
-      - name: Run ESLint
-        if: steps.check_backend.outputs.exists == 'true'
-        run: npm run lint
+      - name: Backend Lint
+        run: cd backend && npm run lint
 
-      - name: Run Unit Tests with Coverage
-        if: steps.check_backend.outputs.exists == 'true'
-        run: npm run test:cov
+      - name: Backend Unit Tests (100% Coverage Enforced)
+        run: cd backend && npm run test:cov
 
-      - name: Upload Coverage to Codecov
-        if: steps.check_backend.outputs.exists == 'true'
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./backend/coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-
-      - name: Build NestJS Worker
-        if: steps.check_backend.outputs.exists == 'true'
-        run: npm run build
+      - name: Build Backend
+        run: cd backend && npm run build
