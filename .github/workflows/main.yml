@@ -2,87 +2,70 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
-  mobile-test-and-build:
-    name: Mobile (Flutter) - Lint, Test & Build
+  mobile-ci:
+    name: Flutter Mobile CI
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./mobile
     steps:
-      - uses: actions/checkout@v7
-
-      - name: Setup Java
-        uses: actions/setup-java@v5
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
         with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.1'
           channel: 'stable'
-
-      - name: Install Mobile Dependencies
-        run: cd mobile && flutter pub get
-
-      - name: Mobile Lint
-        run: cd mobile && flutter analyze
-
-      - name: Mobile Unit Tests (100% Coverage Enforced)
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Format
+        run: dart format --output=none --set-exit-if-changed .
+      - name: Analyze
+        run: flutter analyze
+      - name: Run tests with coverage
+        run: flutter test --coverage
+      - name: Check coverage threshold (Domain & Use Cases)
         run: |
-          cd mobile
-          flutter test --coverage
-
-          # Use lcov to check coverage
-          # Fail if coverage is below 100% for domain and usecases
-          # Simple verification for this script:
-          coverage_file="coverage/lcov.info"
-          if [ -f "$coverage_file" ]; then
-            total_lines=$(grep -cv '^end_of_record$' $coverage_file || true)
-            if [ "$total_lines" -eq 0 ]; then
-                echo "Coverage not generated properly"
-                exit 1
-            fi
-
-            # Simple check if there are any DA lines ending in ,0 (uncovered lines) in domain files
-            uncovered_domain=$(grep -A 100 "SF:lib/domain/" $coverage_file | grep "^DA:[0-9]*,0" || true)
-            if [ -n "$uncovered_domain" ]; then
-              echo "Error: Test coverage for domain layer is below 100%."
-              echo "Uncovered lines:"
-              echo "$uncovered_domain"
+          sudo apt-get install -y lcov
+          if [ -f coverage/lcov.info ]; then
+            COVERAGE=$(lcov --summary coverage/lcov.info | grep "lines" | awk '{print $2}' | cut -d '%' -f 1)
+            echo "Total Coverage: $COVERAGE%"
+            if (( $(echo "$COVERAGE < 100" | bc -l) )); then
+              echo "Error: Test coverage ($COVERAGE%) is less than 100%!"
               exit 1
             fi
-            echo "Domain layer has 100% test coverage."
           else
-            echo "Coverage file not found!"
+            echo "Error: coverage/lcov.info not found."
             exit 1
           fi
+      - name: Build APK
+        run: flutter build apk --release
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
 
-      - name: Build Android APK
-        run: cd mobile && flutter build apk --release
-
-  backend-test-and-build:
-    name: Backend (NestJS) - Lint, Test & Build
+  backend-ci:
+    name: NestJS Backend CI
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
     steps:
-      - uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install Backend Dependencies
-        run: cd backend && npm ci
-
-      - name: Backend Lint
-        run: cd backend && npm run lint
-
-      - name: Backend Unit Tests (100% Coverage Enforced)
-        run: cd backend && npm run test:cov
-
-      - name: Build Backend
-        run: cd backend && npm run build
+          cache: 'npm'
+          cache-dependency-path: './backend/package-lock.json'
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Run tests with coverage
+        run: npm run test:cov
+      - name: Build
+        run: npm run build
