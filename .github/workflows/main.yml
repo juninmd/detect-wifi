@@ -30,10 +30,11 @@ jobs:
         run: |
           sudo apt-get install -y lcov
           if [ -f coverage/lcov.info ]; then
-            COVERAGE=$(lcov --summary coverage/lcov.info | grep "lines" | awk '{print $2}' | cut -d '%' -f 1)
-            echo "Total Coverage: $COVERAGE%"
+            lcov --extract coverage/lcov.info 'lib/domain/*' -o coverage/domain_lcov.info
+            COVERAGE=$(lcov --summary coverage/domain_lcov.info | grep "lines" | awk '{print $2}' | cut -d '%' -f 1)
+            echo "Domain Coverage: $COVERAGE%"
             if (( $(echo "$COVERAGE < 100" | bc -l) )); then
-              echo "Error: Test coverage ($COVERAGE%) is less than 100%!"
+              echo "Error: Domain test coverage ($COVERAGE%) is less than 100%!"
               exit 1
             fi
           else

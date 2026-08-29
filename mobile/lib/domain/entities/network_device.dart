@@ -1,4 +1,5 @@
 enum DeviceCategory { smartphone, iot, computer, unknown }
+
 enum DeviceStatus { known, unknown, blocked }
 
 class NetworkDevice {
