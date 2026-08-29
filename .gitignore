@@ -28,3 +28,5 @@ config/secrets.yml
 google-services.json
 app/google-services.json
 GoogleService-Info.plist
+node_modules/
+coverage/

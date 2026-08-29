@@ -13,13 +13,17 @@ class ScanNetworkUseCase {
     List<Device> mergedDevices = [];
 
     for (var device in scannedDevices) {
-      final knownDevice = await _deviceRepository.getDeviceByMac(device.macAddress);
+      final knownDevice = await _deviceRepository.getDeviceByMac(
+        device.macAddress,
+      );
 
       if (knownDevice != null) {
-        mergedDevices.add(device.copyWith(
-          isKnown: knownDevice.isKnown,
-          category: knownDevice.category,
-        ));
+        mergedDevices.add(
+          device.copyWith(
+            isKnown: knownDevice.isKnown,
+            category: knownDevice.category,
+          ),
+        );
       } else {
         mergedDevices.add(device);
       }
