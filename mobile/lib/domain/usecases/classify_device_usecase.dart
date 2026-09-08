@@ -1,4 +1,3 @@
-import '../entities/device.dart';
 import '../repositories/device_repository.dart';
 
 class ClassifyDeviceUseCase {
