@@ -30,3 +30,9 @@ app/google-services.json
 GoogleService-Info.plist
 node_modules/
 coverage/
+mobile/macos/
+mobile/ios/
+mobile/android/
+mobile/web/
+mobile/windows/
+mobile/linux/
