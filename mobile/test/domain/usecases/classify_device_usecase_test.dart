@@ -27,30 +27,39 @@ void main() {
       lastSeen: DateTime.now(),
     );
 
-    when(() => mockDeviceRepository.getDeviceByMac('00:11:22:33:44:55'))
-        .thenAnswer((_) async => device);
-    when(() => mockDeviceRepository.updateDeviceStatus('00:11:22:33:44:55', true))
-        .thenAnswer((_) async => Future.value());
+    when(
+      () => mockDeviceRepository.getDeviceByMac('00:11:22:33:44:55'),
+    ).thenAnswer((_) async => device);
+    when(
+      () => mockDeviceRepository.updateDeviceStatus('00:11:22:33:44:55', true),
+    ).thenAnswer((_) async => Future.value());
 
     // Act
     await usecase('00:11:22:33:44:55', true);
 
     // Assert
-    verify(() => mockDeviceRepository.getDeviceByMac('00:11:22:33:44:55')).called(1);
-    verify(() => mockDeviceRepository.updateDeviceStatus('00:11:22:33:44:55', true)).called(1);
+    verify(
+      () => mockDeviceRepository.getDeviceByMac('00:11:22:33:44:55'),
+    ).called(1);
+    verify(
+      () => mockDeviceRepository.updateDeviceStatus('00:11:22:33:44:55', true),
+    ).called(1);
   });
 
   test('should throw exception if device not found', () async {
     // Arrange
-    when(() => mockDeviceRepository.getDeviceByMac('00:11:22:33:44:55'))
-        .thenAnswer((_) async => null);
+    when(
+      () => mockDeviceRepository.getDeviceByMac('00:11:22:33:44:55'),
+    ).thenAnswer((_) async => null);
 
     // Act
     final call = usecase('00:11:22:33:44:55', true);
 
     // Assert
     expect(() => call, throwsA(isA<Exception>()));
-    verify(() => mockDeviceRepository.getDeviceByMac('00:11:22:33:44:55')).called(1);
+    verify(
+      () => mockDeviceRepository.getDeviceByMac('00:11:22:33:44:55'),
+    ).called(1);
     verifyNever(() => mockDeviceRepository.updateDeviceStatus(any(), any()));
   });
 }
