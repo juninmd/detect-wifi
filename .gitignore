@@ -36,3 +36,5 @@ mobile/android/
 mobile/web/
 mobile/windows/
 mobile/linux/
+node_modules/
+coverage/

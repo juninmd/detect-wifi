@@ -1,17 +1,30 @@
-import { NetworkDevice, DeviceCategory } from '../entities/network-device.entity';
+import { IDeviceRepository } from '../repositories/device.repository';
+import { Device } from '../entities/device.entity';
+import { DeviceCategory } from '../entities/network-device.entity';
 
 export class ClassifyDeviceUseCase {
-  execute(device: NetworkDevice): NetworkDevice {
+  constructor(private readonly deviceRepository: IDeviceRepository) {}
+
+  async execute(macAddress: string): Promise<Device> {
+    const device = await this.deviceRepository.findByMacAddress(macAddress);
+    if (!device) {
+      throw new Error('Device not found');
+    }
+
+    let category = DeviceCategory.UNKNOWN;
     if (device.vendor) {
-      const vendor = device.vendor.toLowerCase();
-      if (vendor.includes('apple') || vendor.includes('samsung') || vendor.includes('motorola')) {
-        return device.copyWith({ category: DeviceCategory.SMARTPHONE });
-      } else if (vendor.includes('intel') || vendor.includes('dell') || vendor.includes('hp')) {
-        return device.copyWith({ category: DeviceCategory.COMPUTER });
-      } else if (vendor.includes('espressif') || vendor.includes('tuya') || vendor.includes('philips')) {
-        return device.copyWith({ category: DeviceCategory.IOT });
+      const vendorLower = device.vendor.toLowerCase();
+      if (vendorLower.includes('apple') || vendorLower.includes('samsung') || vendorLower.includes('motorola')) {
+        category = DeviceCategory.SMARTPHONE;
+      } else if (vendorLower.includes('intel') || vendorLower.includes('dell') || vendorLower.includes('hp')) {
+        category = DeviceCategory.COMPUTER;
+      } else if (vendorLower.includes('espressif') || vendorLower.includes('tuya') || vendorLower.includes('philips')) {
+        category = DeviceCategory.IOT;
       }
     }
-    return device.copyWith({ category: DeviceCategory.UNKNOWN });
+
+    const updatedDevice = device.copy({ category });
+    await this.deviceRepository.saveDevice(updatedDevice);
+    return updatedDevice;
   }
 }
