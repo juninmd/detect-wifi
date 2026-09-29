@@ -35,11 +35,11 @@ jobs:
             echo "Domain Coverage: $COVERAGE%"
             if (( $(echo "$COVERAGE < 100" | bc -l) )); then
               echo "Error: Domain test coverage ($COVERAGE%) is less than 100%!"
-              exit 1
+              /bin/false
             fi
           else
             echo "Error: coverage/lcov.info not found."
-            exit 1
+            /bin/false
           fi
       - name: Build APK
         run: flutter build apk --release
