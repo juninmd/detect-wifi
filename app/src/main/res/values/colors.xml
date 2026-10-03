@@ -37,6 +37,15 @@
     <color name="gradient_mid">#7C3AED</color>
     <color name="gradient_end">#EC4899</color>
 
+    <!-- Surfaces and states used by the redesigned screens -->
+    <color name="surface_container">#162033</color>
+    <color name="success_soft">#2610B981</color>
+    <color name="danger_soft">#26EF4444</color>
+    <color name="warning_soft">#26F59E0B</color>
+    <color name="primary_soft">#266366F1</color>
+    <color name="key_background">#1E293B</color>
+    <color name="key_pressed">#334155</color>
+
     <!-- Dragon Radar Theme -->
     <color name="dragon_radar_green">#00FF00</color>
     <color name="dragon_radar_grid">#4D00FF00</color> <!-- 30% alpha -->

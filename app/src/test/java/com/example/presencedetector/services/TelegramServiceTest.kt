@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -101,5 +102,37 @@ class TelegramServiceTest {
     verify(mockClient).newCall(any())
 
     tempFile.delete()
+  }
+
+  @Test
+  fun `sendLocation posts latitude and longitude to the sendLocation endpoint`() = runTest {
+    whenever(mockPreferences.isTelegramEnabled()).thenReturn(true)
+    whenever(mockPreferences.getTelegramToken()).thenReturn("TOKEN")
+    whenever(mockPreferences.getTelegramChatId()).thenReturn("12345")
+    whenever(mockClient.newCall(any())).thenReturn(mockCall)
+    val response =
+      Response.Builder()
+        .request(Request.Builder().url("https://example.com").build())
+        .protocol(Protocol.HTTP_1_1)
+        .code(200)
+        .message("OK")
+        .body("{}".toResponseBody("application/json".toMediaTypeOrNull()))
+        .build()
+    whenever(mockCall.execute()).thenReturn(response)
+
+    telegramService.sendLocation(-23.55052, -46.633308)
+
+    val captor = org.mockito.ArgumentCaptor.forClass(Request::class.java)
+    verify(mockClient).newCall(captor.capture())
+    assertTrue(captor.value.url.toString().endsWith("/botTOKEN/sendLocation"))
+  }
+
+  @Test
+  fun `sendLocation does nothing when telegram is disabled`() = runTest {
+    whenever(mockPreferences.isTelegramEnabled()).thenReturn(false)
+
+    telegramService.sendLocation(1.0, 2.0)
+
+    verify(mockClient, never()).newCall(any())
   }
 }

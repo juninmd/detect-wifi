@@ -103,6 +103,25 @@ open class TelegramService(
     }
   }
 
+  open fun sendLocation(latitude: Double, longitude: Double) {
+    executeTelegramAction("Location sent successfully", "Failed to send location") {
+      val (token, chatId) = getCredentials() ?: return@executeTelegramAction null
+
+      val requestBody =
+        MultipartBody.Builder()
+          .setType(MultipartBody.FORM)
+          .addFormDataPart("chat_id", chatId)
+          .addFormDataPart("latitude", latitude.toString())
+          .addFormDataPart("longitude", longitude.toString())
+          .build()
+
+      Request.Builder()
+        .url("https://api.telegram.org/bot$token/sendLocation")
+        .post(requestBody)
+        .build()
+    }
+  }
+
   private fun getCredentials(): Pair<String, String>? {
     if (!prefs.isTelegramEnabled()) return null
 
