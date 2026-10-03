@@ -20,6 +20,12 @@ Um aplicativo Android abrangente que combina detecção de presença residencial
 *   **Selfie de Intruso:** Captura uma foto do intruso após tentativas erradas de desbloqueio (requer configuração específica).
 *   **Desarme Biométrico:** Requer Impressão Digital/FaceID para parar o alarme.
 
+### 🛰️ Novidades: Roteador, Bloqueio de apps e Foto de intruso
+*   **Roteador TP-Link:** lista as redes e os dispositivos conectados (Archer/Deco com API web criptografada), marca dispositivos como "confiáveis" e avisa no celular e no Telegram quando um desconhecido entra na rede. A senha fica cifrada com o Android Keystore. O roteador é acessado por HTTP local: IPs comuns (`192.168.0.1`, `192.168.1.1`, `192.168.15.1`, `192.168.100.1`, `10.0.0.1`, `tplinkwifi.net`) já estão liberados em `network_security_config.xml`.
+*   **Bloqueio de apps (bancos):** PIN próprio (PBKDF2) sobre os apps escolhidos, com bloqueio progressivo após erros. Usa um serviço de acessibilidade que só lê o nome do pacote em primeiro plano.
+*   **Foto de intruso + localização:** PIN errado no bloqueio de apps ou senha errada no desbloqueio do celular (administrador do dispositivo) → selfie + mapa enviados ao Telegram.
+*   Prévias das telas: `docs/preview/`.
+
 ### 🔌 Integrações
 *   **Bot Telegram:** Receba fotos e alertas diretamente no Telegram.
 

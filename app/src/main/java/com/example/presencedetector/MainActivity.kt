@@ -20,6 +20,7 @@ import com.example.presencedetector.security.repository.LogRepository
 import com.example.presencedetector.services.AntiTheftService
 import com.example.presencedetector.services.DetectionBackgroundService
 import com.example.presencedetector.services.PresenceDetectionManager
+import com.example.presencedetector.ui.SecurityCenterCards
 import com.example.presencedetector.utils.BiometricAuthenticator
 import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil
@@ -166,6 +167,7 @@ class MainActivity : AppCompatActivity() {
     super.onResume()
     updateAntiTheftUI()
     updateGlobalStatus()
+    SecurityCenterCards.refresh(this, binding)
     val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
     registerReceiver(batteryReceiver, filter)
   }
@@ -266,6 +268,8 @@ class MainActivity : AppCompatActivity() {
     binding.btnOpenRadarFromGrid.setOnClickListener {
       startActivity(Intent(this, WifiRadarActivity::class.java))
     }
+
+    SecurityCenterCards.bind(this, binding)
 
     binding.btnSettings.setOnClickListener {
       startActivity(Intent(this, SettingsActivity::class.java))

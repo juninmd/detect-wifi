@@ -12,6 +12,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.presencedetector.R
+import com.example.presencedetector.router.RouterPoller
 import com.example.presencedetector.security.service.CameraMonitoringService
 import com.example.presencedetector.utils.NotificationUtil
 import com.example.presencedetector.utils.PreferencesUtil
@@ -31,6 +32,8 @@ class DetectionBackgroundService : Service() {
   private var isRunning = false
   private var cameraPresenceReceiver: BroadcastReceiver? = null
   private lateinit var preferences: PreferencesUtil
+
+  private var routerPoller: RouterPoller? = null
 
   // App Usage Monitoring
   private var appUsageMonitor: AppUsageMonitor? = null
@@ -63,6 +66,7 @@ class DetectionBackgroundService : Service() {
 
     // Init App Monitor
     appUsageMonitor = AppUsageMonitor(this)
+    routerPoller = RouterPoller(this)
   }
 
   private fun triggerHiddenCamera(packageName: String) {
@@ -78,7 +82,7 @@ class DetectionBackgroundService : Service() {
         "⚠️ Security Alert",
         "Sensitive App Accessed: $packageName. Photo captured.",
         true,
-        channelType = NotificationUtil.MOBILE_SECURITY_CHANNEL_ID
+        channelType = NotificationUtil.MOBILE_SECURITY_CHANNEL_ID,
       )
     } catch (e: Exception) {
       Log.e(TAG, "Failed to launch hidden camera", e)
@@ -110,7 +114,7 @@ class DetectionBackgroundService : Service() {
               "🛡️ Zona Segura",
               "Anti-Furto desativado: Conectado a $currentSsid",
               false,
-              channelType = NotificationUtil.HOME_SECURITY_CHANNEL_ID
+              channelType = NotificationUtil.HOME_SECURITY_CHANNEL_ID,
             )
           }
         } else {
@@ -142,7 +146,7 @@ class DetectionBackgroundService : Service() {
         "🛡️ Modo Inteligente",
         "Anti-Furto ativado automaticamente ao sair de casa.",
         false,
-        channelType = NotificationUtil.MOBILE_SECURITY_CHANNEL_ID
+        channelType = NotificationUtil.MOBILE_SECURITY_CHANNEL_ID,
       )
       return
     }
@@ -171,7 +175,7 @@ class DetectionBackgroundService : Service() {
         false, // Info priority (user can ignore)
         "Ativar Agora",
         pendingEnableIntent,
-        channelType = NotificationUtil.MOBILE_SECURITY_CHANNEL_ID
+        channelType = NotificationUtil.MOBILE_SECURITY_CHANNEL_ID,
       )
 
       lastAutoArmSuggestionTime = System.currentTimeMillis()
@@ -237,6 +241,7 @@ class DetectionBackgroundService : Service() {
 
         // Start App Monitor
         appMonitorHandler.post(appMonitorRunnable)
+        routerPoller?.start()
 
         Log.i(TAG, "✅ Presence detection started in background")
       } catch (e: Exception) {
@@ -268,6 +273,7 @@ class DetectionBackgroundService : Service() {
     detectionManager?.destroy()
 
     appMonitorHandler.removeCallbacks(appMonitorRunnable)
+    routerPoller?.stop()
 
     if (cameraPresenceReceiver != null) {
       unregisterReceiver(cameraPresenceReceiver)

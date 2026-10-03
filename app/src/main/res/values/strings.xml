@@ -158,4 +158,63 @@
     <string name="label_left">Saiu</string>
     <string name="text_na">N/A</string>
 
+
+    <!-- Security center -->
+    <string name="section_security_center">🛡️ Central de Segurança</string>
+    <string name="card_router_title">Roteador TP-Link</string>
+    <string name="card_router_off">Toque para conectar</string>
+    <string name="card_router_on">Conectado • %1$s</string>
+    <string name="card_applock_title">Bloqueio de apps</string>
+    <string name="card_applock_off">PIN extra para bancos</string>
+    <string name="card_applock_on">%1$d apps protegidos</string>
+
+    <!-- Router -->
+    <string name="router_title">Roteador TP-Link</string>
+    <string name="router_status_idle">Informe os dados do roteador</string>
+    <string name="router_status_loading">Consultando o roteador…</string>
+    <string name="router_status_ok">%1$d dispositivos • %2$d desconhecidos</string>
+    <string name="router_status_error">Falha: %1$s</string>
+    <string name="router_section_networks">Redes do roteador</string>
+    <string name="router_section_devices">Dispositivos conectados</string>
+    <string name="router_no_networks">Nenhuma rede encontrada</string>
+    <string name="router_hint_host">IP do roteador</string>
+    <string name="router_hint_user">Usuário</string>
+    <string name="router_hint_password">Senha do roteador</string>
+    <string name="router_monitor_switch">Monitorar em segundo plano</string>
+    <string name="router_monitor_desc">Avisa no celular e no Telegram quando um dispositivo desconhecido entrar na rede</string>
+    <string name="router_save_test">Salvar e testar</string>
+    <string name="router_refresh">Atualizar</string>
+    <string name="router_badge_unknown">Desconhecido</string>
+    <string name="router_badge_trusted">Confiável</string>
+    <string name="router_trust">Confiar</string>
+    <string name="router_untrust">Remover</string>
+    <string name="router_trust_all">Confiar em todos</string>
+    <string name="router_need_password">Informe a senha do roteador</string>
+
+    <!-- App lock -->
+    <string name="applock_title">Bloqueio de apps</string>
+    <string name="applock_enable">Proteger apps com PIN</string>
+    <string name="applock_enable_desc">Pede um PIN diferente do desbloqueio do celular ao abrir os apps marcados</string>
+    <string name="applock_set_pin">Definir PIN</string>
+    <string name="applock_change_pin">Alterar PIN</string>
+    <string name="applock_pin_hint">PIN (4 a 8 dígitos)</string>
+    <string name="applock_pin_confirm_hint">Repita o PIN</string>
+    <string name="applock_pin_invalid">Use de 4 a 8 dígitos</string>
+    <string name="applock_pin_mismatch">Os PINs não são iguais</string>
+    <string name="applock_pin_saved">PIN salvo</string>
+    <string name="applock_need_pin">Defina um PIN antes de ativar</string>
+    <string name="applock_service_title">Serviço de acessibilidade</string>
+    <string name="applock_service_on">Ativo — detecta quando um app protegido abre</string>
+    <string name="applock_service_off">Desligado — toque para ativar</string>
+    <string name="applock_service_description">Detecta qual app abriu para cobri-lo com o PIN. Não lê o conteúdo da tela.</string>
+    <string name="applock_section_apps">Apps protegidos</string>
+    <string name="applock_intruder_title">Foto de intruso ao desbloquear</string>
+    <string name="applock_intruder_on">Ativo — foto + localização no Telegram</string>
+    <string name="applock_intruder_off">Desligado — toque para ativar o administrador do dispositivo</string>
+    <string name="applock_intruder_explain">Permite ao app saber quando alguém erra a senha do celular para tirar uma foto.</string>
+    <string name="applock_prompt">Digite o PIN para abrir %1$s</string>
+    <string name="applock_wrong">PIN incorreto • %1$d tentativas restantes</string>
+    <string name="applock_locked">Muitas tentativas. Aguarde %1$d s</string>
+    <string name="applock_cancel">Voltar</string>
+    <string name="applock_intruder_reason">PIN incorreto ao abrir %1$s</string>
 </resources>
