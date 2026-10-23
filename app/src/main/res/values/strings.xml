@@ -168,6 +168,23 @@
     <string name="card_applock_off">PIN extra para bancos</string>
     <string name="card_applock_on">%1$d apps protegidos</string>
 
+    <!-- Presence sensor (ESP32 + backend) -->
+    <string name="card_presence_title">Sensor de presença</string>
+    <string name="card_presence_off">Toque para configurar</string>
+    <string name="card_presence_on">Backend • %1$s</string>
+    <string name="presence_title">Sensor de presença</string>
+    <string name="presence_status_idle">Informe o endereço e a chave do backend</string>
+    <string name="presence_status_loading">Consultando o backend…</string>
+    <string name="presence_status_ok">%1$d conhecidos • %2$d desconhecidos • %3$d anônimos (MAC aleatório)</string>
+    <string name="presence_status_error">Falha: %1$s</string>
+    <string name="presence_hint_url">Endereço do backend (http://IP:3000)</string>
+    <string name="presence_hint_key">Chave de API</string>
+    <string name="presence_monitor_desc">Avisa no celular e no Telegram quando um dispositivo desconhecido aparecer por perto</string>
+    <string name="presence_section_known">Conhecidos por perto</string>
+    <string name="presence_section_unknown">Desconhecidos por perto</string>
+    <string name="presence_none">Nenhum</string>
+    <string name="presence_need_key">Informe a chave de API</string>
+
     <!-- Router -->
     <string name="router_title">Roteador TP-Link</string>
     <string name="router_status_idle">Informe os dados do roteador</string>

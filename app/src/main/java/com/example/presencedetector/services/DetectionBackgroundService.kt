@@ -12,6 +12,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.presencedetector.R
+import com.example.presencedetector.presence.PresencePoller
 import com.example.presencedetector.router.RouterPoller
 import com.example.presencedetector.security.service.CameraMonitoringService
 import com.example.presencedetector.utils.NotificationUtil
@@ -34,6 +35,7 @@ class DetectionBackgroundService : Service() {
   private lateinit var preferences: PreferencesUtil
 
   private var routerPoller: RouterPoller? = null
+  private var presencePoller: PresencePoller? = null
 
   // App Usage Monitoring
   private var appUsageMonitor: AppUsageMonitor? = null
@@ -67,6 +69,7 @@ class DetectionBackgroundService : Service() {
     // Init App Monitor
     appUsageMonitor = AppUsageMonitor(this)
     routerPoller = RouterPoller(this)
+    presencePoller = PresencePoller(this)
   }
 
   private fun triggerHiddenCamera(packageName: String) {
@@ -242,6 +245,7 @@ class DetectionBackgroundService : Service() {
         // Start App Monitor
         appMonitorHandler.post(appMonitorRunnable)
         routerPoller?.start()
+        presencePoller?.start()
 
         Log.i(TAG, "✅ Presence detection started in background")
       } catch (e: Exception) {
@@ -274,6 +278,7 @@ class DetectionBackgroundService : Service() {
 
     appMonitorHandler.removeCallbacks(appMonitorRunnable)
     routerPoller?.stop()
+    presencePoller?.stop()
 
     if (cameraPresenceReceiver != null) {
       unregisterReceiver(cameraPresenceReceiver)

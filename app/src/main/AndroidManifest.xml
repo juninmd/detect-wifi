@@ -97,6 +97,10 @@
             android:label="@string/router_title"
             android:parentActivityName=".MainActivity" />
 
+        <activity android:name=".presence.PresenceActivity"
+            android:label="@string/presence_title"
+            android:parentActivityName=".MainActivity" />
+
         <activity android:name=".lock.AppLockSettingsActivity"
             android:label="@string/applock_title"
             android:exported="true"

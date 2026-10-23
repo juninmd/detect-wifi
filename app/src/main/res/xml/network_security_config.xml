@@ -10,6 +10,13 @@
         <domain includeSubdomains="false">10.0.0.1</domain>
         <domain includeSubdomains="false">tplinkwifi.net</domain>
     </domain-config>
+    <!-- Presence backend (plain HTTP on the LAN). Add your server's IP here if it differs. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">192.168.0.10</domain>
+        <domain includeSubdomains="false">192.168.1.10</domain>
+        <domain includeSubdomains="false">192.168.15.10</domain>
+        <domain includeSubdomains="false">10.0.0.10</domain>
+    </domain-config>
     <debug-overrides>
         <base-config cleartextTrafficPermitted="true" />
     </debug-overrides>
