@@ -27,7 +27,17 @@ PORT=3000 npm start
 Resposta de `/presence`: `known` (MACs em `KNOWN_MACS`), `unknown` (MAC fixo não cadastrado — candidato a intruso) e
 `anonymousCount` (MAC aleatório: só contagem).
 
-Os dados ficam só em memória (1 h) e o servidor fala HTTP puro: use apenas na LAN ou atrás de um proxy com TLS.
+Os sightings ficam em SQLite (`DB_PATH`, padrão `presence.db`, retenção de 24 h) e o servidor fala HTTP puro: use apenas na LAN ou atrás de um proxy com TLS.
+
+## App Android
+
+Na tela inicial, o cartão **Sensor de presença** abre a configuração: endereço do backend (`http://IP:3000`) e chave
+de API (guardada cifrada no Android Keystore). A tela lista conhecidos, desconhecidos e a contagem de anônimos.
+Com **Monitorar em segundo plano** ligado, o serviço consulta o backend a cada 60 s e avisa por notificação e
+Telegram quando um MAC desconhecido novo aparece.
+
+O Android bloqueia HTTP puro: se o IP do backend não for um dos liberados em
+`app/src/main/res/xml/network_security_config.xml` (`192.168.{0,1,15}.10`, `10.0.0.10`), adicione-o lá.
 
 ## Limitações (importante)
 

@@ -28,6 +28,7 @@ Um aplicativo Android abrangente que combina detecção de presença residencial
 
 ### 📡 Sensor de presença passivo (ESP32 + backend)
 *   Detecta aparelhos próximos **mesmo sem estar conectados** ao roteador (probe requests) e expõe `GET /presence`.
+*   O app consulta o backend (tela **Sensor de presença**) e alerta quando um desconhecido aparece; os dados ficam em SQLite.
 *   MACs aleatórios (iOS/Android atuais) são apenas contados, não identificados. Veja `docs/PRESENCE_SNIFFER.md`.
 
 ### 🔌 Integrações
