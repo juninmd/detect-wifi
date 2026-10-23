@@ -1,149 +1,152 @@
 # Presence Detector & Segurança Anti-Furto
 
-[![CI/CD Pipeline](https://github.com/juninmd/detect-wifi/actions/workflows/ci.yml/badge.svg)](https://github.com/juninmd/detect-wifi/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/juninmd/detect-wifi/graph/badge.svg)](https://codecov.io/gh/juninmd/detect-wifi)
+[![CI/CD Pipeline](https://github.com/juninmd/detect-wifi/actions/workflows/main.yml/badge.svg)](https://github.com/juninmd/detect-wifi/actions/workflows/main.yml)
+[![Validate](https://github.com/juninmd/detect-wifi/actions/workflows/validate.yml/badge.svg)](https://github.com/juninmd/detect-wifi/actions/workflows/validate.yml)
 
-Um aplicativo Android abrangente que combina detecção de presença residencial (WiFi/Bluetooth/Câmera) com medidas ativas de proteção anti-furto. Desenvolvido com Kotlin moderno e otimizado para Android 15.
+App Android (Kotlin) que combina detecção de presença residencial (Wi-Fi/Bluetooth/câmera) com proteção anti-furto,
+mais um sensor passivo opcional (ESP32 + backend Node/TypeScript) que enxerga aparelhos próximos mesmo sem estarem
+conectados ao roteador. Alertas saem por notificação local e Telegram.
 
-## 🌟 Principais Recursos
+## Componentes
 
-### 🏠 Monitor de Presença Residencial
-*   **Radar WiFi:** Detecta presença analisando flutuações de sinal WiFi.
-*   **Scanner Bluetooth:** Detecção secundária (fallback) usando dispositivos BLE.
-*   **Monitoramento por Câmera:** Detecção visual de presença usando a câmera do dispositivo.
-*   **Alertas Remotos:** Envia notificações via Telegram quando presença é detectada.
+| Pasta | O que é | Stack |
+|-------|---------|-------|
+| `app/` | App Android principal (módulo Gradle `:app`) | Kotlin 2.4.21, AGP 9.3.1, JDK 21 |
+| `backend/` | API do sensor de presença (`/health`, `/sightings`, `/presence`) | Node 20+, TypeScript, SQLite (`better-sqlite3`), Jest |
+| `firmware/esp32-sniffer/` | Sketch Arduino do ESP32 que envia probe requests ao backend | Arduino IDE, placa "ESP32 Dev Module" |
+| `mobile/` | Esqueleto Flutter (só camada `lib/domain` e `main.dart`) | Dart SDK `^3.11.0` |
+| `docs/` | Documentação do sensor (`PRESENCE_SNIFFER.md`) e prévias das telas (`preview/`) | |
 
-### 🛡️ Segurança Móvel (Anti-Furto)
-*   **Alarme de Movimento:** Dispara se o dispositivo for movido.
-*   **Modo Bolso:** Alarma se o dispositivo for removido do bolso/bolsa enquanto armado.
-*   **Guarda de Carregador:** Alarma se o carregador for desconectado.
-*   **Selfie de Intruso:** Captura uma foto do intruso após tentativas erradas de desbloqueio (requer configuração específica).
-*   **Desarme Biométrico:** Requer Impressão Digital/FaceID para parar o alarme.
+## Recursos
 
-### 🛰️ Novidades: Roteador, Bloqueio de apps e Foto de intruso
-*   **Roteador TP-Link:** lista as redes e os dispositivos conectados (Archer/Deco com API web criptografada), marca dispositivos como "confiáveis" e avisa no celular e no Telegram quando um desconhecido entra na rede. A senha fica cifrada com o Android Keystore. O roteador é acessado por HTTP local: IPs comuns (`192.168.0.1`, `192.168.1.1`, `192.168.15.1`, `192.168.100.1`, `10.0.0.1`, `tplinkwifi.net`) já estão liberados em `network_security_config.xml`.
-*   **Bloqueio de apps (bancos):** PIN próprio (PBKDF2) sobre os apps escolhidos, com bloqueio progressivo após erros. Usa um serviço de acessibilidade que só lê o nome do pacote em primeiro plano.
-*   **Foto de intruso + localização:** PIN errado no bloqueio de apps ou senha errada no desbloqueio do celular (administrador do dispositivo) → selfie + mapa enviados ao Telegram.
-*   Prévias das telas: `docs/preview/`.
+### Monitor de presença residencial
+*   **Radar Wi-Fi:** presença por flutuação de sinal.
+*   **Scanner Bluetooth:** detecção secundária via BLE.
+*   **Câmera:** detecção visual de presença.
+*   **Alertas remotos:** notificações via Telegram.
 
-### 📡 Sensor de presença passivo (ESP32 + backend)
-*   Detecta aparelhos próximos **mesmo sem estar conectados** ao roteador (probe requests) e expõe `GET /presence`.
-*   O app consulta o backend (tela **Sensor de presença**) e alerta quando um desconhecido aparece; os dados ficam em SQLite.
-*   MACs aleatórios (iOS/Android atuais) são apenas contados, não identificados. Veja `docs/PRESENCE_SNIFFER.md`.
+### Segurança móvel (anti-furto)
+*   **Alarme de movimento**, **modo bolso**, **guarda de carregador**.
+*   **Desarme biométrico** (AndroidX Biometric) para parar o alarme.
+*   **Selfie de intruso** após tentativa errada de desbloqueio.
 
-### 🔌 Integrações
-*   **Bot Telegram:** Receba fotos e alertas diretamente no Telegram.
+### Roteador, bloqueio de apps e foto de intruso
+*   **Roteador TP-Link:** lista redes e dispositivos conectados (Archer/Deco, API web criptografada), marca "confiáveis" e
+    avisa quando um desconhecido entra. A senha fica cifrada com o Android Keystore. O acesso é HTTP local: os IPs
+    `192.168.0.1`, `192.168.1.1`, `192.168.15.1`, `192.168.100.1`, `10.0.0.1` e `tplinkwifi.net` já estão liberados em
+    `app/src/main/res/xml/network_security_config.xml`.
+*   **Bloqueio de apps (bancos):** PIN próprio (PBKDF2) com bloqueio progressivo após erros; usa um serviço de
+    acessibilidade que só lê o nome do pacote em primeiro plano.
+*   **Foto de intruso + localização:** PIN errado no bloqueio de apps, ou senha errada no desbloqueio do celular
+    (administrador do dispositivo), envia selfie e mapa ao Telegram.
 
-## 📱 Requisitos
+### Sensor de presença passivo (ESP32 + backend)
+*   Detecta aparelhos próximos via probe requests, mesmo sem conexão ao roteador, e expõe `GET /presence`.
+*   MACs aleatórios (iOS/Android atuais) só são contados, não identificados. Detalhes e limitações em
+    [`docs/PRESENCE_SNIFFER.md`](docs/PRESENCE_SNIFFER.md).
 
-*   **Android Mínimo:** Android 8.0 (Oreo) recomendado para melhor performance em segundo plano.
-*   **Android Alvo:** Android 15 (Vanilla Ice Cream).
-*   **Hardware:** WiFi, Bluetooth, Câmera, Acelerômetro, Sensor de Proximidade.
+## Screenshots
 
-## 🚀 Instalação e Configuração
+Prévias das telas em `docs/preview/`:
 
-### 1. Pré-requisitos
-*   Android Studio Koala ou mais recente.
-*   JDK 21.
-*   Android SDK Platform 35.
+| Home | Roteador | Bloqueio de apps | PIN | Telegram |
+|------|----------|------------------|-----|----------|
+| ![Home](docs/preview/01_home.png) | ![Roteador](docs/preview/02_router.png) | ![Bloqueio de apps](docs/preview/03_app_lock_settings.png) | ![PIN](docs/preview/04_pin_lock.png) | ![Telegram](docs/preview/05_telegram.png) |
 
-### 2. Instruções de Build
+Saída real do backend rodando localmente (health, ingestão e consulta de presença): [`docs/terminal.txt`](docs/terminal.txt).
 
-**Nota:** Este projeto requer uma configuração válida do Android SDK.
+## Requisitos
 
-1.  **Configurar SDK:**
-    Crie um arquivo `local.properties` na raiz do projeto se ele não existir:
-    ```properties
-    sdk.dir=/caminho/para/seu/android/sdk
-    ```
-    *(No Windows: `C:\\Users\\<Usuario>\\AppData\\Local\\Android\\Sdk`)*
-    *(No Mac/Linux: `/Users/<Usuario>/Library/Android/sdk` ou `/usr/lib/android-sdk`)*
+*   **App Android:** `minSdk 33` (Android 13), `targetSdk 35`, `compileSdk 37`. Hardware: Wi-Fi, Bluetooth, câmera,
+    acelerômetro, sensor de proximidade.
+*   **Build do app:** JDK 21 e Android SDK (plataforma 37; o Gradle baixa o restante).
+*   **Backend:** Node.js 20 ou superior (a CI usa Node 20) e npm.
+*   **Mobile Flutter:** Flutter estável com Dart `^3.11.0`.
 
-2.  **Rodar Testes:**
-    ```bash
-    ./gradlew testDebugUnitTest
-    ```
+## Instalação e uso
 
-3.  **Verificar Cobertura:**
-    ```bash
-    ./gradlew jacocoTestReport jacocoTestCoverageVerification
-    ```
+### App Android
 
-4.  **Compilar o APK:**
-    ```bash
-    ./gradlew assembleDebug
-    ```
+Crie `local.properties` na raiz (ignorado pelo git) apontando para o SDK:
 
-5.  **Instalar:**
-    ```bash
-    ./gradlew installDebug
-    ```
+```properties
+sdk.dir=/caminho/para/seu/android/sdk
+```
 
-### 3. Configuração do App
+```bash
+./gradlew assembleDebug                 # compila o APK de debug
+./gradlew installDebug                  # instala em dispositivo/emulador conectado
+./gradlew testDebugUnitTest             # testes unitários (JUnit, Mockito, Robolectric)
+./gradlew jacocoTestReport jacocoTestCoverageVerification   # cobertura (mínimo 80%)
+./gradlew spotlessCheck                 # formatação (ktfmt, Google Style); spotlessApply corrige
+./gradlew connectedDebugAndroidTest     # testes instrumentados (exige emulador/dispositivo)
+```
 
-**Permissões:**
-Ao iniciar pela primeira vez, você deve conceder:
-*   **Localização:** "Permitir o tempo todo" é necessário para varredura WiFi/BLE em background.
-*   **Notificações:** Necessário para status persistente do serviço e alertas.
-*   **Câmera:** Para monitoramento e selfies de intruso.
-*   **Sobreposição:** (Opcional) Para certos recursos visuais do alarme.
+Atalhos: `./run_all.sh` (testes + relatório + verificação de cobertura) e `./run_coverage.sh` (testes + relatório).
 
-**Integrações:**
-*   **Telegram:** Vá em Configurações -> Integrações -> Telegram. Insira seu Bot Token e Chat ID.
+Permissões pedidas no primeiro uso: localização ("permitir o tempo todo", para varredura em segundo plano),
+notificações, câmera e, opcionalmente, sobreposição. Telegram: Configurações > Integrações > Telegram (bot token e chat id).
 
-## 🛠️ Detalhes Técnicos
+### Backend do sensor
 
-*   **Linguagem:** Kotlin 1.9.22
-*   **Arquitetura:** Baseada em Serviços com Managers Singleton.
-*   **Processamento em Background:** Usa Foreground Services com tipos `location` e `specialUse` para cumprir as restrições do Android 14+.
-*   **Dependências:**
-    *   `LibVLC` para processamento de vídeo.
-    *   `AndroidX Biometric` para autenticação.
-    *   `Coroutines` para tarefas assíncronas.
+```bash
+cd backend
+npm ci
+npm run build          # tsc -> dist/
+API_KEY=<chave-com-16+-caracteres> npm start
+```
 
-## 🔄 Pipeline CI/CD e Processo de Release
+Variáveis de ambiente (apenas nomes; nunca versione valores):
 
-O projeto utiliza um pipeline robusto no GitHub Actions para garantir a qualidade do código e automatizar entregas.
+| Variável | Obrigatória | Descrição |
+|----------|-------------|-----------|
+| `API_KEY` | sim | Mínimo de 16 caracteres; sem ela o processo encerra. Enviada no header `x-api-key`. |
+| `PORT` | não | Porta HTTP (padrão `3000`). |
+| `DB_PATH` | não | Arquivo SQLite (padrão `presence.db`). |
+| `KNOWN_MACS` | não | Lista `MAC=Nome,MAC=Nome` de aparelhos conhecidos. |
 
-### Estágios do Pipeline
-1.  **Lint & Format:** Verifica a qualidade do código com Android Lint e formatação com Spotless.
-2.  **Testes:** Executa testes unitários e valida a cobertura de código (mínimo 80%) via JaCoCo.
-3.  **Testes Android:** Executa testes de interface (E2E) em um emulador Android.
-4.  **Segurança:** Escaneia o código em busca de segredos expostos (Gitleaks) e vulnerabilidades em dependências (Trivy).
-5.  **Build:** Compila os artefatos (APKs) para Debug e Release.
-6.  **Deploy:** Automatiza a publicação no GitHub Releases.
+O servidor fala HTTP puro: use só na LAN ou atrás de proxy com TLS. Rotas e fluxo completo em `docs/PRESENCE_SNIFFER.md`.
 
-### Tipos de Release
+```bash
+npm test               # jest
+npm run test:cov       # jest --coverage (limiar global de 100%)
+npm run lint           # eslint com --fix
+```
 
-1.  **Release Automática (Staging/Nightly):**
-    *   Gerada automaticamente a cada push na branch `main`.
-    *   A versão segue o número da build do GitHub Actions (ex: `v1.1.42`).
-    *   Inclui APKs de debug e release (não assinado por padrão).
+### Firmware ESP32
 
-2.  **Release de Produção (Stable):**
-    *   Gerada ao criar uma tag Git (ex: `v1.2.0`).
-    *   Inclui APK assinado (se as chaves estiverem configuradas).
-    *   Para criar:
-        ```bash
-        git tag v1.2.0
-        git push origin v1.2.0
-        ```
+Edite as constantes no topo de `firmware/esp32-sniffer/esp32-sniffer.ino` (`WIFI_SSID`, `WIFI_PASS`, `BACKEND_URL`,
+`API_KEY`, `SENSOR_ID`) com valores locais, sem commitá-los, e grave pela Arduino IDE. O firmware não é compilado na CI.
 
-### Configuração de Assinatura (Opcional)
+### Mobile (Flutter)
 
-Para gerar APKs assinados automaticamente, configure os seguintes **Secrets** no repositório GitHub (Settings -> Secrets and variables -> Actions):
+```bash
+cd mobile
+flutter pub get
+dart format --output=none --set-exit-if-changed .
+flutter analyze
+flutter test --coverage
+```
 
-*   `RELEASE_KEYSTORE_BASE64`: Conteúdo do arquivo keystore (.jks) codificado em Base64 (`base64 -w 0 seu-keystore.jks`).
-*   `KEYSTORE_PASSWORD`: Senha do keystore.
-*   `KEY_ALIAS`: Alias da chave.
-*   `KEY_PASSWORD`: Senha da chave.
+## Gates de CI
 
-Se esses segredos não estiverem configurados, a release conterá um APK não assinado (ou assinado com debug key, dependendo da configuração local).
+Workflows em `.github/workflows/`:
 
-## 🤝 Contribuição
+| Workflow | Gatilho | O que checa |
+|----------|---------|-------------|
+| `main.yml` (CI/CD Pipeline) | push/PR em `main` | **Flutter Mobile CI:** `dart format`, `flutter analyze`, `flutter test --coverage`, cobertura de `lib/domain` em 100%, `flutter build apk --release` e upload do APK. **Backend CI** (job "NestJS Backend CI", mas `backend/` é Node/TypeScript puro): `npm ci`, lint, `npm run test:cov` (limiar 100%) e `npm run build`. |
+| `validate.yml` (Validate) | PR e push em `main`/`master` | Reusable `juninmd/base-actions` `reusable-validate.yml`: validação do PR (instalação, lint, auditoria de dependências, varredura de segredos). |
+| `security.yml` (Security Scan) | push em `main`/`master` | Reusable `reusable-security-scan.yml`: Gitleaks no histórico completo (`.gitleaks.toml` tem allowlist). |
+| `release-drafter.yml` | push em `main`/`master`, PR | Mantém o rascunho de release (`release-drafter.yml`). |
 
-Por favor, leia `CONTRIBUTING.md` para padrões de código e diretrizes de CI/CD antes de submeter um Pull Request.
+Atenção: a CI **não** executa o build, os testes nem o Spotless/JaCoCo do app Android (`./gradlew ...`); rode-os localmente
+antes de abrir PR. Também não há job de assinatura/publicação de APK: as variáveis `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`,
+`KEY_ALIAS` e `KEY_PASSWORD` só são lidas pelo `app/build.gradle` quando definidas no ambiente.
 
-## 📄 Licença
+## Contribuição
 
-Este projeto está licenciado sob a MIT License.
+Leia `CONTRIBUTING.md` e `AGENTS.md` antes de abrir PR.
+
+## Licença
+
+MIT.
