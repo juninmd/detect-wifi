@@ -1,0 +1,20 @@
+# Saida real do backend (backend/) rodando localmente. API_KEY e MACs sao valores fabricados.
+$ API_KEY=<chave-16+> PORT=3917 KNOWN_MACS="00:11:22:33:44:55=Celular Ana" npm start
+presence backend listening on :3917
+
+$ curl -s -w "\n[HTTP %{http_code}]\n" http://localhost:3917/health
+{"status":"ok"}
+[HTTP 200]
+
+$ curl -s -X POST http://localhost:3917/sightings -H "x-api-key: <API_KEY>" -H "content-type: application/json" -d @sightings.json
+# sightings.json: {"sensorId":"esp32-sala","sightings":[{"mac":"00:11:22:33:44:55","rssi":-60},{"mac":"02:11:22:33:44:55","rssi":-70},{"mac":"00:16:3E:00:00:01","rssi":-55}]}
+{"accepted":3}
+[HTTP 202]
+
+$ curl -s -w "\n[HTTP %{http_code}]\n" "http://localhost:3917/presence?window=300" -H "x-api-key: <API_KEY>"
+{"windowSeconds":300,"known":[{"mac":"00:11:22:33:44:55","rssi":-60,"lastSeen":"2026-10-23T12:10:59.002Z","vendor":"Celular Ana","category":"known"}],"unknown":[{"mac":"00:16:3E:00:00:01","rssi":-55,"lastSeen":"2026-10-23T12:10:59.002Z"}],"anonymousCount":1}
+[HTTP 200]
+
+$ curl -s -w "\n[HTTP %{http_code}]\n" http://localhost:3917/presence   # sem chave
+{"error":"Unauthorized"}
+[HTTP 401]
