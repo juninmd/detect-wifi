@@ -26,6 +26,10 @@ Um aplicativo Android abrangente que combina detecção de presença residencial
 *   **Foto de intruso + localização:** PIN errado no bloqueio de apps ou senha errada no desbloqueio do celular (administrador do dispositivo) → selfie + mapa enviados ao Telegram.
 *   Prévias das telas: `docs/preview/`.
 
+### 📡 Sensor de presença passivo (ESP32 + backend)
+*   Detecta aparelhos próximos **mesmo sem estar conectados** ao roteador (probe requests) e expõe `GET /presence`.
+*   MACs aleatórios (iOS/Android atuais) são apenas contados, não identificados. Veja `docs/PRESENCE_SNIFFER.md`.
+
 ### 🔌 Integrações
 *   **Bot Telegram:** Receba fotos e alertas diretamente no Telegram.
 
