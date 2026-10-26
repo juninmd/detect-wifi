@@ -32,13 +32,18 @@ export function createHttpListener(handler: RequestHandler) {
     }
 
     const url = new URL(req.url ?? '/', 'http://localhost');
-    const result = await handler.handle({
-      method: req.method ?? 'GET',
-      path: url.pathname,
-      query: url.searchParams,
-      headers: req.headers,
-      body,
-    });
-    send(res, result.status, result.body);
+    try {
+      const result = await handler.handle({
+        method: req.method ?? 'GET',
+        path: url.pathname,
+        query: url.searchParams,
+        headers: req.headers,
+        body,
+      });
+      send(res, result.status, result.body);
+    } catch (error) {
+      console.error('Unhandled request error', error);
+      send(res, 500, { error: 'Internal error' });
+    }
   };
 }

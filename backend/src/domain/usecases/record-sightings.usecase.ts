@@ -8,6 +8,8 @@ export interface RawSighting {
 }
 
 const MIN_RSSI = -127;
+const MAX_SENSOR_ID_LENGTH = 64;
+const MAX_BATCH_SIZE = 500;
 
 /** Validates readings sent by a sensor and stores the valid ones; invalid entries are skipped. */
 export class RecordSightingsUseCase {
@@ -17,6 +19,8 @@ export class RecordSightingsUseCase {
     if (typeof sensorId !== 'string' || sensorId.trim() === '') {
       throw new Error('Invalid sensorId');
     }
+    if (sensorId.length > MAX_SENSOR_ID_LENGTH) throw new Error('sensorId too long');
+    if (raw.length > MAX_BATCH_SIZE) throw new Error(`Batch too large (max ${MAX_BATCH_SIZE})`);
 
     const valid: Sighting[] = [];
     for (const item of raw) {
