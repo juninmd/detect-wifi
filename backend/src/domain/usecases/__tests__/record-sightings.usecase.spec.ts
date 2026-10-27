@@ -11,6 +11,13 @@ describe('RecordSightingsUseCase', () => {
     useCase = new RecordSightingsUseCase(repo);
   });
 
+  it('rejects oversized sensorId and batches', async () => {
+    await expect(useCase.execute('x'.repeat(65), [], now)).rejects.toThrow('sensorId too long');
+    const big = Array.from({ length: 501 }, () => ({ mac: 'aa:bb:cc:dd:ee:ff', rssi: -60 }));
+    await expect(useCase.execute('esp-1', big, now)).rejects.toThrow('Batch too large');
+    expect(repo.saveAll).not.toHaveBeenCalled();
+  });
+
   it('stores only valid sightings with normalized MACs', async () => {
     const accepted = await useCase.execute(
       'esp-1',

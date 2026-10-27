@@ -45,6 +45,15 @@ describe('createHttpListener', () => {
     expect(handler.handle).not.toHaveBeenCalled();
   });
 
+  it('answers 500 without leaking details when the handler throws', async () => {
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    handler.handle.mockRejectedValue(new Error('SQLITE_BUSY secret'));
+    await run(request([]));
+    expect(res.writeHead).toHaveBeenCalledWith(500, expect.anything());
+    expect(res.end).toHaveBeenCalledWith('{"error":"Internal error"}');
+    spy.mockRestore();
+  });
+
   it('answers 413 for oversized bodies', async () => {
     await run(request(['x'.repeat(70 * 1024)]));
     expect(res.writeHead).toHaveBeenCalledWith(413, expect.anything());
