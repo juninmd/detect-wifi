@@ -38,3 +38,10 @@ mobile/windows/
 mobile/linux/
 node_modules/
 coverage/
+backend/node_modules/
+backend/coverage/
+backend/dist/
+mobile/coverage/
+mobile/.dart_tool/
+mobile/build/
+node_modules/
