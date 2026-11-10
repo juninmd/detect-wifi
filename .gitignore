@@ -45,3 +45,9 @@ mobile/coverage/
 mobile/.dart_tool/
 mobile/build/
 node_modules/
+
+# Artefatos locais e segredos: nunca versionar (smoke test de seguranca)
+install_log.txt
+*.log
+.env.*
+!.env.example
