@@ -31,8 +31,8 @@ export function createHttpListener(handler: RequestHandler) {
       return send(res, tooLarge ? 413 : 400, { error: tooLarge ? 'Payload too large' : 'Invalid JSON' });
     }
 
-    const url = new URL(req.url ?? '/', 'http://localhost');
     try {
+      const url = new URL(req.url ?? '/', 'http://localhost');
       const result = await handler.handle({
         method: req.method ?? 'GET',
         path: url.pathname,
@@ -42,6 +42,7 @@ export function createHttpListener(handler: RequestHandler) {
       });
       send(res, result.status, result.body);
     } catch (error) {
+      if ((error as { code?: string }).code === 'ERR_INVALID_URL') return send(res, 400, { error: 'Invalid URL' });
       console.error('Unhandled request error', error);
       send(res, 500, { error: 'Internal error' });
     }

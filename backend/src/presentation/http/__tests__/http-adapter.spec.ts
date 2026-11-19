@@ -34,6 +34,13 @@ describe('createHttpListener', () => {
     expect(res.end).toHaveBeenCalledWith('{"ok":true}');
   });
 
+  it('answers 400 instead of throwing on a request target that is not a valid URL', async () => {
+    await run(request([], { method: 'GET', url: '//' }));
+    expect(handler.handle).not.toHaveBeenCalled();
+    expect(res.writeHead).toHaveBeenCalledWith(400, { 'Content-Type': 'application/json' });
+    expect(res.end).toHaveBeenCalledWith('{"error":"Invalid URL"}');
+  });
+
   it('handles empty bodies and missing method/url', async () => {
     await run(request([], { method: undefined, url: undefined }));
     expect(handler.handle).toHaveBeenCalledWith(expect.objectContaining({ method: 'GET', path: '/', body: undefined }));
