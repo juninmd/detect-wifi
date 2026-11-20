@@ -170,10 +170,12 @@ class PresenceDetectionManager(
 
   private fun processSmartDeviceEvents(detectedDevices: List<WiFiDevice>) {
     val now = System.currentTimeMillis()
-    val detectedBssids = detectedDevices.map { it.bssid }.toSet()
 
     // Filter out weak signals to reduce noise
     val validDevices = detectedDevices.filter { it.level >= MIN_SIGNAL_THRESHOLD }
+    // Weak signals count as absent: lastSeenMap is only refreshed for valid devices, so a device
+    // lingering below the threshold would otherwise never depart and re-"arrive" spuriously.
+    val detectedBssids = validDevices.map { it.bssid }.toSet()
 
     // 1. Handle Arrivals and Updates
     validDevices.forEach { device ->
