@@ -7,7 +7,7 @@ describe('RecordSightingsUseCase', () => {
   const now = new Date('2026-01-01T00:00:00Z');
 
   beforeEach(() => {
-    repo = { saveAll: jest.fn(), findSince: jest.fn() };
+    repo = { saveAll: jest.fn(), findLatestPerMacSince: jest.fn() };
     useCase = new RecordSightingsUseCase(repo);
   });
 

@@ -15,7 +15,13 @@ export class InMemorySightingRepository implements ISightingRepository {
     this.sightings = [...this.sightings, ...sightings].filter((s) => s.seenAt.getTime() >= oldest);
   }
 
-  async findSince(since: Date): Promise<Sighting[]> {
-    return this.sightings.filter((s) => s.seenAt >= since);
+  async findLatestPerMacSince(since: Date): Promise<Sighting[]> {
+    const latest = new Map<string, Sighting>();
+    for (const s of this.sightings) {
+      if (s.seenAt < since) continue;
+      const current = latest.get(s.mac);
+      if (!current || s.seenAt > current.seenAt) latest.set(s.mac, s);
+    }
+    return [...latest.values()];
   }
 }

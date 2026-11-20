@@ -45,7 +45,10 @@ export class SqliteSightingRepository implements ISightingRepository {
     db.exec(SCHEMA);
     this.insert = db.prepare('INSERT INTO sightings (mac, rssi, seen_at, sensor_id) VALUES (?, ?, ?, ?)');
     this.prune = db.prepare('DELETE FROM sightings WHERE seen_at < ?');
-    this.select = db.prepare('SELECT mac, rssi, seen_at, sensor_id FROM sightings WHERE seen_at >= ? ORDER BY seen_at');
+    // SQLite fills the bare columns (rssi, sensor_id) from the row holding MAX(seen_at): one row per MAC.
+    this.select = db.prepare(
+      'SELECT mac, rssi, MAX(seen_at) AS seen_at, sensor_id FROM sightings WHERE seen_at >= ? GROUP BY mac',
+    );
     this.insertAll = db.transaction((items: Sighting[]) => {
       for (const s of items) this.insert.run(s.mac, s.rssi, s.seenAt.getTime(), s.sensorId);
       this.prune.run(this.clock() - this.retentionMs);
@@ -56,7 +59,7 @@ export class SqliteSightingRepository implements ISightingRepository {
     this.insertAll(sightings);
   }
 
-  async findSince(since: Date): Promise<Sighting[]> {
+  async findLatestPerMacSince(since: Date): Promise<Sighting[]> {
     const rows = this.select.all(since.getTime()) as SightingRow[];
     return rows.map((r) => new Sighting(r.mac, r.rssi, new Date(r.seen_at), r.sensor_id));
   }

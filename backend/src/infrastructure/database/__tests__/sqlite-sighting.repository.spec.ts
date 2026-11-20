@@ -1,4 +1,5 @@
 import { SqliteSightingRepository, SqlDatabase, SqlStatement } from '../sqlite-sighting.repository';
+import Database = require('better-sqlite3');
 import { Sighting } from '../../../domain/entities/sighting.entity';
 
 describe('SqliteSightingRepository', () => {
@@ -43,9 +44,27 @@ describe('SqliteSightingRepository', () => {
     const repo = build();
     statements.SELECT.all.mockReturnValue([{ mac: 'AA', rssi: -50, seen_at: 1234, sensor_id: 's1' }]);
 
-    const result = await repo.findSince(new Date(1000));
+    const result = await repo.findLatestPerMacSince(new Date(1000));
 
     expect(statements.SELECT.all).toHaveBeenCalledWith(1000);
     expect(result).toEqual([new Sighting('AA', -50, new Date(1234), 's1')]);
+  });
+
+  it('returns the latest row of each MAC from a real SQLite database', async () => {
+    const repo = new SqliteSightingRepository(new Database(':memory:') as unknown as SqlDatabase, 60_000, () => 10_000);
+    await repo.saveAll([
+      new Sighting('AA', -70, new Date(5_000), 's1'),
+      new Sighting('AA', -50, new Date(9_000), 's2'),
+      new Sighting('AA', -90, new Date(7_000), 's1'),
+      new Sighting('BB', -60, new Date(8_000), 's1'),
+      new Sighting('CC', -60, new Date(1_000), 's1'),
+    ]);
+
+    const latest = await repo.findLatestPerMacSince(new Date(2_000));
+
+    expect(latest.sort((a, b) => a.mac.localeCompare(b.mac))).toEqual([
+      new Sighting('AA', -50, new Date(9_000), 's2'),
+      new Sighting('BB', -60, new Date(8_000), 's1'),
+    ]);
   });
 });

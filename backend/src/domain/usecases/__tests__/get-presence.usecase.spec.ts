@@ -12,7 +12,7 @@ describe('GetPresenceUseCase', () => {
   const at = (s: number) => new Date(now.getTime() - s * 1000);
 
   beforeEach(() => {
-    sightings = { saveAll: jest.fn(), findSince: jest.fn() };
+    sightings = { saveAll: jest.fn(), findLatestPerMacSince: jest.fn() };
     devices = {
       findByMacAddress: jest.fn(),
       saveDevice: jest.fn(),
@@ -22,11 +22,9 @@ describe('GetPresenceUseCase', () => {
     useCase = new GetPresenceUseCase(sightings, devices);
   });
 
-  it('splits known, unknown and anonymous devices using the latest sighting per MAC', async () => {
-    sightings.findSince.mockResolvedValue([
-      new Sighting('00:11:22:33:44:55', -70, at(60), 's1'),
+  it('splits known, unknown and anonymous devices', async () => {
+    sightings.findLatestPerMacSince.mockResolvedValue([
       new Sighting('00:11:22:33:44:55', -50, at(10), 's1'),
-      new Sighting('00:11:22:33:44:55', -90, at(120), 's1'),
       new Sighting('00:AA:BB:CC:DD:EE', -80, at(5), 's1'),
       new Sighting('02:AA:BB:CC:DD:EE', -80, at(5), 's1'),
     ]);
@@ -36,7 +34,7 @@ describe('GetPresenceUseCase', () => {
 
     const snapshot = await useCase.execute(300, now);
 
-    expect(sightings.findSince).toHaveBeenCalledWith(at(300));
+    expect(sightings.findLatestPerMacSince).toHaveBeenCalledWith(at(300));
     expect(snapshot.known).toEqual([
       { mac: '00:11:22:33:44:55', rssi: -50, lastSeen: at(10), vendor: 'Ana phone', category: 'known' },
     ]);
@@ -47,7 +45,7 @@ describe('GetPresenceUseCase', () => {
   });
 
   it('treats a stored but not-known device as unknown', async () => {
-    sightings.findSince.mockResolvedValue([new Sighting('00:11:22:33:44:55', -50, at(1), 's1')]);
+    sightings.findLatestPerMacSince.mockResolvedValue([new Sighting('00:11:22:33:44:55', -50, at(1), 's1')]);
     devices.findByMacAddress.mockResolvedValue(new Device('1', '00:11:22:33:44:55', '', 'V', false, false, 'x', at(0)));
 
     const snapshot = await useCase.execute(60, now);
@@ -57,9 +55,9 @@ describe('GetPresenceUseCase', () => {
   });
 
   it('defaults the reference time to now', async () => {
-    sightings.findSince.mockResolvedValue([]);
+    sightings.findLatestPerMacSince.mockResolvedValue([]);
     await useCase.execute(60);
-    const since: Date = sightings.findSince.mock.calls[0][0];
+    const since: Date = sightings.findLatestPerMacSince.mock.calls[0][0];
     expect(Date.now() - since.getTime()).toBeGreaterThanOrEqual(59_000);
   });
 });
