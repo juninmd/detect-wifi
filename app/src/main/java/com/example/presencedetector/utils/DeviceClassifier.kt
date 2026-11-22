@@ -47,13 +47,18 @@ object DeviceClassifier {
 
   // Pre-compiled regex for hotspot detection
   private val SHORT_NAME_REGEX = Regex("[A-Za-z0-9]+")
+  private val CAMEL_BOUNDARY = Regex("(?<=[a-z])(?=[A-Z])")
+  private val NON_ALNUM = Regex("[^a-z0-9]+")
+  private val SHORT_WORD = Regex("[a-z0-9]{1,4}")
+  // Longer patterns that are also common word endings ("notebook", "netbook").
+  private val WORD_ONLY = setOf("ebook")
 
   fun classify(ssid: String, bssid: String, isHotspot: Boolean = false): DeviceCategory {
     if (isHotspot) {
       return DeviceCategory.SMARTPHONE
     }
 
-    val name = ssid.lowercase()
+    val name = SsidText(ssid)
 
     return when {
       name.containsAny(Patterns.SMARTPHONE_HIGH_CONFIDENCE) -> DeviceCategory.SMARTPHONE
@@ -74,10 +79,8 @@ object DeviceClassifier {
    * patterns and heuristics.
    */
   fun isMobileHotspot(ssid: String): Boolean {
-    val lowerSsid = ssid.lowercase()
-
     // Check if contains mobile patterns
-    val containsMobilePattern = lowerSsid.containsAny(Patterns.MOBILE_HOTSPOT_PATTERNS)
+    val containsMobilePattern = SsidText(ssid).containsAny(Patterns.MOBILE_HOTSPOT_PATTERNS)
 
     // Check if SSID is very short (typical for hotspots)
     val isShortName = ssid.length < 15 && !ssid.contains("_") && !ssid.contains("-")
@@ -85,7 +88,24 @@ object DeviceClassifier {
     return containsMobilePattern || (isShortName && ssid.matches(SHORT_NAME_REGEX))
   }
 
-  private fun String.containsAny(patterns: Collection<String>): Boolean {
-    return patterns.any { this.contains(it) }
+  /**
+   * Short single-word patterns ("lg", "tv", "hue", "note", "5g", plus "ebook") must match a whole
+   * word: as substrings they hit "Algar", "Ativa", "Hueston", "Notebook". Longer or multi-word
+   * patterns still match anywhere, so concatenated names like "SamsungTV" keep working.
+   */
+  private class SsidText(ssid: String) {
+    val lower = ssid.lowercase()
+    val words: Set<String> =
+      ssid
+        .replace(CAMEL_BOUNDARY, " ")
+        .lowercase()
+        .split(NON_ALNUM)
+        .filter { it.isNotEmpty() }
+        .toSet()
+
+    fun containsAny(patterns: Collection<String>): Boolean =
+      patterns.any {
+        if (SHORT_WORD.matches(it) || it in WORD_ONLY) it in words else lower.contains(it)
+      }
   }
 }
