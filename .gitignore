@@ -51,3 +51,4 @@ install_log.txt
 *.log
 .env.*
 !.env.example
+build_*.txt
